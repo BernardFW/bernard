@@ -1,0 +1,6 @@
+.idea
+*.pyc
+*.un~
+*.swp
+MANIFEST
+/dist
