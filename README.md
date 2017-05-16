@@ -82,7 +82,7 @@ class BaseTransition(object):
             return cls(request, *args, **kwargs)
         return factory
 
-    def rank(self) -> float:
+    def rank(self) -> Optional[float]:
         """
         Given the current request, ranks on a scale from 0 to 1 how likely it is that this
         transition matches it.
@@ -123,19 +123,30 @@ class ChoiceTransition(BaseTransition):
         choices = self.request.get_trans_register('choices', [])
 
         if not choices:
-            return 0
+            return
 
         self.choice, score = max((x, self._rank_choice(x) for x in choices), key=lambda y: y[1])
 
         if score and (self.when is None or self.when == self.choice.slug):
             return score
-
-        return 0
 ```
+
+## Global app
+
+We should have a global app that gets instantiated like this:
+
+```python
+app = Bernard(config)
+app.serve()
+```
+
+This will parse all the stuff, initialize what needs to be and so on.
 
 ## Intents DB
 
-TODO
+Intents DB is a list of words/phrases that the user might say in order to trigger a story. It should
+be accessible easily from everywhere but also I don't see why it should be a singleton. The simplest
+thing would be to tie it to the Sanic app.
 
 ## Message layering
 
@@ -180,16 +191,14 @@ Here, two ways to send a message:
 
 ## Configuration
 
-We'll use Sanic's app configuration facilities. This lays two questions:
-
-1. How is Sanic instantiated?
-2. How do you access the app instance from anywhere in the code?
-
 Configuration is composed of two things:
 
 1. App-specific configuration (like the name of classes, list of middlewares, etc) that is commited
    and found in a Python file
 2. Instance-specific configuration that comes from environment variables (like tokens and passwords)
+
+Configuration works like in Django and can be imported in a `from bernard.config import settings`
+fashion.
 
 ## Middlewares
 
@@ -206,7 +215,50 @@ class MyStory(BaseStory):
         return m
 ```
 
-TODO: define middleware interface
+```python
+from typing import Optional, Tuple, List
+from bernard.layers import Text, QuickReplies, QuickReply, BaseLayer
+from bernard.i18n import translate as t, intents as i
+
+
+def middleware_for(pattern):
+    """
+    That's a decorator that will check if the request matches a specific pattern.
+    """
+    raise NotImplementedError
+
+
+class ConfirmationToQuickReplies(BaseMiddleware):
+    @middleware_for('Confirmation')
+    def filter_response(self, request, response) -> Optional[Tuple[List[BaseLayer], float]]:
+        confirmation = response[0]
+        filtered = [
+            Text(confirmation.text),
+            QuickReplies(
+                QuickReply('yes', t.YES, i.YES),
+                QuickReply('no', t.NO, i.NO),
+            ),
+        ]
+
+        return filtered, 0.8
+
+class QuickRepliesMock(BaseMiddleware):
+    @middleware_for('Text+ QuickReplies')
+    def filter_response(self, request, response) -> Optional[Tuple[List[BaseLayer], float]]:
+        filtered = list(response)
+
+        qr = response[-1]
+        text = t('LIST_JOIN_OR', list=[x.text for x in qr.replies])
+        filtered.append(TextLayer(text, trans_register=qr.trans_register))
+
+        return filtered, 0.7
+```
+
+Each middleware output is given to other middlewares until it gets accepted by the platform. (Is it
+a good idea? I smell infinite recursion here. TODO decide how to mitigate that).
+
+The goal of middlewares is not to make sure that contents fit within the platform limits. If a
+message is too long, sending will be stopped and an error will be logged.
 
 ## Translation
 
@@ -249,9 +301,16 @@ in the framework and other framework facilities.
 The other option would be to have a magic Django `get_language()`-like function, but I don't like
 magic and I feel it can be avoided here.
 
+TODO = a way to split a message within several bubbles
+
+TODO = a way to randomize a string
+
 ## Translations configuration
 
-TODO
+Translations can be loaded from various sources. Those sources could refresh themselves, so the
+translation database needs to be updatable via callbacks.
+
+Loaders are listed and configured in the configuration file.
 
 ## Message templating
 
