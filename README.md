@@ -357,11 +357,47 @@ TODO code examples
 
 ## Logging
 
-TODO
+We'll use the Python 3 logging tools, as Sanic does. The configuration must be integrated.
 
 ## Single/Multi-user conversations
 
-TODO
+Although the main focus is 1:1 conversations, let's not set aside the possibility of group 
+conversations too fast.
+
+For each message, platform handlers will construct:
+
+- A sender ID
+- A conversation ID
+
+We know that some provider do not allow yet group conversation although they will soon, so the
+building of those ID has to be future-proof.
+
+Those ID must also be short and textual, so they can be used as key, for indexing and so on.
+
+The framework will maintain 2 contexts
+
+- One for the conversation. It will store things like the state of the conversation or things
+  related to a single user.
+- One for the user. It can store user-specific preferences that will also be available in other
+  conversations involving this user.
+  
+Now, how to access that in practice?
+
+```python
+async def handle(self):
+    # Access user ID
+    print(self.user.id)
+    
+    # Access conversation ID
+    print(self.conversation.id)
+    
+    # Get user's friendly name
+    print(await self.user.get_friendly_name())
+    
+    # Access conversation's context
+    print(await self.conversation.context.get('some_key'))
+    print(await self.conversation.context.set('some_key', {'some_json': True}, timeout=20 * 60))
+```
 
 ## Context
 
@@ -377,4 +413,13 @@ TODO
 
 ## Send a message from a cron/external trigger
 
-TODO
+There will be an authenticated API endpoint that crons and external scripts will be able to call in
+order to generate fake postback messages.
+
+Each platform will expose a way to serialize a responder that can be re-created on the fly through
+some specific logic.
+
+Calling this API will require two arguments (besides the signature protocol):
+
+- The serialized responder
+- The payload to put in the postback message
