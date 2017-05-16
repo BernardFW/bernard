@@ -312,13 +312,48 @@ translation database needs to be updatable via callbacks.
 
 Loaders are listed and configured in the configuration file.
 
+TODO how to configure dimensions
+
 ## Message templating
 
-TODO
+Templating is needed in a very basic form inside text translations. We'll use the Python string
+formatting ability to do so. It allows to do things like:
+
+```
+Hello, {name}
+```
+
+There will be in the configuration a way to register filters, in order to get custom output. There
+will be built-in filters as well. Such as:
+
+```
+Hello, {name}. You owe {amount:money}
+```
+
+Or
+
+```python
+# Given this template
+FOO = 'Say: {options:joinor}'
+
+# You could do
+assert t('FOO', options=['yes', 'maybe', 'no']).render(i18n_context) == 'Say: yes, maybe or no'
+```
 
 ## Media handling
 
-TODO
+Media handling is quite a pain in the ass. Messenger is pretty simple (just give any HTTPS URL),
+however other platforms require you to upload the data in a more or less straightforward way.
+
+Also, media might need to be resized or re-encoded for each specific platform.
+
+This means that media handling should be done on a separate process/machine that will specialize
+in resizing stuff.
+
+Moreover, media provided by platforms are accessible for some time but don't stay online forever.
+We need to store them somewhere if we care to keep them.
+
+TODO code examples
 
 ## Logging
 
