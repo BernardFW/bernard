@@ -15,6 +15,13 @@ BERNARD stands for "Bot Engine Responding Naturally At Requests Detection".
 This framework does not exist yet. Here we'll list a few code snippets of how we want things to
 look like from a developer standpoint.
 
+## Introspection
+
+Make it possible to easily create a graph of the FSM with a static analysis (which would allow
+the creation of tools to automatically model a bot).
+
+Each transition should also be annotated/documented.
+
 ## Story interface
 
 Each state of the FSM will be represented by a class. The class will have as members/functions
@@ -41,7 +48,90 @@ class MyStory(BaseStory):
 
 ## Transitions
 
-TODO
+Transitions can't be in the same instance as the story, since they are awoken to know if we need to
+instantiate the story. However, transitions still need mostly what stories have (context, message,
+user, and so on).
+
+The idea is to make them a sub-class of another story with a conventional name. This sub-class will
+be instantiated every time there is 
+
+```python
+transitions = [
+    trans(origin=None, dest=HelloStory, factory=TextTransition.builder(intent='foo')),
+    trans(origin=HelloStory, dest=YesStory, factory=ChoiceTransition.builder(when='yes')),
+    trans(origin=HelloStory, dest=NoStory, factory=ChoiceTransition.builder(when='no')),
+    trans(origin=None, dest=InsultStory, factory=TextTransition.builder(intent='insult'), 
+          weight=0.6, desc="When the user becomes insulting"),
+    trans(origin=InsultStory, dest=FuckYouStory, factory=AnyTransition.builder()),
+]
+```
+
+We also need a register to store information related to the next transition. And that should come
+from each layer. Which means that each layer can emit something for the `trans_register`.
+
+The API of transitions would be something like
+
+```python
+class BaseTransition(object):
+    def __init__(self, request):
+        self.request = request
+
+    @classmethod
+    def builder(cls, *args, **kwargs):
+        def factory(request):
+            return cls(request, *args, **kwargs)
+        return factory
+
+    def rank(self) -> float:
+        """
+        Given the current request, ranks on a scale from 0 to 1 how likely it is that this
+        transition matches it.
+        """
+        raise NotImplementedError
+
+    def patch(self) -> None:
+        """
+        This method will be called when the transition is selected. If you need to alter the request
+        or the user context, this is where you need to do it.
+        """
+        pass
+
+class TextTransition(BaseTransition):
+    def __init__(self, request, intent):
+        super(TextTransition, self).__init__(request)
+        self.intent = intent
+
+    def _compare_text(self, text):
+        return 1  # implement the text matching logic here
+
+    def rank(self):
+        msg = self.request.message
+
+        if msg.has_layer(layers.Text):
+            return self._compare_text(msg.get_layer(layers.Text).text)
+            
+class ChoiceTransition(BaseTransition):
+    def __init__(self, request, when=None):
+        super(ChoiceTransition, self).__init__(request)
+        self.when = when
+        self.choice = None
+        
+    def _rank_choice(self, choice):
+        return 1  # todo implement ranking logic
+        
+    def rank(self):
+        choices = self.request.get_trans_register('choices', [])
+
+        if not choices:
+            return 0
+
+        self.choice, score = max((x, self._rank_choice(x) for x in choices), key=lambda y: y[1])
+
+        if score and (self.when is None or self.when == self.choice.slug):
+            return score
+
+        return 0
+```
 
 ## Intents DB
 
