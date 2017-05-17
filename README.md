@@ -527,3 +527,21 @@ the appropriate layer.
 
 If a handler returns the class of another state, then the engine will immediately transition to this
 state.
+
+## Multiple instances in the same process
+
+Suppose that you have several FB pages for several languages. We need to both accept messages from
+those pages and display the right lang.
+
+```python
+FACEBOOK = [
+    {
+        'page_id': '11111',
+        'i18n_hint': {'lang': 'fr'},
+    },
+    {
+        'page_id': '22222',
+        'i18n_hint': {'lang': 'en'},
+    },
+]
+```
