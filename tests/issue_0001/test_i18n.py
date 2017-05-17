@@ -1,6 +1,7 @@
 # coding: utf-8
 import asyncio
 import os
+import pytest
 from bernard.i18n.loaders import BaseLoader, CsvLoader
 from unittest.mock import Mock
 
@@ -34,3 +35,9 @@ def test_load_csv():
     asyncio.get_event_loop().run_until_complete(loader.load(file_path))
 
     mock_cb.assert_called_once_with(data)
+
+
+def test_base_loader_is_abstract():
+    loader = BaseLoader()
+    with pytest.raises(NotImplementedError):
+        asyncio.get_event_loop().run_until_complete(loader.load())
