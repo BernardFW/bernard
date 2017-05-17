@@ -216,7 +216,7 @@ class MyStory(BaseStory):
 ```
 
 ```python
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Iterable
 from bernard.layers import Text, QuickReplies, QuickReply, BaseLayer
 from bernard.i18n import translate as t, intents as i
 
@@ -252,6 +252,20 @@ class QuickRepliesMock(BaseMiddleware):
         filtered.append(TextLayer(text, trans_register=qr.trans_register))
 
         return filtered, 0.7
+
+class Humanize(BaseMiddleware):
+    @platform(['facebook'])
+    def filter_batch(self, request, responses) -> Optional[List[List[BaseLayer]]]:
+        out = []
+        for response in responses:
+            filtered = []
+            for layer in response:
+                if isinstance(layer, layers.TextLayer):
+                    filtered.append(layers.TypingLayer(typing=on))
+                    filtered.append(layers.SleepLayer(duration=1.0))
+                filtered.append(layer)
+            out.append(filtered)
+        return out
 ```
 
 Each middleware output is given to other middlewares until it gets accepted by the platform. (Is it
@@ -259,6 +273,9 @@ a good idea? I smell infinite recursion here. TODO decide how to mitigate that).
 
 The goal of middlewares is not to make sure that contents fit within the platform limits. If a
 message is too long, sending will be stopped and an error will be logged.
+
+There is also the `filter_batch()` method which filters a batch of messages to add things like
+typing indications. If the output is not accepted by the platform, then it is discarded.
 
 ## Translation
 
@@ -293,6 +310,11 @@ could get something like that:
 | SUBSTITUTE_ME_PLURALIZE\[0,1] | {name} le grand   | {name} la grande   | {name} en grandeur  | 
 | SUBSTITUTE_ME_PLURALIZE\[2,]  | {name} les grands | {name} les grandes | {name} en grandeurs | 
 | HELLO                         |                   |                    | Bonjour             |
+| RANDOM+1                      |                   |                    | Rand 1, Bubble 1    |
+| RANDOM+1                      |                   |                    | Rand 1, Bubble 2    |
+| RANDOM+2                      |                   |                    | Rand 2, Bubble 1    |
+| RANDOM+2                      |                   |                    | Rand 2, Bubble 2    |
+| RAND_PLUR\[0]+1               |                   |                    | Plural + random     |
 
 Translated strings are not real strings but rather objects that you can render any time you'd like
 using a context of your choosing. This will be done automatically by the layer-rendering functions
@@ -301,9 +323,17 @@ in the framework and other framework facilities.
 The other option would be to have a magic Django `get_language()`-like function, but I don't like
 magic and I feel it can be avoided here.
 
-TODO = a way to split a message within several bubbles
+Python-side, we'll get an API that does two things:
 
-TODO = a way to randomize a string
+- `.render()` which always produces a single merged string of everything (with `\n` between)
+- `.render_list()` which produces a list of strings (even if there is only one) so that things like
+  `layers.Text` can split that into several bubbles. 
+
+The randomization system will work as follow:
+
+- Messages are sorted using the "rand ID" in the key
+- Current position for each key is stored in conversation context
+- Initial position is calculated with a modulo on (conversation + key)'s hash.
 
 ## Translations configuration
 
@@ -312,7 +342,17 @@ translation database needs to be updatable via callbacks.
 
 Loaders are listed and configured in the configuration file.
 
-TODO how to configure dimensions
+In order to configure dimensions, several things:
+
+- The configuration file will provide the dimensions and their possible values
+- The developer will also have to provide a function which given a request will return the according
+  dimension values
+- This means that the user object will have to be cached in order to avoid querying the platform all
+  the time.
+- Dimensions must be deduced from the conversation and not the user. Conversations auto-guess their
+  language, however it is persisted in cache and they provide an API to change the current language.
+- At some point, we'll have to talk to external libs like Babel. Given internal knowledge + app
+  dimensions, the conversation must be able to generate a traditional `en_IN`-like string.
 
 ## Message templating
 
@@ -353,7 +393,11 @@ in resizing stuff.
 Moreover, media provided by platforms are accessible for some time but don't stay online forever.
 We need to store them somewhere if we care to keep them.
 
-TODO code examples
+- Each platform has its media downloader/store module (which takes arbitrary JSON as input)
+- For any media you can get an internal media ID
+- Which you can use to generate thumbnails/cropped versions/and so on
+- Then each platform can use the output to push the media online and use an opaque data structure
+  to send to itself
 
 ## Logging
 
@@ -372,7 +416,9 @@ For each message, platform handlers will construct:
 We know that some provider do not allow yet group conversation although they will soon, so the
 building of those ID has to be future-proof.
 
-Those ID must also be short and textual, so they can be used as key, for indexing and so on.
+Those ID must also be short and textual, so they can be used as key, for indexing and so on. Also,
+the ID space between sender/conversation and platforms must not overlap. Like `fb:single:12345` and
+`fb:user:12345` for the conversation and the user.
 
 The framework will maintain 2 contexts
 
@@ -401,15 +447,58 @@ async def handle(self):
 
 ## Context
 
-TODO
+The storing needs are:
+
+- Current conversation status
+- Persistent user and conversation contexts
+- Duplicate messages and nonces
+
+Which are two different access patterns. Let's say that we have 2 interfaces, one for each.
+
+Configuration would look like this
+
+```python
+from os import getenv
+
+REGISTER_STORE = {
+    'class': 'bernard.stores.engines.RedisRegister',
+    'url': getenv('BERNARD_REDIS_URL'),
+}
+
+NONCE_STORE = {
+    'class': 'bernard.stores.engines.RedisNonce',
+    'url': getenv('BERNARD_REDIS_URL'),
+}
+
+CONTEXT_STORE = {
+    'class': 'bernard.stores.engines.PostgreSqlContext',
+    'url': getenv('BERNARD_PSQL_URL'),
+}
+```
+
+Then using the stores would be like
+
+```python
+from bernard.stores import register, nonce, context
+
+# Register
+await register.get(conversation_id)
+await register.set(conversation_id, content)
+
+# Nonce
+await nonce.is_duplicate(message.nonce, max_time_delta=3600)
+
+# Context
+ctx = context.get(conversation_id)
+```
 
 ## Typing indications
 
-TODO
+That's a special layer, `layers.Typing`
 
 ## Pause between messages
 
-TODO
+That's a special layer, `layers.Sleep`
 
 ## Send a message from a cron/external trigger
 
@@ -423,3 +512,18 @@ Calling this API will require two arguments (besides the signature protocol):
 
 - The serialized responder
 - The payload to put in the postback message
+
+## Read message trigger
+
+For platforms that support read message detection, layers will all embed a `read_payload` parameter
+that will come back inside a special layer if the layer ever gets read.
+
+## Dead man switch
+
+Each platform will have the freedom to implement a way to know if webviews get closed, and trigger
+the appropriate layer.
+ 
+## State redirection
+
+If a handler returns the class of another state, then the engine will immediately transition to this
+state.
