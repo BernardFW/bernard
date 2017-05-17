@@ -6,6 +6,8 @@
 #
 aiofiles==0.3.1           # via sanic
 httptools==0.0.9          # via sanic
+py==1.4.33                # via pytest
+pytest==3.0.7
 sanic==0.5.4
 ujson==1.35               # via sanic
 uvloop==0.8.0             # via sanic

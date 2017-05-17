@@ -1,1 +1,5 @@
+# For everyone
 sanic
+
+# For dev
+pytest
