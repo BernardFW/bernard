@@ -1,0 +1,3 @@
+[run]
+omit =
+    src/bernard/conf/default_settings.py
