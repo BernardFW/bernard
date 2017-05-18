@@ -129,14 +129,25 @@ class Translator(object):
     That's the basic object that you use to produce translations.
     """
 
-    def __init__(self, wd: WordDictionary):
+    def __init__(self, wd: Optional[WordDictionary]=None):
         """
         We need the word dictionary here in order to pass it to the string to
         translate when it will get rendered.
 
         :param wd: a configured WordDictionary
         """
-        self.wd = wd
+
+        self.wd = wd  # type: WordDictionary
+
+        if not self.wd:
+            self._regenerate_word_dict()
+
+    def _regenerate_word_dict(self):
+        """
+        Re-generate the word dict, if you need to.
+        """
+
+        self.wd = WordDictionary()
 
     def __getattr__(self, key: Text) -> StringToTranslate:
         """

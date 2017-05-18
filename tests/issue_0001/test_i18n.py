@@ -173,3 +173,9 @@ def test_translate_render():
         t = Translator(wd)
 
         assert t.FOO.render() == 'éléphant'
+
+
+def test_translate_singleton():
+    with patch_conf(LOADER_CONFIG):
+        from bernard.i18n import translate as t
+        assert t.FOO.key == 'FOO'
