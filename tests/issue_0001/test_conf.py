@@ -22,7 +22,7 @@ def test_load_file():
 
 
 def test_lazy_load_file():
-    settings = LazySettings([asset_config_path])
+    settings = LazySettings(lambda: [asset_config_path])
 
     assert settings.FOO == 'bar'
     assert settings.BAR == [1, 2, 3]
@@ -35,7 +35,7 @@ def test_set_settings():
 
 
 def test_set_lazy_settings():
-    settings = LazySettings([])
+    settings = LazySettings(lambda: [])
     settings.NEW_KEY = 'new_value'
     assert settings.NEW_KEY == 'new_value'
 
@@ -63,7 +63,6 @@ def test_reload_config():
 
     reload_config()
 
-    from bernard.conf import settings
     with pytest.raises(AttributeError):
         assert settings.NEWLY_SET
 

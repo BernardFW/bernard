@@ -3,7 +3,7 @@ import types
 import re
 from typing import Text, Any
 
-CONFIG_ATTR = re.compile(r'^[A-Z](?:_?[A-Z]+)*$')
+CONFIG_ATTR = re.compile(r'^[A-Z](?:_?[A-Z0-9]+)*$')
 
 
 class Settings(dict):
@@ -68,13 +68,13 @@ class LazySettings(object):
     method, specify a list of files to load as argument.
     """
 
-    def __init__(self, files):
+    def __init__(self, get_files):
         """
         Initialize internal cache.
         """
         self.__dict__.update({
             '__settings': None,
-            '_files': files,
+            '_get_files': get_files,
         })
 
     @property
@@ -84,11 +84,17 @@ class LazySettings(object):
         """
         if self.__dict__['__settings'] is None:
             self.__dict__['__settings'] = Settings()
-            for file_path in self._files:
+            for file_path in self._get_files():
                 if file_path:
                     # noinspection PyProtectedMember
                     self.__dict__['__settings']._load(file_path)
         return self.__dict__['__settings']
+
+    def _reload(self) -> None:
+        """
+        Delete the inner settings object so it gets reloaded.
+        """
+        self.__dict__['__settings'] = None
 
     def __getattr__(self, key: Text) -> Any:
         """

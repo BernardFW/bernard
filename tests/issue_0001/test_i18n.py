@@ -1,14 +1,45 @@
 # coding: utf-8
-import asyncio
 import os
 import pytest
+from bernard.i18n.translator import *
 from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
     BaseIntentsLoader, CsvIntentsLoader
+from bernard.conf.utils import patch_conf
+from bernard.utils import run
 from unittest.mock import Mock
 
 
-def run(task):
-    asyncio.get_event_loop().run_until_complete(task)
+TRANS_FILE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    'assets',
+    'trans.csv',
+)
+
+LOADER_CONFIG = {
+    'I18N_TRANSLATION_LOADERS': [
+        {
+            'loader': 'bernard.i18n.loaders.CsvTranslationLoader',
+            'params': {
+                'file_path': TRANS_FILE_PATH,
+            }
+        }
+    ]
+}
+
+LOADER_CONFIG_2 = {
+    'I18N_TRANSLATION_LOADERS': [
+        {
+            'loader': 'bernard.i18n.loaders.CsvTranslationLoader',
+            'params': {
+                'file_path': os.path.join(
+                    os.path.dirname(__file__),
+                    'assets',
+                    'trans2.csv',
+                ),
+            }
+        }
+    ]
+}
 
 
 # noinspection PyProtectedMember
@@ -41,15 +72,10 @@ def test_load_translations_csv():
         'FOO': 'éléphant',
         'BAR': 'baz',
     }
-    file_path = os.path.join(
-        os.path.dirname(__file__),
-        'assets',
-        'trans.csv',
-    )
 
     loader = CsvTranslationLoader()
     loader.on_update(mock_cb)
-    run(loader.load(file_path=file_path))
+    run(loader.load(file_path=TRANS_FILE_PATH))
 
     mock_cb.assert_called_once_with(data)
 
@@ -83,3 +109,67 @@ def test_load_intents_csv():
     run(loader.load(file_path=file_path))
 
     mock_cb.assert_called_once_with(data)
+
+
+def test_word_dict():
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+        assert wd.get('FOO') == 'éléphant'
+
+
+def test_word_dict_count():
+    wd = WordDictionary()
+
+    with pytest.raises(TranslationError):
+        wd.get('FOO', 1)
+
+
+def test_word_dict_missing():
+    wd = WordDictionary()
+
+    with pytest.raises(MissingTranslationError):
+        wd.get('DOES_NOT_EXIST')
+
+
+def test_word_dict_param():
+    with patch_conf(LOADER_CONFIG_2):
+        wd = WordDictionary()
+        assert wd.get('WITH_PARAM', name='Mike') == 'Hello Mike'
+
+
+def test_word_dict_missing_param():
+    with patch_conf(LOADER_CONFIG_2):
+        wd = WordDictionary()
+
+        with pytest.raises(MissingParamError):
+            wd.get('WITH_PARAM')
+
+
+def test_translator_call():
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+        t = Translator(wd)
+        s = t('FOO', 42, bar='baz')
+
+        assert s.key == 'FOO'
+        assert s.count == 42
+        assert s.params == {'bar': 'baz'}
+
+
+def test_translator_attr():
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+        t = Translator(wd)
+        s = t.FOO
+
+        assert s.key == 'FOO'
+        assert s.count is None
+        assert s.params == {}
+
+
+def test_translate_render():
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+        t = Translator(wd)
+
+        assert t.FOO.render() == 'éléphant'
