@@ -176,6 +176,5 @@ def test_translate_render():
 
 
 def test_translate_singleton():
-    with patch_conf(LOADER_CONFIG):
-        from bernard.i18n import translate as t
-        assert t.FOO.key == 'FOO'
+    from bernard.i18n import translate as t
+    assert isinstance(t, Translator)
