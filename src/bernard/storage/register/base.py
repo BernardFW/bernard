@@ -121,20 +121,19 @@ class BaseRegisterStore(object):
         """
         return RegisterContextManager(key, self)
 
-    async def _start(self, key: Text) -> None:  # pragma: no cover
+    async def _start(self, key: Text) -> None:
         """
         That's when you start working on a key. You should start locking here.
         """
         raise NotImplementedError
 
-    async def _get(self, key: Text) -> Any:  # pragma: no cover
+    async def _get(self, key: Text) -> Any:
         """
         There you fetch the data of the register.
         """
         raise NotImplementedError
 
-    async def _replace(self, key: Text, data: Dict[Text, Any]) \
-            -> None:  # pragma: no cover
+    async def _replace(self, key: Text, data: Dict[Text, Any]) -> None:
         """
         This function will be called if there is a replacement in order to
         store it into the register. This will be called only once by the
@@ -143,7 +142,7 @@ class BaseRegisterStore(object):
         """
         raise NotImplementedError
 
-    async def _finish(self, key: Text) -> None:  # pragma: no cover
+    async def _finish(self, key: Text) -> None:
         """
         This is called when everything is done. You should release the lock
         here. This will get called even if the replace failed.
