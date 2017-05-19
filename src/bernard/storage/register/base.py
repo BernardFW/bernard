@@ -127,7 +127,7 @@ class BaseRegisterStore(object):
         """
         raise NotImplementedError
 
-    async def _get(self, key: Text) -> Any:
+    async def _get(self, key: Text) -> Dict[Text, Any]:
         """
         There you fetch the data of the register.
         """

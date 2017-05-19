@@ -1,9 +1,11 @@
 # coding: utf-8
 import pytest
+import asyncio
 from collections import defaultdict
 from bernard.storage.register import make_ro, RoDict, RoList, Register, \
-    BaseRegisterStore
+    BaseRegisterStore, RedisRegisterStore
 from bernard.utils import run
+from bernard.conf.utils import patch_conf
 
 SAMPLE_DATA = {
     'foo': 'bar',
@@ -88,3 +90,58 @@ def test_register_context_manager():
         assert store.called['finish']
 
     run(test())
+
+
+@pytest.fixture(scope='module')
+def redis_store():
+    store = RedisRegisterStore()
+    yield store
+
+    async def shutdown():
+        store.pool.close()
+        await store.pool.wait_closed()
+
+    run(shutdown())
+
+
+# noinspection PyShadowingNames
+def test_redis_register_store(redis_store):
+    key = 'my-key'
+    register_key = 'register::content:my-key'
+    lock_key = 'register::lock:my-key'
+
+    assert redis_store.lock_key(key) == lock_key
+    assert redis_store.register_key(key) == register_key
+
+    async def test():
+        with await redis_store.pool as r:
+            await r.delete(register_key, lock_key)
+
+        async with redis_store.work_on_register(key) as reg:
+            assert reg == {}
+            reg.replacement = {'key_was_set': True}
+
+        async with redis_store.work_on_register(key) as reg:
+            assert reg == {'key_was_set': True}
+
+    run(test())
+
+
+# noinspection PyShadowingNames
+def test_redis_register_lock(redis_store):
+    key = 'my-key'
+
+    async def test_one():
+        async with redis_store.work_on_register(key):
+            await asyncio.sleep(0.002)
+
+    async def test_two():
+        async with redis_store.work_on_register(key):
+            pass
+
+    with patch_conf({'REDIS_POLL_INTERVAL': 0.001}):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(
+            test_one(),
+            test_two(),
+        ))
