@@ -11,6 +11,7 @@ httptools==0.0.9          # via sanic
 py==1.4.33                # via pytest
 pytest==3.0.7
 sanic==0.5.4
-ujson==1.35               # via sanic
+ujson==1.35
+unidecode==0.4.20
 uvloop==0.8.0             # via sanic
 websockets==3.3           # via sanic

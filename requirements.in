@@ -2,6 +2,7 @@
 sanic
 aioredis
 ujson
+unidecode
 
 # For dev
 pytest
