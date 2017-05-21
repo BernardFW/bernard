@@ -1,6 +1,7 @@
 # coding: utf-8
 
-from .base import make_ro, RoDict, RoList, Register, BaseRegisterStore
+from .base import Register, BaseRegisterStore
+from bernard.utils import RoList, RoDict, make_ro
 
 try:
     # noinspection PyUnresolvedReferences

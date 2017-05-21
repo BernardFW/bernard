@@ -8,9 +8,6 @@ from bernard.conf import settings
 from .base import BaseRegisterStore
 
 
-LOCK_POLL_PERIOD = 1
-
-
 class RedisRegisterStore(BaseRegisterStore):
     """
     Store the register in Redis.

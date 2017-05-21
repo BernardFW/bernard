@@ -2,9 +2,9 @@
 import pytest
 import asyncio
 from collections import defaultdict
-from bernard.storage.register import make_ro, RoDict, RoList, Register, \
+from bernard.storage.register import Register, \
     BaseRegisterStore, RedisRegisterStore
-from bernard.utils import run
+from bernard.utils import run, RoList, RoDict, make_ro
 from bernard.conf.utils import patch_conf
 
 SAMPLE_DATA = {

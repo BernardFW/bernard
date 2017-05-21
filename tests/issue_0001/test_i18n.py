@@ -178,3 +178,67 @@ def test_translate_render():
 def test_translate_singleton():
     from bernard.i18n import translate as t
     assert isinstance(t, Translator)
+
+
+def test_serialize():
+    assert serialize('foo') == {
+        'type': 'string',
+        'value': 'foo',
+    }
+
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+        t = Translator(wd)
+        s = t.FOO
+
+        assert serialize(s) == {
+            'type': 'trans',
+            'key': 'FOO',
+            'count': None,
+            'params': {},
+        }
+
+
+def test_unserialize():
+    with patch_conf(LOADER_CONFIG):
+        wd = WordDictionary()
+
+        v = 42
+        with pytest.raises(ValueError):
+            # noinspection PyTypeChecker
+            unserialize(wd, v)
+
+        v = {}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {'type': 'string'}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {'type': 'trans'}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {'type': 'trans', 'params': 42}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {'type': 'trans', 'params': {42: True}}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {'type': 'trans', 'params': {'42': True}}
+        with pytest.raises(ValueError):
+            unserialize(wd, v)
+
+        v = {
+            'type': 'trans',
+            'params': {'42': True},
+            'key': 'FOO',
+            'count': None
+        }
+        assert isinstance(unserialize(wd, v), StringToTranslate)
+
+        v = {'type': 'string', 'value': 'foo'}
+        assert unserialize(wd, v) == 'foo'

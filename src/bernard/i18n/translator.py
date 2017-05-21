@@ -1,5 +1,6 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict
+from typing import List, Text, Optional, Dict, TypeVar
+from collections import Mapping
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from .loaders import BaseTranslationLoader
@@ -169,3 +170,53 @@ class Translator(object):
         """
 
         return StringToTranslate(self.wd, key, count, **params)
+
+
+TransText = TypeVar('TransText', StringToTranslate, Text)
+
+
+def serialize(text: TransText):
+    if isinstance(text, str):
+        return {
+            'type': 'string',
+            'value': text,
+        }
+    elif isinstance(text, StringToTranslate):
+        return {
+            'type': 'trans',
+            'key': text.key,
+            'count': text.count,
+            'params': text.params,
+        }
+    else:
+        raise ValueError('Cannot accept type "{}"'
+                         .format(text.__class__.__name__))
+
+
+def unserialize(wd: WordDictionary, text: Dict):
+    if not isinstance(text, Mapping):
+        raise ValueError('Text has not the right format')
+
+    try:
+        t = text['type']
+
+        if t == 'string':
+            return text['value']
+        elif t == 'trans':
+            if not isinstance(text['params'], Mapping):
+                raise ValueError('Params should be a dictionary')
+
+            for param in text['params']:
+                if not isinstance(param, str):
+                    raise ValueError('Params are not all text-keys')
+
+            return StringToTranslate(
+                wd=wd,
+                key=text['key'],
+                count=text['count'],
+                **text['params'],
+            )
+        else:
+            raise ValueError('Unknown type "{}"'.format(t))
+    except KeyError:
+        raise ValueError('Not enough information to unserialize')

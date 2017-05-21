@@ -1,80 +1,6 @@
 # coding: utf-8
-from typing import Text, Any, Dict, Iterator, Union, Optional
-from collections import Mapping, Sequence
-
-
-# noinspection PyTypeChecker
-def make_ro(obj: Union[str, bytes, int, float, bool, None, Mapping, Sequence]):
-    """
-    Make a json-serializable type recursively read-only
-
-    :param obj: Any json-serializable type 
-    """
-
-    if isinstance(obj, (str, bytes, int, float, bool, RoDict, RoList)) \
-            or obj is None:
-        return obj
-    elif isinstance(obj, Mapping):
-        return RoDict(obj)
-    elif isinstance(obj, Sequence):
-        return RoList(obj)
-    else:
-        raise ValueError('Trying to make read-only an object of type "{}"'
-                         .format(obj.__class__.__name__))
-
-
-class RoDict(Mapping):
-    """
-    Wrapper around a dict to make it read-only.
-    """
-
-    def __init__(self, data: Dict[Text, Any]):
-        self._data = data
-
-    def __getitem__(self, key: Text) -> Any:
-        """
-        Gets the item from data while making it read-only first
-        """
-
-        return make_ro(self._data[key])
-
-    def __len__(self) -> int:
-        """
-        Proxy to data's length
-        """
-
-        return len(self._data)
-
-    def __iter__(self) -> Iterator[Any]:
-        """
-        Proxy to data's iterator
-        """
-
-        return iter(self._data)
-
-
-class RoList(Sequence):
-    """
-    Wrapper around a list to make it read-only
-    """
-
-    def __init__(self, data: Sequence):
-        """
-        Store data we're wrapping
-        """
-        self._data = data
-
-    def __getitem__(self, index: int) -> Any:
-        """
-        Proxy to data's get item
-        """
-        return make_ro(self._data[index])
-
-    def __len__(self):
-        """
-        Proxy to data's length
-        """
-        return len(self._data)
+from typing import Text, Any, Dict, Optional
+from bernard.utils import RoDict
 
 
 class Register(RoDict):
@@ -82,6 +8,8 @@ class Register(RoDict):
     Once the new register is built, save it using `replace()`. It will later
     be inserted into the store.
     """
+
+    TRANSITION = 'transition'
 
     def __init__(self, *args, **kwargs):
         """
