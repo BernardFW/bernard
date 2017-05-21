@@ -1,4 +1,5 @@
 # coding: utf-8
+import pytest
 from bernard import layers
 
 
@@ -48,7 +49,9 @@ def test_stack():
     assert stack.has_layer(layers.Text)
     assert not stack.has_layer(layers.QuickRepliesList)
     assert stack.get_layer(layers.Text) == l1
-    assert stack.get_layer(layers.QuickRepliesList) is None
+
+    with pytest.raises(KeyError):
+        assert stack.get_layer(layers.QuickRepliesList) is None
 
     stack.layers = [l1, l2, l3]
 
