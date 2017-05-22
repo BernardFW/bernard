@@ -90,10 +90,55 @@ class Choice(BaseTrigger):
         self.chosen = None
 
     # noinspection PyUnresolvedReferences
+    def _rank_qr(self, choices):
+        """
+        Look for the QuickReply layer's slug into available choices.
+        """
+
+        try:
+            qr = self.request.get_layer(l.QuickReply)
+            self.chosen = choices[qr.slug]
+            self.slug = qr.slug
+
+            if self.when is None or self.when == qr.slug:
+                return 1.0
+        except KeyError:
+            pass
+
+    def _rank_text(self, choices):
+        """
+        Try to match the TextLayer with choice's intents.
+        """
+
+        tl = self.request.get_layer(l.RawText)
+        best = 0.0
+
+        for slug, params in choices.items():
+            strings = []
+
+            if params['intent']:
+                intent = getattr(intents, params['intent'])
+                strings += intent.strings(self.request)
+
+            if params['text']:
+                strings.append(params['text'])
+
+            matcher = Matcher([Trigram(x) for x in strings])
+            score = matcher % Trigram(render(tl.text, self.request))
+
+            if score > best:
+                self.chosen = params
+                self.slug = slug
+                best = score
+
+        if self.when is None or self.slug == self.when:
+            return best
+
+    # noinspection PyUnresolvedReferences
     def rank(self):
         """
         Try to find a choice in what the user did:
-        
+
         - If there is a quick reply, then use its payload as choice slug
         - Otherwise, try to match each choice with its intent
         """
@@ -101,39 +146,6 @@ class Choice(BaseTrigger):
         choices = self.request.get_trans_reg('choices')
 
         if self.request.has_layer(l.QuickReply):
-            try:
-                qr = self.request.get_layer(l.QuickReply)
-                self.chosen = choices[qr.slug]
-                self.slug = qr.slug
-
-                if self.when is None or self.when == qr.slug:
-                    return 1.0
-            except KeyError:
-                pass
-
+            return self._rank_qr(choices)
         elif self.request.has_layer(l.RawText):
-            tl = self.request.get_layer(l.RawText)
-            best = 0.0
-
-            for slug, params in choices.items():
-                strings = []
-
-                if params['intent']:
-                    intent = getattr(intents, params['intent'])
-                    strings += intent.strings(self.request)
-
-                if params['text']:
-                    strings.append(params['text'])
-
-                matcher = Matcher([Trigram(x) for x in strings])
-                score = matcher % Trigram(render(tl.text, self.request))
-
-                if score > best:
-                    self.chosen = params
-                    self.slug = slug
-                    best = score
-
-            if self.when is None or self.slug == self.when:
-                return best
-
-        return 0.0
+            return self._rank_text(choices)
