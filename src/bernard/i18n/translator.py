@@ -1,9 +1,12 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict, TypeVar
+from typing import List, Text, Optional, Dict, TypeVar, TYPE_CHECKING
 from collections import Mapping
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from .loaders import BaseTranslationLoader
+
+if TYPE_CHECKING:
+    from bernard.engine.request import Request
 
 
 class TranslationError(Exception):
@@ -220,3 +223,10 @@ def unserialize(wd: WordDictionary, text: Dict):
             raise ValueError('Unknown type "{}"'.format(t))
     except KeyError:
         raise ValueError('Not enough information to unserialize')
+
+
+def render(text: TransText, request: 'Request'):
+    if isinstance(text, str):
+        return text
+    elif isinstance(text, StringToTranslate):
+        return text.render(request)

@@ -42,17 +42,18 @@ class RoList(Sequence):
     Wrapper around a list to make it read-only
     """
 
-    def __init__(self, data: Sequence):
+    def __init__(self, data: Sequence, forgive_type=False):
         """
         Store data we're wrapping
         """
         self._data = data
+        self._forgive_type = forgive_type
 
     def __getitem__(self, index: int) -> Any:
         """
         Proxy to data's get item
         """
-        return make_ro(self._data[index])
+        return make_ro(self._data[index], self._forgive_type)
 
     def __len__(self):
         """
@@ -66,15 +67,16 @@ class RoDict(Mapping):
     Wrapper around a dict to make it read-only.
     """
 
-    def __init__(self, data: Dict[Text, Any]):
+    def __init__(self, data: Dict[Text, Any], forgive_type=False):
         self._data = data
+        self._forgive_type = forgive_type
 
     def __getitem__(self, key: Text) -> Any:
         """
         Gets the item from data while making it read-only first
         """
 
-        return make_ro(self._data[key])
+        return make_ro(self._data[key], self._forgive_type)
 
     def __len__(self) -> int:
         """
@@ -92,20 +94,24 @@ class RoDict(Mapping):
 
 
 # noinspection PyTypeChecker
-def make_ro(obj: Union[str, bytes, int, float, bool, None, Mapping, Sequence]):
+def make_ro(obj: Any, forgive_type=False):
     """
     Make a json-serializable type recursively read-only
 
     :param obj: Any json-serializable type 
+    :param forgive_type: If you can forgive a type to be unknown (instead of
+                         raising an exception)
     """
 
     if isinstance(obj, (str, bytes, int, float, bool, RoDict, RoList)) \
             or obj is None:
         return obj
     elif isinstance(obj, Mapping):
-        return RoDict(obj)
+        return RoDict(obj, forgive_type)
     elif isinstance(obj, Sequence):
-        return RoList(obj)
+        return RoList(obj, forgive_type)
+    elif forgive_type:
+        return obj
     else:
         raise ValueError('Trying to make read-only an object of type "{}"'
                          .format(obj.__class__.__name__))

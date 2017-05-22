@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+from sys import modules
 from bernard.conf import settings
 from contextlib import contextmanager
 from ..conf import ENVIRONMENT_VARIABLE
@@ -14,6 +15,7 @@ def reload_config() -> None:
     settings._reload()
 
 
+# noinspection PyProtectedMember
 @contextmanager
 def patch_conf(settings_patch):
     """
@@ -34,4 +36,10 @@ def patch_conf(settings_patch):
     # noinspection PyProtectedMember
     r_settings = l_settings._settings
     r_settings.update(settings_patch)
+
+    if 'bernard.i18n' in modules:
+        from bernard.i18n import translate, intents
+        translate._regenerate_word_dict()
+        intents._refresh_intents_db()
+
     yield

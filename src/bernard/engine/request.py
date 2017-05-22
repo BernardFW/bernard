@@ -74,6 +74,8 @@ class Request(object):
         self.stack = Stack(message.get_layers())
         self.register = register
 
+        self.stack.transform(self)
+
     def get_trans_reg(self, name: Text, default: Any=None) -> Any:
         """
         Convenience function to access the transition register of a specific
@@ -86,20 +88,20 @@ class Request(object):
         tr = self.register.get(Register.TRANSITION, {})
         return tr.get(name, default)
 
-    def has_layer(self, class_: L) -> bool:
+    def has_layer(self, class_: L, became: bool=True) -> bool:
         """
         Proxy to stack
         """
-        return self.stack.has_layer(class_)
+        return self.stack.has_layer(class_, became)
 
-    def get_layer(self, class_: L) -> L:
+    def get_layer(self, class_: L, became: bool=True) -> L:
         """
         Proxy to stack
         """
-        return self.stack.get_layer(class_)
+        return self.stack.get_layer(class_, became)
 
-    def get_layers(self, class_: L) -> List[L]:
+    def get_layers(self, class_: L, became: bool=True) -> List[L]:
         """
         Proxy to stack
         """
-        return self.stack.get_layers(class_)
+        return self.stack.get_layers(class_, became)

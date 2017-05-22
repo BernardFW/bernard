@@ -23,6 +23,7 @@ class Stack(object):
     def __init__(self, layers: List['BaseLayer']):
         self._layers = []
         self._index = {}
+        self._transformed = {}
         self.layers = layers
 
     @property
@@ -32,7 +33,7 @@ class Stack(object):
         tempted to append stuff to the list (which would break the index).
         """
         # noinspection PyTypeChecker
-        return RoList(self._layers)
+        return RoList(self._layers, True)
 
     @layers.setter
     def layers(self, value: List['BaseLayer']):
@@ -42,8 +43,9 @@ class Stack(object):
 
         Then update the index.
         """
-        self._layers = list(value)
+        self._layers = list(value)  # type: List[BaseLayer]
         self._index = self._make_index()
+        self._transformed = {}
 
     def _make_index(self):
         """
@@ -59,30 +61,56 @@ class Stack(object):
 
         return out
 
-    def has_layer(self, class_: L) -> bool:
+    def transform(self, request):
+        out = {}
+
+        for layer in self._layers:  # type: BaseLayer
+            for become in layer.can_become():
+                b_layer = layer.become(become, request)
+                out[become] = out.get(become, []) + [b_layer]
+
+        self._transformed = out
+
+    def has_layer(self, class_: L, became: bool=True) -> bool:
         """
         Test the presence of a given layer type.
 
         :param class_: Layer class you're interested in.
+        :param became: Allow transformed layers in results
         """
 
-        return class_ in self._index
+        return (class_ in self._index or
+                (became and class_ in self._transformed))
 
-    def get_layer(self, class_: L) -> L:
+    def get_layer(self, class_: L, became: bool=True) -> L:
         """
         Return the first layer of a given class. If that layer is not present,
         then raise a KeyError.
 
-        :param class_: class of the expected layer 
+        :param class_: class of the expected layer
+        :param became: Allow transformed layers in results
         """
 
-        return self._index[class_][0]
+        try:
+            return self._index[class_][0]
+        except KeyError:
+            if became:
+                return self._transformed[class_][0]
+            else:
+                raise
 
-    def get_layers(self, class_: L) -> List[L]:
+    def get_layers(self, class_: L, became: bool=True) -> List[L]:
         """
         Returns the list of layers of a given class. If no layers are present
         then the list will be empty.
 
         :param class_: class of the expected layers
+        :param became: Allow transformed layers in results
         """
-        return self._index.get(class_, [])
+
+        out = self._index.get(class_, [])
+
+        if became:
+            out += self._transformed.get(class_, [])
+
+        return out

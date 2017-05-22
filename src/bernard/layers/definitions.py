@@ -1,10 +1,17 @@
 # coding: utf-8
-from typing import Dict, Text as TextT, List, Optional
-from bernard.i18n import TransText, serialize
+from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
+    TypeVar, Type
+from bernard.i18n import TransText, render
+
+if TYPE_CHECKING:
+    from bernard.engine.request import Request
+
+
+L = TypeVar('L')
 
 
 class BaseLayer(object):
-    def patch_register(self, register: Dict) -> Dict:
+    def patch_register(self, register: Dict, request: 'Request') -> Dict:
         """
         If you want to put a value in the transition register, you can overload
         this function and patch the provided register.
@@ -29,11 +36,23 @@ class BaseLayer(object):
         can choose to add information to what previous layers inserted or to
         overwrite it completely. That is why the previous output is provided
         as argument.
-
-        :param register: a dictionary to patch
         """
 
         return register
+
+    def can_become(self):
+        """
+        This indicates other layer classes that you can transform this layer
+        into from a request.
+        """
+        return []
+
+    def become(self, layer_type: Type[L], request: 'Request') -> L:
+        """
+        Transform this layer into another layer type
+        """
+
+        raise ValueError('Cannot become "{}"'.format(layer_type.__name__))
 
 
 class Text(BaseLayer):
@@ -42,6 +61,24 @@ class Text(BaseLayer):
     """
 
     def __init__(self, text: TransText):
+        self.text = text
+
+    def can_become(self):
+        return [RawText]
+
+    def become(self, layer_type: Type[L], request: 'Request'):
+        if layer_type != RawText:
+            super(Text, self).become(layer_type, request)
+
+        return RawText(render(self.text, request))
+
+
+class RawText(BaseLayer):
+    """
+    That is a text message that warranties it will never have to be translated.
+    """
+
+    def __init__(self, text: TextT):
         self.text = text
 
 
@@ -85,7 +122,7 @@ class QuickRepliesList(BaseLayer):
     def __init__(self, options: List[BaseOption]):
         self.options = options
 
-    def patch_register(self, register: Dict):
+    def patch_register(self, register: Dict, request: 'Request'):
         """
         Store all options in the "choices" sub-register. We store both the
         text and the potential intent, in order to match both regular
@@ -96,8 +133,8 @@ class QuickRepliesList(BaseLayer):
         # noinspection PyUnresolvedReferences
         register['choices'] = {
             o.slug: {
-                'intents': o.intents_key,
-                'text': serialize(o.text),
+                'intent': o.intents_key,
+                'text': render(o.text, request),
             } for o in self.options
             if isinstance(o, QuickRepliesList.TextOption)
         }

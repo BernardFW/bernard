@@ -113,6 +113,7 @@ def test_load_intents_csv():
     data = {
         'FOO': ['bar', 'baz'],
         'BAR': ['ᕕ( ՞ ᗜ ՞ )ᕗ', '∩༼˵☯‿☯˵༽つ¤=[]:::::>', 'c( ⁰ 〰 ⁰ )੭'],
+        'BAZ': ['foo'],
     }
     file_path = os.path.join(
         os.path.dirname(__file__),
