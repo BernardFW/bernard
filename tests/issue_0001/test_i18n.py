@@ -4,6 +4,7 @@ import pytest
 from bernard.i18n.translator import *
 from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
     BaseIntentsLoader, CsvIntentsLoader
+from bernard.i18n.intents import Intent, IntentsMaker, IntentsDb
 from bernard.conf.utils import patch_conf
 from bernard.utils import run
 from unittest.mock import Mock
@@ -36,6 +37,21 @@ LOADER_CONFIG_2 = {
                     'assets',
                     'trans2.csv',
                 ),
+            }
+        }
+    ]
+}
+
+LOADER_CONFIG_3 = {
+    'I18N_INTENTS_LOADERS': [
+        {
+            'loader': 'bernard.i18n.loaders.CsvIntentsLoader',
+            'params': {
+                'file_path': os.path.join(
+                    os.path.dirname(__file__),
+                    'assets',
+                    'intents.csv',
+                )
             }
         }
     ]
@@ -242,3 +258,33 @@ def test_unserialize():
 
         v = {'type': 'string', 'value': 'foo'}
         assert unserialize(wd, v) == 'foo'
+
+
+def test_intents_db():
+    with patch_conf(LOADER_CONFIG_3):
+        db = IntentsDb()
+        assert db.get('FOO') == ['bar', 'baz']
+
+
+def test_intent():
+    with patch_conf(LOADER_CONFIG_3):
+        db = IntentsDb()
+        intent = Intent(db, 'FOO')
+        assert intent.strings() == ['bar', 'baz']
+
+
+def test_intents_maker():
+    with patch_conf(LOADER_CONFIG_3):
+        db = IntentsDb()
+        maker = IntentsMaker(db)
+        assert maker.FOO.strings() == ['bar', 'baz']
+
+
+def test_intents_maker_singleton():
+    with patch_conf(LOADER_CONFIG_3):
+        from sys import modules
+        if 'bernard.i18n' in modules:
+            del modules['bernard.i18n']
+
+        from bernard.i18n import intents as i
+        assert i.FOO.strings() == ['bar', 'baz']
