@@ -15,6 +15,7 @@ class BaseTrigger(object):
     def builder(cls, *args, **kwargs) -> Callable[[Request], 'BaseTrigger']:
         def factory(request: Request):
             return cls(request, *args, **kwargs)
+        factory.trigger_name = cls.__name__
         return factory
 
     def rank(self) -> Optional[float]:
@@ -144,6 +145,9 @@ class Choice(BaseTrigger):
         """
 
         choices = self.request.get_trans_reg('choices')
+
+        if not choices:
+            return
 
         if self.request.has_layer(l.QuickReply):
             return self._rank_qr(choices)

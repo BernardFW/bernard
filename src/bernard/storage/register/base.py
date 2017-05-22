@@ -10,6 +10,7 @@ class Register(RoDict):
     """
 
     TRANSITION = 'transition'
+    STATE = 'state'
 
     def __init__(self, *args, **kwargs):
         """

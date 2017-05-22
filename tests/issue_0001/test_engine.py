@@ -3,10 +3,15 @@ import pytest
 import os
 from bernard.engine.request import Request, Conversation, User, BaseMessage
 from bernard.storage.register import Register
+from bernard.storage.register import RedisRegisterStore
 from bernard import layers as l
 from bernard.engine import triggers as trig
+from bernard.engine.fsm import FSM
+from bernard.engine.transition import Transition
 from bernard.conf.utils import patch_conf
 from bernard.i18n import intents
+from bernard.utils import run
+from .states import Hello, Great, TestBaseState
 
 
 LOADER_CONFIG = {
@@ -36,6 +41,12 @@ LOADER_CONFIG = {
     ],
 }
 
+ENGINE_SETTINGS_FILE = os.path.join(
+    os.path.dirname(__file__),
+    'assets',
+    'engine_settings.py',
+)
+
 
 @pytest.fixture('module')
 def reg():
@@ -56,13 +67,24 @@ def reg():
     })
 
 
-class MockTextMessage(BaseMessage):
-    def __init__(self, text, add_qr=False):
-        self.text = text
-        self.add_qr = add_qr
+class BaseMockMessage(BaseMessage):
+    def get_platform(self):
+        return 'mock'
+
+    def get_user(self):
+        return User('fake_user')
 
     def get_conversation(self):
         return Conversation('fake_convo')
+
+    def get_layers(self):
+        raise NotImplementedError
+
+
+class MockTextMessage(BaseMockMessage):
+    def __init__(self, text, add_qr=False):
+        self.text = text
+        self.add_qr = add_qr
 
     def get_layers(self):
         out = [
@@ -76,11 +98,18 @@ class MockTextMessage(BaseMessage):
 
         return out
 
-    def get_platform(self):
-        return 'mock'
 
-    def get_user(self):
-        return User('fake_user')
+class MockChoiceMessage(BaseMockMessage):
+    def get_layers(self):
+        return [
+            l.QuickReply('yes'),
+            l.Text('yes'),
+        ]
+
+
+class MockEmptyMessage(BaseMockMessage):
+    def get_layers(self):
+        return []
 
 
 # noinspection PyShadowingNames
@@ -142,3 +171,65 @@ def test_choice_trigger(reg):
         ct = ct_factory(req)  # type: trig.Choice
         assert ct.rank() == 1.0
         assert ct.slug == 'bar'
+
+
+def test_fsm_init():
+    with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
+        fsm = FSM()
+        assert isinstance(fsm.register, RedisRegisterStore)
+        assert isinstance(fsm.transitions, list)
+
+        for t in fsm.transitions:
+            assert isinstance(t, Transition)
+
+
+# noinspection PyShadowingNames,PyProtectedMember
+def test_fsm_find_trigger(reg):
+    with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
+        fsm = FSM()
+        req = Request(MockTextMessage('hello'), reg)
+
+        trigger, state = run(fsm._find_trigger(req))
+        assert isinstance(trigger, trig.Text)
+        assert state == Hello
+
+        req = Request(MockChoiceMessage(), reg)
+        trigger, state = run(fsm._find_trigger(req))
+        assert trigger is None
+        assert state is None
+
+        reg = Register({
+            Register.STATE: Hello.name(),
+            Register.TRANSITION: {
+                'choices': {
+                    'yes': {
+                        'text': 'Yes',
+                        'intent': 'YES',
+                    },
+                    'no': {
+                        'text': 'No',
+                        'intent': 'NO'
+                    },
+                },
+            },
+        })
+
+        req = Request(MockChoiceMessage(), reg)
+        trigger, state = run(fsm._find_trigger(req))
+        assert isinstance(trigger, trig.Choice)
+        assert state == Great
+
+
+# noinspection PyShadowingNames,PyProtectedMember
+def test_fsm_confused_state():
+    with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
+        fsm = FSM()
+
+        reg = Register({})
+        req = Request(MockEmptyMessage(), reg)
+        assert fsm._confused_state(req) == TestBaseState
+
+        reg = Register({Register.STATE: 'tests.issue_0001.states.Hello'})
+        req = Request(MockEmptyMessage(), reg)
+        assert fsm._confused_state(req) == Hello
+

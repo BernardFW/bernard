@@ -17,7 +17,7 @@ def reload_config() -> None:
 
 # noinspection PyProtectedMember
 @contextmanager
-def patch_conf(settings_patch):
+def patch_conf(settings_patch=None, settings_file=None):
     """
     Reload the configuration form scratch. Only the default config is loaded,
     not the environment-specified config.
@@ -29,8 +29,11 @@ def patch_conf(settings_patch):
     :param settings_patch: Custom configuration values to insert
     """
 
+    if settings_patch is None:
+        settings_patch = {}
+
     reload_config()
-    os.environ[ENVIRONMENT_VARIABLE] = ''
+    os.environ[ENVIRONMENT_VARIABLE] = settings_file if settings_file else ''
 
     from bernard.conf import settings as l_settings
     # noinspection PyProtectedMember

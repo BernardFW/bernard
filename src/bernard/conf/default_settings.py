@@ -20,3 +20,17 @@ REGISTER_LOCK_TIME = 60
 # How fast to poll redis for locks? There is no real good reason to change
 # this, it is simply here to be able to speed up some tests
 REDIS_POLL_INTERVAL = 1
+
+# Base score of a jumping trigger: if a transition can be triggered from the
+# initial state but that there is a current state, then the trigger needs to
+# make a jump in the graph. This is unnatural, so it gets a penalty. Still,
+# we want it to be possible for users not to stay trapped in the same story
+# forever if they don't want to finish it.
+JUMPING_TRIGGER_PENALTY = 0.8
+
+# Below this score, the trigger isn't considered valid
+MINIMAL_TRIGGER_SCORE = 0.3
+
+# This is the state that handles error messages in case no other state is
+# active (and something fails)
+DEFAULT_STATE = 'bernard.engine.state.DefaultState'
