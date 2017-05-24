@@ -54,6 +54,13 @@ class Intent(object):
         self.db = db
         self.key = key
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.key == other.key)
+
+    def __repr__(self):
+        return 'Intent({})'.format(repr(self.key))
+
     # noinspection PyUnusedLocal
     def strings(self, request: Optional['Request']=None):
         """

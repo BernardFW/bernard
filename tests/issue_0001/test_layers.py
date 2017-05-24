@@ -5,6 +5,7 @@ from bernard import layers
 from bernard.storage.register import Register
 from bernard.engine.request import Request, Conversation, User, BaseMessage
 from bernard.conf.utils import patch_conf
+from bernard.i18n import intents
 
 
 LOADER_CONFIG = {
@@ -79,7 +80,7 @@ def test_text_layer_patch(text_request):
 def test_quick_replies_player_patch(text_request):
     l = layers.QuickRepliesList([
         layers.QuickRepliesList.TextOption('foo', 'Foo'),
-        layers.QuickRepliesList.TextOption('bar', 'Bar', 'BAR'),
+        layers.QuickRepliesList.TextOption('bar', 'Bar', intents.BAR),
         layers.QuickRepliesList.LocationOption(),
     ])
 
@@ -102,7 +103,7 @@ def test_stack():
     l2 = layers.Text('sup?')
     l3 = layers.QuickRepliesList([
         layers.QuickRepliesList.TextOption('foo', 'Foo'),
-        layers.QuickRepliesList.TextOption('bar', 'Bar', 'BAR'),
+        layers.QuickRepliesList.TextOption('bar', 'Bar', intents.BAR),
         layers.QuickRepliesList.LocationOption(),
     ])
 

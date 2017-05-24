@@ -1,7 +1,10 @@
 # coding: utf-8
-from typing import List, TypeVar
+from typing import List, TypeVar, Text, Dict, TYPE_CHECKING
 from bernard.utils import RoList
 from .definitions import BaseLayer
+
+if TYPE_CHECKING:
+    from bernard.engine.request import Request
 
 
 L = TypeVar('L')
@@ -25,6 +28,14 @@ class Stack(object):
         self._index = {}
         self._transformed = {}
         self.layers = layers
+
+    def __eq__(self, other):
+        # noinspection PyProtectedMember
+        return (self.__class__ == other.__class__ and
+                self._layers == other._layers)
+
+    def __repr__(self):
+        return 'Layer({})'.format(', '.join(repr(x) for x in self._layers))
 
     @property
     def layers(self) -> List['BaseLayer']:
@@ -114,3 +125,17 @@ class Stack(object):
             out += self._transformed.get(class_, [])
 
         return out
+
+    def describe(self) -> Text:
+        return ', '.join(
+            s.__class__.__name__ for s in self._layers
+        )
+
+    def patch_register(self, register: Dict, request: 'Request'):
+        for layer in self._layers:  # type: BaseLayer
+            register = layer.patch_register(register, request)
+        return register
+
+
+def stack(*layers: BaseLayer):
+    return Stack(list(layers))

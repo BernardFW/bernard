@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from .stack import Stack
+from .stack import Stack, stack
 from .definitions import (
     BaseLayer,
     Text,

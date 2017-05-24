@@ -1,28 +1,37 @@
 # coding: utf-8
 from bernard.engine import BaseState
+from bernard import layers as lyr
+from bernard.i18n import translate as t, intents
 
 
-class TestBaseState(BaseState):
+class BaseTestState(BaseState):
     async def error(self) -> None:
-        pass
+        self.send(t.ERROR)
 
     async def handle(self) -> None:
         raise NotImplementedError
 
     async def confused(self) -> None:
-        pass
+        self.send(t.CONFUSED)
 
 
-class Hello(TestBaseState):
+class Hello(BaseTestState):
     async def handle(self):
-        pass
+        self.send(lyr.Text(t.HELLO))
+        self.send(
+            lyr.Text(t.HOW_ARE_YOU),
+            lyr.QuickRepliesList([
+                lyr.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
+                lyr.QuickRepliesList.TextOption('no', t.NO, intents.NO),
+            ]),
+        )
 
 
-class Great(TestBaseState):
+class Great(BaseTestState):
     async def handle(self):
-        pass
+        self.send(lyr.Text(t.GREAT))
 
 
-class TooBad(TestBaseState):
+class TooBad(BaseTestState):
     async def handle(self):
-        pass
+        self.send(lyr.Text(t.TOO_BAD))

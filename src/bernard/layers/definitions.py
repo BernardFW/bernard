@@ -2,6 +2,7 @@
 from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
     TypeVar, Type
 from bernard.i18n import TransText, render
+from bernard.i18n.intents import Intent
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -11,6 +12,18 @@ L = TypeVar('L')
 
 
 class BaseLayer(object):
+    def __eq__(self, other):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return '{}({})'.format(
+            self.__class__.__name__,
+            ','.join(repr(x) for x in self._repr_arguments()),
+        )
+
+    def _repr_arguments(self):
+        raise NotImplementedError
+
     def patch_register(self, register: Dict, request: 'Request') -> Dict:
         """
         If you want to put a value in the transition register, you can overload
@@ -63,10 +76,24 @@ class Text(BaseLayer):
     def __init__(self, text: TransText):
         self.text = text
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.text == other.text)
+
+    def _repr_arguments(self):
+        return [self.text]
+
     def can_become(self):
+        """
+        A Text can become a RawText
+        """
         return [RawText]
 
     def become(self, layer_type: Type[L], request: 'Request'):
+        """
+        Transforms the translatable string into an actual string and put it
+        inside a RawText.
+        """
         if layer_type != RawText:
             super(Text, self).become(layer_type, request)
 
@@ -80,6 +107,13 @@ class RawText(BaseLayer):
 
     def __init__(self, text: TextT):
         self.text = text
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.text == other.text)
+
+    def _repr_arguments(self):
+        return [self.text]
 
 
 class QuickRepliesList(BaseLayer):
@@ -104,10 +138,23 @@ class QuickRepliesList(BaseLayer):
         def __init__(self,
                      slug: TextT,
                      text: TransText,
-                     intents_key: Optional[TextT]=None):
+                     intent: Optional[Intent]=None):
             self.slug = slug
             self.text = text
-            self.intents_key = intents_key
+            self.intent = intent
+
+        def __eq__(self, other):
+            return (self.__class__ == other.__class__ and
+                    self.slug == other.slug and
+                    self.text == other.text and
+                    self.intent == other.intent)
+
+        def __repr__(self):
+            return 'Text({}, {}, {})'.format(
+                repr(self.slug),
+                repr(self.text),
+                repr(self.intent)
+            )
 
     class LocationOption(BaseOption):
         """
@@ -119,8 +166,30 @@ class QuickRepliesList(BaseLayer):
         def __init__(self):
             pass
 
+        def __eq__(self, other):
+            return self.__class__ == other.__class__
+
+        def __repr__(self):
+            return 'Location()'
+
     def __init__(self, options: List[BaseOption]):
         self.options = options
+
+    def __eq__(self, other):
+        if self.__class__ != other.__class__:
+            return False
+
+        if len(self.options) != len(other.options):
+            return False
+
+        for o1, o2 in zip(self.options, other.options):
+            if o1 != o2:
+                return False
+
+        return True
+
+    def _repr_arguments(self):
+        return self.options
 
     def patch_register(self, register: Dict, request: 'Request'):
         """
@@ -133,7 +202,7 @@ class QuickRepliesList(BaseLayer):
         # noinspection PyUnresolvedReferences
         register['choices'] = {
             o.slug: {
-                'intent': o.intents_key,
+                'intent': o.intent.key if o.intent else None,
                 'text': render(o.text, request),
             } for o in self.options
             if isinstance(o, QuickRepliesList.TextOption)
@@ -149,3 +218,10 @@ class QuickReply(BaseLayer):
 
     def __init__(self, slug):
         self.slug = slug
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.slug == other.slug)
+
+    def _repr_arguments(self):
+        return [self.slug]

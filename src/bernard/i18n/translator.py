@@ -105,6 +105,23 @@ class StringToTranslate(object):
         self.count = count
         self.params = params
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.key == other.key and
+                self.count == other.count and
+                self.params == other.params)
+
+    def __repr__(self):
+        parts = [repr(self.key)]
+
+        if self.count is not None:
+            parts.append(repr(self.count))
+
+        for k, v in self.params.items():
+            parts.append('{}={}'.format(k, repr(v)))
+
+        return 't({})'.format(', '.join(parts))
+
     def render(self, request=None):
         """
         Render the translation for the specified request. If no request is
@@ -179,6 +196,12 @@ TransText = TypeVar('TransText', StringToTranslate, Text)
 
 
 def serialize(text: TransText):
+    """
+    Takes as input either a string to translate either an actual string and
+    transforms it into a JSON-serializable structure that can be reconstructed
+    using `unserialize()`.
+    """
+
     if isinstance(text, str):
         return {
             'type': 'string',
@@ -197,6 +220,10 @@ def serialize(text: TransText):
 
 
 def unserialize(wd: WordDictionary, text: Dict):
+    """
+    Transforms back a serialized value of `serialize()`
+    """
+
     if not isinstance(text, Mapping):
         raise ValueError('Text has not the right format')
 
@@ -226,6 +253,11 @@ def unserialize(wd: WordDictionary, text: Dict):
 
 
 def render(text: TransText, request: 'Request'):
+    """
+    Render either a normal string either a string to translate into an actual
+    string for the specified request.
+    """
+
     if isinstance(text, str):
         return text
     elif isinstance(text, StringToTranslate):

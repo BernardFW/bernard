@@ -7,12 +7,27 @@ from .state import BaseState
 
 
 class Transition(object):
+    """
+    Describes a specific transition from one state to the other, with the
+    trigger in charge.
+    """
+
     def __init__(self,
                  dest: Type[BaseState],
                  factory,
                  origin: Type[BaseState]=None,
                  weight: float=1.0,
                  desc: Text=''):
+        """
+        Create the transition.
+
+        :param dest: Destination state
+        :param factory: Trigger factory (see `.builder()` on triggers)
+        :param origin: Optional origin state
+        :param weight: Weight of the transition (1 by default, can be reduced)
+        :param desc: A textual description for documentation
+        """
+
         self.origin = origin
         self.dest = dest
         self.factory = factory
@@ -33,6 +48,16 @@ class Transition(object):
 
     async def rank(self, request, origin: Optional[Text]) \
             -> Tuple[float, Optional[BaseTrigger], Optional[type]]:
+        """
+        Computes the rank of this transition for a given request.
+
+        It returns (in order):
+
+            - The score (from 0 to 1)
+            - The trigger instance (if it matched)
+            - The class of the destination state (if matched)
+        """
+
         if self.origin_name == origin:
             score = 1.0
         elif self.origin_name is None:

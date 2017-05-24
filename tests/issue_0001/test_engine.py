@@ -1,7 +1,11 @@
 # coding: utf-8
 import pytest
 import os
+from unittest.mock import Mock
 from bernard.engine.request import Request, Conversation, User, BaseMessage
+from bernard.engine.responder import Responder
+from bernard.layers.stack import Stack, stack
+from bernard.platforms.test.platform import make_test_fsm
 from bernard.storage.register import Register
 from bernard.storage.register import RedisRegisterStore
 from bernard import layers as l
@@ -9,9 +13,10 @@ from bernard.engine import triggers as trig
 from bernard.engine.fsm import FSM
 from bernard.engine.transition import Transition
 from bernard.conf.utils import patch_conf
-from bernard.i18n import intents
+from bernard.i18n import intents, translate as t
 from bernard.utils import run
-from .states import Hello, Great, TestBaseState
+from bernard.engine.platform import Platform
+from .states import Hello, Great, BaseTestState
 
 
 LOADER_CONFIG = {
@@ -227,9 +232,49 @@ def test_fsm_confused_state():
 
         reg = Register({})
         req = Request(MockEmptyMessage(), reg)
-        assert fsm._confused_state(req) == TestBaseState
+        assert fsm._confused_state(req) == BaseTestState
 
         reg = Register({Register.STATE: 'tests.issue_0001.states.Hello'})
         req = Request(MockEmptyMessage(), reg)
         assert fsm._confused_state(req) == Hello
 
+
+# noinspection PyProtectedMember
+def test_platform_event():
+    platform = Platform()
+    mock_cb = Mock()
+    data = MockEmptyMessage()
+    responder = Responder(platform)
+
+    platform.on_message(mock_cb)
+    run(platform._notify(data, responder))
+
+    mock_cb.assert_called_once_with(data, responder, True)
+
+
+def test_story_hello():
+    with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
+        _, platform = make_test_fsm()
+
+        platform.handle(
+            l.Text('Hello!'),
+        )
+        platform.assert_state(Hello)
+        platform.assert_sent(
+            stack(l.Text(t.HELLO)),
+            stack(
+                l.Text(t.HOW_ARE_YOU),
+                l.QuickRepliesList([
+                    l.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
+                    l.QuickRepliesList.TextOption('no', t.NO, intents.NO),
+                ])
+            ),
+        )
+
+        platform.handle(
+            l.Text('Yes'),
+            l.QuickReply('yes'),
+        )
+        platform.assert_sent(
+            stack(l.Text(t.GREAT))
+        )

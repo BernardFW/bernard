@@ -30,6 +30,11 @@ def run(task: Coroutine) -> Any:
 
 
 async def run_or_return(task: Union[Coroutine, Any]):
+    """
+    If the specified task is a coroutine then await it, otherwise return
+    directly.
+    """
+
     try:
         task = asyncio.ensure_future(task)
         return await task

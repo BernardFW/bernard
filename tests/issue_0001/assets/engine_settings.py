@@ -19,4 +19,16 @@ I18N_INTENTS_LOADERS = [
     }
 ]
 
-DEFAULT_STATE = 'tests.issue_0001.states.TestBaseState'
+I18N_TRANSLATION_LOADERS = [
+    {
+        'loader': 'bernard.i18n.loaders.CsvTranslationLoader',
+        'params': {
+            'file_path': os.path.join(
+                os.path.dirname(__file__),
+                'engine_responses.csv',
+            ),
+        }
+    }
+]
+
+DEFAULT_STATE = 'tests.issue_0001.states.BaseTestState'
