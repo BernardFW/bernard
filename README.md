@@ -1,7 +1,8 @@
 BERNARD
 =======
 
-Create powerful and flexible bots using BERNARD. Features (will) include:
+Create powerful and flexible bots using BERNARD. It comes batteries-included
+and with strong opinions. You'll be able to:
 
 - Represent conversations as finite-state machines
 - Multi-platform (Facebook Messenger, WeChat, VK, Line, Twilio, ...)
@@ -10,17 +11,44 @@ Create powerful and flexible bots using BERNARD. Features (will) include:
 
 BERNARD stands for "Bot Engine Responding Naturally At Requests Detection".
 
-# Coding rules
+# Get started
 
-Rules are being established. Yet:
+Please go to the [get started](doc/get_started.md) section!
+
+# Licensing
+
+There is a dual licencing scheme here:
+
+- By default, AGPL v3+
+- If your project is not compatible with the AGPL, please contact
+  *<span>remy.sanchez</span>@with-madrid.com*.
+
+# Contribution
+
+Contribution is of course welcome, although there is a few rules to respect
+for the well-being of the project.
+
+## Governance
+
+Please do not hesitate to communicate through GitHub issues before committing
+to a large contribution: the team of the project has plans and priorities, so
+if you end up going against those it will be hard to merge your code.
+
+## Coding Rules
+
+Coding rules are very, very important. There is not too many yet:
 
 - PEP 8
-- Don't bring down the test coverage (100% so far)
+- No undocumented code gets merged
+- Code bringing test coverage down or breaking tests doesn't get merged
 
-# Testing
+## Testing
 
-Use `py.test`
+Use `py.test`. Node for later: document this part a bit better.
 
 # Vision
 
-See [the vision doc](doc/vision.md).
+The vision of the framework API was established in the
+[the vision doc](doc/vision.md). This document is the basis of any development
+going on as it tries to bring consistency to all the different concepts and
+problems encountered in bot making.
