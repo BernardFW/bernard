@@ -1,6 +1,8 @@
 BERNARD
 =======
 
+[![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
+
 Create powerful and flexible bots using BERNARD. It comes batteries-included
 and with strong opinions. You'll be able to:
 
