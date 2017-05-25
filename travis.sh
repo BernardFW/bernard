@@ -1,4 +1,4 @@
 #!/bin/sh
 
-cd $TRAVIS_BUILD_DIR/src
+export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/src
 pytest
