@@ -1,8 +1,9 @@
 # coding: utf-8
+import re
 import importlib
 import asyncio
 from collections import Sequence, Mapping
-from typing import Text, Coroutine, Any, Union, Dict, Iterator
+from typing import Text, Coroutine, Any, Union, Dict, Iterator, List
 
 
 def import_class(name: Text) -> type:
@@ -120,3 +121,41 @@ def make_ro(obj: Any, forgive_type=False):
     else:
         raise ValueError('Trying to make read-only an object of type "{}"'
                          .format(obj.__class__.__name__))
+
+
+class ClassExp(object):
+    """
+    Perform regular expression matching on list of classes.
+    """
+
+    RE_SPACES = re.compile(r'\s+')
+    RE_PYTHON_VAR = re.compile(r'([A-Za-z_][A-Za-z_0-9]*)')
+
+    def __init__(self, expression):
+        self._initial_expression = expression
+        self._compiled_expression = self._compile(expression)
+
+    def _compile(self, expression):
+        """
+        Transform a class exp into an actual regex
+        """
+
+        x = self.RE_SPACES.sub('', expression)
+        x = self.RE_PYTHON_VAR.sub('(:?\\1,)', x)
+        return re.compile(x)
+
+    def _make_string(self, objects: List[Any]) -> Text:
+        """
+        Transforms a list of objects into a matchable string
+        """
+
+        return ''.join(x.__class__.__name__ + ',' for x in objects)
+
+    def match(self, objects: List[Any]) -> bool:
+        """
+        Return True if the list of objects matches the expression.
+        """
+
+        s = self._make_string(objects)
+        m = self._compiled_expression.match(s)
+        return m is not None
