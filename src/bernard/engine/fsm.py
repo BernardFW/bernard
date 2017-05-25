@@ -167,7 +167,7 @@ class FSM(object):
             state, trigger, request = \
                 await self._build_state(message, responder, reg)
             await self._run_state(responder, state, trigger)
-            await responder.flush()
+            await responder.flush(request)
 
             reg.replacement = \
                 self._build_state_register(state, request, responder)

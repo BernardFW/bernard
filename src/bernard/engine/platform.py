@@ -1,5 +1,7 @@
 # coding: utf-8
 from typing import Callable, List
+
+from bernard.engine.request import Request
 from bernard.engine.responder import Responder
 from bernard.layers import Stack
 from .request import BaseMessage
@@ -32,6 +34,9 @@ class Platform(object):
         self._listeners = []  # type: List[MessageCallback]
         self._register = None
 
+    async def init(self):
+        pass
+
     def on_message(self, cb: MessageCallback):
         """
         Register a callback to listen for incoming messages.
@@ -55,3 +60,24 @@ class Platform(object):
         and False otherwise.
         """
         raise NotImplementedError
+
+    async def send(self, request: Request, stack: Stack) -> None:
+        raise NotImplementedError
+
+
+class PlatformError(Exception):
+    """
+    Base platform error
+    """
+
+
+class PlatformDoesNotExist(PlatformError):
+    """
+    Happens when a non-existing platform is asked for initialization
+    """
+
+
+class PlatformOperationError(PlatformError):
+    """
+    An operation on the platform failed
+    """

@@ -1,7 +1,7 @@
 # coding: utf-8
 from typing import List, Tuple, Type
 from bernard.engine.platform import Platform
-from bernard.engine.request import BaseMessage, User, Conversation
+from bernard.engine.request import BaseMessage, User, Conversation, Request
 from bernard.engine.responder import Responder
 from bernard.engine.state import BaseState
 from bernard.layers import Stack, BaseLayer
@@ -59,11 +59,6 @@ class TestResponder(Responder):
     """
     It's just a proxy to the platform's `send()` method.
     """
-    async def _send_to_platform(self, stack: Stack):
-        """
-        Send to platform.
-        """
-        self.platform.send(stack)
 
 
 class TestPlatform(Platform):
@@ -88,7 +83,7 @@ class TestPlatform(Platform):
         super(TestPlatform, self).__init__()
         self.sent = []  # type: List[Stack]
 
-    def send(self, stack: Stack):
+    async def send(self, request: Request, stack: Stack):
         """
         Store the message to be sent for later analysis
         """

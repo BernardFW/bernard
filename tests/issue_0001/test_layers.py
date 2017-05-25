@@ -2,6 +2,7 @@
 import pytest
 import os
 from bernard import layers
+from bernard.layers.stack import stack as make_stack
 from bernard.storage.register import Register
 from bernard.engine.request import Request, Conversation, User, BaseMessage
 from bernard.conf.utils import patch_conf
@@ -137,3 +138,13 @@ def test_transform_layers(reg):
         assert stack.get_layer(layers.RawText).text == 'foo'
         assert len(stack.get_layers(layers.Text)) == 1
         assert len(stack.get_layers(layers.RawText)) == 1
+
+
+def test_match_layer():
+    s = make_stack(
+        layers.Text('yolo'),
+        layers.Text('pouet'),
+        layers.QuickRepliesList([]),
+    )
+
+    s.match_exp('(Text|RawText)+ QuickRepliesList?')

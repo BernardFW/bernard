@@ -4,7 +4,7 @@ import os
 from unittest.mock import Mock
 from bernard.engine.request import Request, Conversation, User, BaseMessage
 from bernard.engine.responder import Responder
-from bernard.layers.stack import Stack, stack
+from bernard.layers.stack import stack
 from bernard.platforms.test.platform import make_test_fsm
 from bernard.storage.register import Register
 from bernard.storage.register import RedisRegisterStore

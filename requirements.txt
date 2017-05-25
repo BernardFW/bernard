@@ -4,14 +4,14 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
-aiofiles==0.3.1           # via sanic
+aiohttp==2.0.7
 aioredis==0.3.1
+async-timeout==1.2.1      # via aiohttp
+chardet==3.0.3            # via aiohttp
 hiredis==0.2.0            # via aioredis
-httptools==0.0.9          # via sanic
+multidict==2.1.5          # via aiohttp, yarl
 py==1.4.33                # via pytest
-pytest==3.0.7
-sanic==0.5.4
+pytest==3.1.0
 ujson==1.35
 unidecode==0.4.20
-uvloop==0.8.0             # via sanic
-websockets==3.3           # via sanic
+yarl==0.10.2              # via aiohttp

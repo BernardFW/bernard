@@ -1,6 +1,6 @@
 # coding: utf-8
 from typing import List, TypeVar, Text, Dict, TYPE_CHECKING
-from bernard.utils import RoList
+from bernard.utils import RoList, ClassExp
 from .definitions import BaseLayer
 
 if TYPE_CHECKING:
@@ -28,6 +28,7 @@ class Stack(object):
         self._index = {}
         self._transformed = {}
         self.layers = layers
+        self.annotation = None
 
     def __eq__(self, other):
         # noinspection PyProtectedMember
@@ -135,6 +136,10 @@ class Stack(object):
         for layer in self._layers:  # type: BaseLayer
             register = layer.patch_register(register, request)
         return register
+
+    def match_exp(self, expression: Text):
+        e = ClassExp(expression)
+        return e.match(self._layers)
 
 
 def stack(*layers: BaseLayer):

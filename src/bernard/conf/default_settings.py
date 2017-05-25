@@ -5,6 +5,12 @@ import os
 # So far it changes nothing, but hey who knows.
 DEBUG = os.getenv('DEBUG') == 'yes'
 
+# Bind to this host/port by default
+SERVER_BIND = {
+    'host': '::1',
+    'port': '8666',
+}
+
 # List of translation loaders. Empty by default so it doesn't crash, but you
 # need to specify your own.
 I18N_TRANSLATION_LOADERS = []
@@ -34,3 +40,19 @@ MINIMAL_TRIGGER_SCORE = 0.3
 # This is the state that handles error messages in case no other state is
 # active (and something fails)
 DEFAULT_STATE = 'bernard.engine.state.DefaultState'
+
+# Configure here the Facebook pages you want to handle.
+# Each item is expected to be like:
+# {
+#     'security_token': 'xxxx',
+#     'app_secret': 'xxxx',
+#     'page_id': 'xxxx',
+#     'page_token': 'xxxx',
+# }
+FACEBOOK = []
+
+# By default, store the register in local redis
+REGISTER_STORE = {
+    'class': 'bernard.storage.register.RedisRegisterStore',
+    'params': {},
+}

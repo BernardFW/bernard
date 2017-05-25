@@ -1,5 +1,5 @@
 # For everyone
-sanic
+aiohttp
 aioredis
 ujson
 unidecode

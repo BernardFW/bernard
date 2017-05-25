@@ -27,12 +27,8 @@ class Responder(object):
     The responder is the abstract object that allows to talk back to the
     conversation.
 
-    If you implement a platform, you need to:
-
-        - Overload the `__init__` in order to store whatever you need to reply
-          (like the user ID...)
-        - Implement the `_send_to_platform()` method, which will communicate
-          with the platform in order to send the messages.
+    If you implement a platform, you can overload this class but you probably
+    won't need to change anything.
     """
 
     def __init__(self, platform: 'Platform'):
@@ -60,20 +56,13 @@ class Responder(object):
 
         self._stacks = []
 
-    async def _send_to_platform(self, stack: Stack):
-        """
-        Communicate with the platform to actually send the messages.
-        """
-
-        raise NotImplementedError
-
-    async def flush(self):
+    async def flush(self, request: 'Request'):
         """
         Send all queued messages.
         """
 
         for stack in self._stacks:
-            await self._send_to_platform(stack)
+            await self.platform.send(request, stack)
 
     def make_transition_register(self, request: 'Request'):
         """
