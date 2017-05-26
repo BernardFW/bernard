@@ -27,14 +27,16 @@ class PlatformManager(object):
         Check if initialization was done
         :return: 
         """
-        return bool(self.fsm)
+        return self.fsm is not None
 
-    def init(self):
+    async def init(self):
         """
         Creates the FSM and the cache. It can be called several times to reset
         stuff (like for unit tests...).
         """
         self.fsm = FSM()
+        await self.fsm.async_init()
+
         self.platforms = {}
 
     async def build_facebook(self):
@@ -54,9 +56,9 @@ class PlatformManager(object):
         """
 
         if not self._is_init:
-            self.init()
+            await self.init()
 
-        if 'name' not in self.platforms:
+        if name not in self.platforms:
             build = getattr(self, 'build_{}'.format(name), None)
 
             if not build:

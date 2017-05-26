@@ -6,13 +6,13 @@ from bernard.i18n import translate as t, intents
 
 class BaseTestState(BaseState):
     async def error(self) -> None:
-        self.send(t.ERROR)
+        self.send(lyr.Text(t.ERROR))
 
     async def handle(self) -> None:
         raise NotImplementedError
 
     async def confused(self) -> None:
-        self.send(t.CONFUSED)
+        self.send(lyr.Text(t.CONFUSED))
 
 
 class Hello(BaseTestState):

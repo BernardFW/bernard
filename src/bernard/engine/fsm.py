@@ -31,6 +31,13 @@ class FSM(object):
         self.transitions = self._make_transitions()
         self._allowed_states = set(self._make_allowed_states())
 
+    async def async_init(self):
+        """
+        THe register might need to be initialized in a loop
+        """
+
+        await self.register.async_init()
+
     def _make_register(self) -> BaseRegisterStore:
         """
         Make the register storage.

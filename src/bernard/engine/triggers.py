@@ -153,3 +153,25 @@ class Choice(BaseTrigger):
             return self._rank_qr(choices)
         elif self.request.has_layer(l.RawText):
             return self._rank_text(choices)
+
+
+class Action(BaseTrigger):
+    """
+    Triggered by "actions". An action is a postback message with a "action"
+    field in its payload. This trigger simply matches actions on text.
+    """
+
+    def __init__(self, request: Request, action: TextT):
+        super(Action, self).__init__(request)
+        self.action = action
+
+    # noinspection PyUnresolvedReferences
+    def rank(self) -> Optional[float]:
+        if self.request.has_layer(l.Postback):
+            pb = self.request.get_layer(l.Postback)
+
+            try:
+                if pb.payload['action'] == self.action:
+                    return 1.0
+            except (TypeError, KeyError):
+                pass

@@ -7,4 +7,5 @@ from .definitions import (
     RawText,
     QuickReply,
     QuickRepliesList,
+    Postback,
 )

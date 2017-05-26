@@ -95,6 +95,7 @@ def test_register_context_manager():
 @pytest.fixture(scope='module')
 def redis_store():
     store = RedisRegisterStore()
+    run(store.async_init())
     yield store
 
     async def shutdown():

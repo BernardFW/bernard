@@ -139,6 +139,8 @@ def make_test_fsm() -> Tuple[FSM, TestPlatform]:
     """
 
     fsm = FSM()
+    run(fsm.async_init())
+
     platform = TestPlatform()
     # noinspection PyTypeChecker
     platform.on_message(fsm.handle_message)

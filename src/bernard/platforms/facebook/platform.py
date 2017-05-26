@@ -12,6 +12,7 @@ from bernard.engine.platform import Platform, PlatformOperationError
 from bernard.conf import settings
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
+PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
 
 
 class FacebookUser(User):
@@ -88,6 +89,10 @@ class FacebookMessage(BaseMessage):
         if 'quick_reply' in msg:
             out.append(lyr.QuickReply(msg['quick_reply']['payload']))
 
+        if 'postback' in self._event:
+            payload = ujson.loads(self._event['postback']['payload'])
+            out.append(lyr.Postback(payload))
+
         return out
 
     def get_page_id(self) -> Text:
@@ -118,6 +123,51 @@ class Facebook(Platform):
         outgoing connexions to FB alive.
         """
         self.session = aiohttp.ClientSession()
+        await self._set_get_started()
+
+    async def _send_to_messenger_profile(self, page, content):
+        """
+        The messenger profile API handles all meta-information about the bot,
+        like the menu. This allows to submit data to this API endpoint.
+        
+        :param page: page dict from the configuration 
+        :param content: content to be sent to Facebook (as dict)
+        """
+
+        params = {
+            'access_token': page['page_token'],
+        }
+
+        headers = {
+            'content-type': 'application/json',
+        }
+
+        post = self.session.post(
+            PROFILE_ENDPOINT,
+            params=params,
+            headers=headers,
+            data=ujson.dumps(content)
+        )
+
+        async with post as r:
+            await self._handle_fb_response(r)
+
+    async def _set_get_started(self):
+        """
+        Set the "get started" action for all configured pages.
+        """
+
+        for page in settings.FACEBOOK:
+            if 'get_started' in page:
+                payload = page['get_started']
+            else:
+                payload = {'action': 'get_started'}
+
+            await self._send_to_messenger_profile(page, {
+                'get_started': {
+                    'payload': ujson.dumps(payload),
+                },
+            })
 
     def accept(self, stack: Stack):
         """

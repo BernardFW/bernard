@@ -42,9 +42,7 @@ class RedisRegisterStore(BaseRegisterStore):
         self.max_pool_size = max_pool_size
         self.pool = None
 
-        run(self._init())
-
-    async def _init(self):
+    async def async_init(self):
         """
         Handle here the asynchronous part of the init.
         """

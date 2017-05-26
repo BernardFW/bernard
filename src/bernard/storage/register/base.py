@@ -44,6 +44,12 @@ class BaseRegisterStore(object):
     implemented to communicate with an actual storage backend.
     """
 
+    async def async_init(self):
+        """
+        This is just a placeholder in case a subclass needs to overload it.
+        """
+        pass
+
     def work_on_register(self, key: Text) -> "RegisterContextManager":
         """
         Create the context manager

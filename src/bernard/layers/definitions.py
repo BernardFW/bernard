@@ -225,3 +225,20 @@ class QuickReply(BaseLayer):
 
     def _repr_arguments(self):
         return [self.slug]
+
+
+class Postback(BaseLayer):
+    """
+    That's some arbitrary data sent by the platform when the user clicks a
+    button. Usually, it's buttons that were previously programmed by the bot.
+    """
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.payload == other.payload)
+
+    def _repr_arguments(self):
+        return [self.payload]
