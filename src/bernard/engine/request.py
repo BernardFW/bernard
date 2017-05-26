@@ -1,5 +1,6 @@
 # coding: utf-8
 from typing import Text, Any, List
+from enum import Enum
 from bernard.storage.register import Register
 from bernard.layers import BaseLayer, Stack
 from bernard.layers.stack import L
@@ -17,8 +18,44 @@ class User(object):
     """
     Abstract representation of a user.
     """
+
+    class Gender(Enum):
+        """
+        Represents the gender of a person. Unknown is to be used either when
+        you actually don't know or when the gender is more complex than male or
+        female.
+        """
+
+        male = 'male'
+        female = 'female'
+        unknown = 'unknown'
+
     def __init__(self, id_):
         self.id = id_
+
+    async def get_gender(self) -> Gender:
+        """
+        Returns the gender of the person if known
+        """
+        return self.Gender.unknown
+
+    async def get_friendly_name(self) -> Text:
+        """
+        Computes a friendly name (like in "Hi Rémy")
+        """
+        raise NotImplementedError
+
+    async def get_formal_name(self) -> Text:
+        """
+        Computes a formal name (like in "Howdy Mr Sanchez")
+        """
+        raise NotImplementedError
+
+    async def get_full_name(self) -> Text:
+        """
+        Computes an administrative full name (like "Name: Rémy Sanchez")
+        """
+        raise NotImplementedError
 
 
 class BaseMessage(object):

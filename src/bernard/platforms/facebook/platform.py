@@ -13,6 +13,7 @@ from bernard.conf import settings
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
+USER_ENDPOINT = 'https://graph.facebook.com/v2.6/{}'
 
 
 class FacebookUser(User):
@@ -21,8 +22,11 @@ class FacebookUser(User):
     ID.
     """
 
-    def __init__(self, fbid: Text):
+    def __init__(self, fbid: Text, page_id: Text, facebook: 'Facebook'):
         self.fbid = fbid
+        self.page_id = page_id
+        self.facebook = facebook
+        self._cache = None
         super(FacebookUser, self).__init__(self._fbid_to_id(fbid))
 
     def _fbid_to_id(self, fbid: Text):
@@ -30,6 +34,49 @@ class FacebookUser(User):
         Transforms a Facebook user ID into a unique user ID.
         """
         return 'facebook:user:{}'.format(fbid)
+
+    async def _get_user(self):
+        """
+        Get the user dict from cache or query it from the platform if missing.
+        """
+
+        if self._cache is None:
+            self._cache = await self.facebook.get_user(self.fbid, self.page_id)
+        return self._cache
+
+    async def get_full_name(self) -> Text:
+        """
+        Let's implement this later
+        """
+        raise NotImplementedError
+
+    async def get_formal_name(self) -> Text:
+        """
+        Let's implement this later
+        """
+        raise NotImplementedError
+
+    async def get_friendly_name(self) -> Text:
+        """
+        The friendly name is mapped to Facebook's first name. If the first
+        name is missing, use the last name.
+        """
+        u = await self._get_user()
+        f = u.get('first_name', '').strip()
+        l = u.get('last_name', '').strip()
+
+        return f or l
+
+    async def get_gender(self) -> User.Gender:
+        """
+        Get the gender from Facebook.
+        """
+        u = await self._get_user()
+
+        try:
+            return User.Gender(u.get('gender'))
+        except ValueError:
+            return User.Gender.unknown
 
 
 class FacebookConversation(Conversation):
@@ -55,8 +102,9 @@ class FacebookMessage(BaseMessage):
     accompanying layers.
     """
 
-    def __init__(self, event):
+    def __init__(self, event, facebook):
         self._event = event
+        self._facebook = facebook
 
     def get_platform(self) -> Text:
         """
@@ -68,7 +116,11 @@ class FacebookMessage(BaseMessage):
         """
         Generate a Facebook user instance
         """
-        return FacebookUser(self._event['sender']['id'])
+        return FacebookUser(
+            self._event['sender']['id'],
+            self.get_page_id(),
+            self._facebook,
+        )
 
     def get_conversation(self) -> FacebookConversation:
         """
@@ -205,13 +257,14 @@ class Facebook(Platform):
         responder = FacebookResponder(self)
         await self._notify(event, responder)
 
-    def _access_token(self, request: Request):
+    def _access_token(self, request: Request=None, page_id: Text=''):
         """
         Guess the access token for that specific request.
         """
 
-        msg = request.message  # type: FacebookMessage
-        page_id = msg.get_page_id()
+        if not page_id:
+            msg = request.message  # type: FacebookMessage
+            page_id = msg.get_page_id()
 
         for page in settings.FACEBOOK:
             if page['page_id'] == page_id:
@@ -324,3 +377,23 @@ class Facebook(Platform):
 
         async with post as r:
             await self._handle_fb_response(r)
+
+    async def get_user(self, user_id, page_id):
+        """
+        Query a user from the API and return its JSON
+        """
+
+        access_token = self._access_token(page_id=page_id)
+
+        params = {
+            'fields': 'first_name,last_name,profile_pic,locale,timezone'
+                      ',gender',
+            'access_token': access_token,
+        }
+
+        url = USER_ENDPOINT.format(user_id)
+
+        get = self.session.get(url, params=params)
+        async with get as r:
+            await self._handle_fb_response(r)
+            return await r.json()

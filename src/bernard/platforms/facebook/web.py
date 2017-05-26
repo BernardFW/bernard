@@ -80,7 +80,7 @@ async def receive_events(request: Request):
 
     for entry in content['entry']:
         for raw_message in entry.get('messaging', []):
-            message = FacebookMessage(raw_message)
+            message = FacebookMessage(raw_message, fb)
             await fb.handle_event(message)
 
     return json_response({
