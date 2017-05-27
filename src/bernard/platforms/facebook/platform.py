@@ -10,6 +10,7 @@ from bernard.layers import Stack, BaseLayer
 from bernard import layers as lyr
 from bernard.engine.platform import Platform, PlatformOperationError
 from bernard.conf import settings
+from bernard.media.base import BaseMedia, UrlMedia
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
@@ -137,6 +138,22 @@ class FacebookMessage(BaseMessage):
 
         if 'text' in msg:
             out.append(lyr.RawText(msg['text']))
+
+        for attachment in msg.get('attachments') or []:
+            if attachment['type'] == 'image':
+                out.append(lyr.Image(UrlMedia(attachment['payload']['url'])))
+            elif attachment['type'] == 'audio':
+                out.append(lyr.Audio(UrlMedia(attachment['payload']['url'])))
+            elif attachment['type'] == 'file':
+                out.append(lyr.File(UrlMedia(attachment['payload']['url'])))
+            elif attachment['type'] == 'video':
+                out.append(lyr.Video(UrlMedia(attachment['payload']['url'])))
+            elif attachment['type'] == 'location':
+                # noinspection PyArgumentList
+                out.append(lyr.Location(lyr.Location.Point(
+                    lat=attachment['payload']['coordinates']['lat'],
+                    lon=attachment['payload']['coordinates']['long'],
+                )))
 
         if 'quick_reply' in msg:
             out.append(lyr.QuickReply(msg['quick_reply']['payload']))
@@ -397,3 +414,14 @@ class Facebook(Platform):
         async with get as r:
             await self._handle_fb_response(r)
             return await r.json()
+
+    async def ensure_usable_media(self, media: BaseMedia) -> UrlMedia:
+        """
+        So far, let's just accept URL media. We'll see in the future how it
+        goes.
+        """
+
+        if not isinstance(media, UrlMedia):
+            raise ValueError('Facebook platform only accepts URL media')
+
+        return media

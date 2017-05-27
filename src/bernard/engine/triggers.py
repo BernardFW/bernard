@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import Optional, Text as TextT, Callable
+from typing import Optional, Text as TextT, Callable, Type
 from bernard.i18n.intents import Intent
 from bernard.i18n import intents, render
 from bernard.trigram import Matcher, Trigram
@@ -175,3 +175,20 @@ class Action(BaseTrigger):
                     return 1.0
             except (TypeError, KeyError):
                 pass
+
+
+class Layer(BaseTrigger):
+    """
+    Gets triggered when the message contains a specific layer
+    """
+
+    def __init__(self, request: Request, layer_type: Type[l.BaseLayer]):
+        super(Layer, self).__init__(request)
+        self.layer_type = layer_type
+
+    def rank(self) -> Optional[float]:
+        """
+        Simply test the presence of layer type
+        """
+
+        return 1.0 if self.request.has_layer(self.layer_type) else 0.0

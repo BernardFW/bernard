@@ -8,4 +8,9 @@ from .definitions import (
     QuickReply,
     QuickRepliesList,
     Postback,
+    Image,
+    Audio,
+    Video,
+    File,
+    Location,
 )

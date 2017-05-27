@@ -1,11 +1,12 @@
 # coding: utf-8
 from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
-    TypeVar, Type
+    TypeVar, Type, NamedTuple
 from bernard.i18n import TransText, render
 from bernard.i18n.intents import Intent
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
+    from bernard.engine.platform import Platform
 
 
 L = TypeVar('L')
@@ -66,6 +67,12 @@ class BaseLayer(object):
         """
 
         raise ValueError('Cannot become "{}"'.format(layer_type.__name__))
+
+    async def convert_media(self, platform: 'Platform') -> None:
+        """
+        Convert this layer's media if needed
+        """
+        pass
 
 
 class Text(BaseLayer):
@@ -242,3 +249,73 @@ class Postback(BaseLayer):
 
     def _repr_arguments(self):
         return [self.payload]
+
+
+class BaseMediaLayer(BaseLayer):
+    """
+    Base for all layer types holding a media. All media layers have the same
+    code, but the subclasses exist to make it easier to filter out messages
+    based on what kind of media they have.
+    """
+
+    def __init__(self, media):
+        self.media = media
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.media == other.media)
+
+    def _repr_arguments(self):
+        return [self.media]
+
+
+class Image(BaseMediaLayer):
+    """
+    Represents an image
+    """
+    pass
+
+
+class Audio(BaseMediaLayer):
+    """
+    Represents some audio
+    """
+    pass
+
+
+class File(BaseMediaLayer):
+    """
+    Represents an arbitrary file
+    """
+    pass
+
+
+class Video(BaseMediaLayer):
+    """
+    Represents a video
+    """
+    pass
+
+
+class Location(BaseLayer):
+    """
+    That's when the user sends his location
+    """
+
+    class Point(NamedTuple):
+        """
+        Representation as tuple of a user location
+        """
+
+        lon: float
+        lat: float
+
+    def __init__(self, point: Point):
+        self.point = point
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.point == other.point)
+
+    def _repr_arguments(self):
+        return [self.point]

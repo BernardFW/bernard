@@ -4,6 +4,7 @@ from typing import Callable, List
 from bernard.engine.request import Request
 from bernard.engine.responder import Responder
 from bernard.layers import Stack
+from bernard.media.base import BaseMedia
 from .request import BaseMessage
 
 
@@ -62,6 +63,18 @@ class Platform(object):
         raise NotImplementedError
 
     async def send(self, request: Request, stack: Stack) -> None:
+        """
+        Send a stack to the user
+        """
+        raise NotImplementedError
+
+    async def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
+        """
+        Ensure that the media passed as argument can be used to send on the
+        platform.
+
+        If the media is already usable, it is returned as-is.
+        """
         raise NotImplementedError
 
 

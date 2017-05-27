@@ -1,10 +1,12 @@
 # coding: utf-8
 from typing import List, TypeVar, Text, Dict, TYPE_CHECKING
+
 from bernard.utils import RoList, ClassExp
 from .definitions import BaseLayer
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
+    from bernard.engine.platform import Platform
 
 
 L = TypeVar('L')
@@ -140,6 +142,14 @@ class Stack(object):
     def match_exp(self, expression: Text):
         e = ClassExp(expression)
         return e.match(self._layers)
+
+    async def convert_media(self, platform: 'Platform') -> None:
+        """
+        Polls all the layers to convert the media inside.
+        """
+
+        for layer in self.layers:
+            await layer.convert_media(platform)
 
 
 def stack(*layers: BaseLayer):

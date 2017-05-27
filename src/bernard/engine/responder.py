@@ -59,7 +59,13 @@ class Responder(object):
     async def flush(self, request: 'Request'):
         """
         Send all queued messages.
+
+        The first step is to convert all media in the stacked layers then the
+        second step is to send all messages as grouped in time as possible.
         """
+
+        for stack in self._stacks:
+            await stack.convert_media(self.platform)
 
         for stack in self._stacks:
             await self.platform.send(request, stack)
