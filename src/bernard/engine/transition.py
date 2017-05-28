@@ -17,7 +17,8 @@ class Transition(object):
                  factory,
                  origin: Type[BaseState]=None,
                  weight: float=1.0,
-                 desc: Text=''):
+                 desc: Text='',
+                 internal: bool=False):
         """
         Create the transition.
 
@@ -26,6 +27,8 @@ class Transition(object):
         :param origin: Optional origin state
         :param weight: Weight of the transition (1 by default, can be reduced)
         :param desc: A textual description for documentation
+        :param internal: That transition is an internal jump (eg it is only
+                         triggered right after handling another state).
         """
 
         self.origin = origin
@@ -33,6 +36,7 @@ class Transition(object):
         self.factory = factory
         self.weight = weight
         self.desc = desc
+        self.internal = internal
 
         if self.origin:
             self.origin_name = self.origin.name()

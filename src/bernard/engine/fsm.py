@@ -12,6 +12,18 @@ from .request import Request, BaseMessage
 from .responder import Responder
 
 
+class FsmError(Exception):
+    """
+    Base FSM exception
+    """
+
+
+class MaxInternalJump(FsmError):
+    """
+    That's when the max number of internal jumps is reached
+    """
+
+
 class FSM(object):
     """
     The FSM is the core of the engine. FSM as in "Finite-State Machine".
@@ -68,26 +80,35 @@ class FSM(object):
             if trans.origin:
                 yield trans.origin.name()
 
-    async def _find_trigger(self, request: Request) \
-            -> Optional[Tuple[
+    async def _find_trigger(self,
+                            request: Request,
+                            origin: Optional[Text]=None,
+                            internal: bool=False) \
+            -> Tuple[
                 Optional[BaseTrigger],
                 Optional[Type[BaseState]],
-            ]]:
+            ]:
         """
         Find the best trigger for this request, or go away.
         """
 
         reg = request.register
-        origin = reg.get(Register.STATE)
+
+        if not origin:
+            origin = reg.get(Register.STATE)
+
         results = await asyncio.gather(*(
             x.rank(request, origin)
             for x
             in self.transitions
+            if x.internal == internal
         ))
-        score, trigger, state = max(results, key=lambda x: x[0])
 
-        if score >= settings.MINIMAL_TRIGGER_SCORE:
-            return trigger, state
+        if len(results):
+            score, trigger, state = max(results, key=lambda x: x[0])
+
+            if score >= settings.MINIMAL_TRIGGER_SCORE:
+                return trigger, state
 
         return None, None
 
@@ -125,7 +146,8 @@ class FSM(object):
         state = state_class(request, responder)
         return state, trigger, request
 
-    async def _run_state(self, responder, state, trigger):
+    async def _run_state(self, responder, state, trigger, request) \
+            -> BaseState:
         """
         Execute the state, or if execution fails handle it.
         """
@@ -136,10 +158,25 @@ class FSM(object):
                 await state.handle()
             else:
                 await state.confused()
+
+            for i in range(0, settings.MAX_INTERNAL_JUMPS + 1):
+                if i == settings.MAX_INTERNAL_JUMPS:
+                    raise MaxInternalJump()
+
+                trigger, state_class = \
+                    await self._find_trigger(request, state.name(), True)
+
+                if not trigger:
+                    break
+
+                state = state_class(request, responder)
+                await state.handle()
         except Exception:
             # todo handle exception
             responder.clear()
             await state.error()
+
+        return state
 
     def _build_state_register(self,
                               state: BaseState,
@@ -173,7 +210,7 @@ class FSM(object):
         async with reg_manager as reg:
             state, trigger, request = \
                 await self._build_state(message, responder, reg)
-            await self._run_state(responder, state, trigger)
+            state = await self._run_state(responder, state, trigger, request)
             await responder.flush(request)
 
             reg.replacement = \
@@ -188,7 +225,7 @@ class FSM(object):
         Public method to handle a message. It requires:
 
             - A message from the platform
-            - A responder from the platfrom
+            - A responder from the platform
 
         If `create_task` is true, them the task will automatically be added to
         the loop. However, if it is not, the coroutine will be returned and it

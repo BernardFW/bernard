@@ -56,3 +56,7 @@ REGISTER_STORE = {
     'class': 'bernard.storage.register.RedisRegisterStore',
     'params': {},
 }
+
+# Max internal jumps allowed. This is to avoid infinite loops in poorly
+# configured transitions.
+MAX_INTERNAL_JUMPS = 10

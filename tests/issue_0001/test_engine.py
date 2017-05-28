@@ -16,7 +16,7 @@ from bernard.conf.utils import patch_conf
 from bernard.i18n import intents, translate as t
 from bernard.utils import run
 from bernard.engine.platform import Platform
-from .states import Hello, Great, BaseTestState
+from .states import Hello, Great, BaseTestState, HowAreYou
 
 
 LOADER_CONFIG = {
@@ -204,7 +204,7 @@ def test_fsm_find_trigger(reg):
         assert state is None
 
         reg = Register({
-            Register.STATE: Hello.name(),
+            Register.STATE: HowAreYou.name(),
             Register.TRANSITION: {
                 'choices': {
                     'yes': {
@@ -259,7 +259,7 @@ def test_story_hello():
         platform.handle(
             l.Text('Hello!'),
         )
-        platform.assert_state(Hello)
+        platform.assert_state(HowAreYou)
         platform.assert_sent(
             stack(l.Text(t.HELLO)),
             stack(
