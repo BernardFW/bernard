@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict, TypeVar, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union
 from collections import Mapping
 from bernard.conf import settings
 from bernard.utils import import_class, run
@@ -192,7 +192,7 @@ class Translator(object):
         return StringToTranslate(self.wd, key, count, **params)
 
 
-TransText = TypeVar('TransText', StringToTranslate, Text)
+TransText = Union[StringToTranslate, Text]
 
 
 def serialize(text: TransText):

@@ -1,8 +1,10 @@
 # coding: utf-8
+from enum import Enum
 from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
     TypeVar, Type, NamedTuple
 from bernard.i18n import TransText, render
 from bernard.i18n.intents import Intent
+from .helpers import FbBaseButton, FbCard
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -319,3 +321,77 @@ class Location(BaseLayer):
 
     def _repr_arguments(self):
         return [self.point]
+
+
+class FbButtonTemplate(BaseLayer):
+    """
+    Represents the Facebook "button template"
+    """
+    def __init__(self,
+                 text: Text,
+                 buttons: List[FbBaseButton],
+                 sharable: bool=False):
+        self.text = text
+        self.buttons = buttons
+        self.sharable = sharable
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.text == other.text and
+                self.buttons == other.buttons)
+
+    def _repr_arguments(self):
+        return [self.text, self.buttons]
+
+    def is_sharable(self):
+        """
+        Is sharable if marked as and if buttons are sharable (they might
+        hold sensitive data).
+        """
+        return self.sharable and all(x.is_sharable() for x in self.buttons)
+
+
+class FbGenericTemplate(BaseLayer):
+    """
+    Represents the Facebook "generic template"
+    """
+
+    class AspectRatio(Enum):
+        """
+        Aspect ratio of card images
+        """
+        horizontal = 'horizontal'
+        square = 'square'
+
+    def __init__(self,
+                 elements: List[FbCard],
+                 aspect_ratio: Optional[AspectRatio]=None,
+                 sharable: Optional[bool]=None):
+        self.elements = elements
+        self.aspect_ratio = aspect_ratio
+        self.sharable = sharable
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                list(self.elements) == list(other.elements) and
+                self.sharable == other.sharable)
+
+    def _repr_arguments(self):
+        return self.elements
+
+    def is_sharable(self):
+        """
+        Can only be sharable if marked as such and no child element is blocking
+        sharing due to security reasons.
+        """
+        return bool(
+            self.sharable and
+            all(x.is_sharable() for x in self.elements)
+        )
+
+    async def convert_media(self, platform: 'Platform'):
+        """
+        Forward the "convert media" call to all children.
+        """
+        for element in self.elements:
+            await element.convert_media(platform)

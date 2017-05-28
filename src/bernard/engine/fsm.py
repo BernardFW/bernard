@@ -1,6 +1,7 @@
 # coding: utf-8
 import asyncio
 import importlib
+import logging
 from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
 from bernard.conf import settings
 from bernard.utils import import_class
@@ -10,6 +11,9 @@ from .triggers import BaseTrigger
 from .state import BaseState
 from .request import Request, BaseMessage
 from .responder import Responder
+
+
+logger = logging.getLogger('bernard.fsm')
 
 
 class FsmError(Exception):
@@ -96,6 +100,7 @@ class FSM(object):
 
         if not origin:
             origin = reg.get(Register.STATE)
+            logger.debug('From state: %s', origin)
 
         results = await asyncio.gather(*(
             x.rank(request, origin)
@@ -138,10 +143,14 @@ class FSM(object):
         """
 
         request = Request(message, reg)
+        logger.debug('Incoming message: %s', request.stack)
         trigger, state_class = await self._find_trigger(request)
 
         if trigger is None:
             state_class = self._confused_state(request)
+            logger.debug('Next state: %s (confused)', state_class.name())
+        else:
+            logger.debug('Next state: %s', state_class.name())
 
         state = state_class(request, responder)
         return state, trigger, request
@@ -169,10 +178,11 @@ class FSM(object):
                 if not trigger:
                     break
 
+                logger.debug('Jumping to state: %s', state_class.name())
                 state = state_class(request, responder)
                 await state.handle()
         except Exception:
-            # todo handle exception
+            logger.exception('Error while handling state "%s"', state.name())
             responder.clear()
             await state.error()
 

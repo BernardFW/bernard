@@ -60,3 +60,14 @@ REGISTER_STORE = {
 # Max internal jumps allowed. This is to avoid infinite loops in poorly
 # configured transitions.
 MAX_INTERNAL_JUMPS = 10
+
+# Secret used to validate user ID/page ID in a webview. It is supposed to be
+# a string but is set to none in order for things to fail if this key is not
+# set properly.
+WEBVIEW_SECRET_KEY = None
+
+# JWT algorithm
+WEBVIEW_JWT_ALGORITHM = 'HS256'
+
+# Where to store the webview token
+WEBVIEW_TOKEN_KEY = '_bnd_user'

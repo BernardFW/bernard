@@ -3,7 +3,9 @@ import re
 import importlib
 import asyncio
 from collections import Sequence, Mapping
-from typing import Text, Coroutine, Any, Union, Dict, Iterator, List
+from itertools import chain
+from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple
+from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode
 
 
 def import_class(name: Text) -> type:
@@ -159,3 +161,28 @@ class ClassExp(object):
         s = self._make_string(objects)
         m = self._compiled_expression.match(s)
         return m is not None
+
+
+def patch_qs(url: Text, data: Dict[Text, Text]) -> Text:
+    """
+    Given an URL, change the query string to include the values specified in
+    the dictionary.
+
+    If the keys of the dictionary can be found in the query string of the URL,
+    then they will be removed.
+
+    It is guaranteed that all other values of the query string will keep their
+    order.
+    """
+
+    qs_id = 4
+    p = list(urlparse(url))
+    qs = parse_qsl(p[qs_id])  # type: List[Tuple[Text, Text]]
+    patched_qs = list(chain(
+        filter(lambda x: x[0] not in data, qs),
+        data.items(),
+    ))
+
+    p[qs_id] = urlencode(patched_qs)
+
+    return urlunparse(p)

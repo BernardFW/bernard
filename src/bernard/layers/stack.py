@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import List, TypeVar, Text, Dict, TYPE_CHECKING
+from typing import List, TypeVar, Text, Dict, TYPE_CHECKING, Type
 
 from bernard.utils import RoList, ClassExp
 from .definitions import BaseLayer
@@ -85,7 +85,7 @@ class Stack(object):
 
         self._transformed = out
 
-    def has_layer(self, class_: L, became: bool=True) -> bool:
+    def has_layer(self, class_: Type[L], became: bool=True) -> bool:
         """
         Test the presence of a given layer type.
 
@@ -96,7 +96,7 @@ class Stack(object):
         return (class_ in self._index or
                 (became and class_ in self._transformed))
 
-    def get_layer(self, class_: L, became: bool=True) -> L:
+    def get_layer(self, class_: Type[L], became: bool=True) -> L:
         """
         Return the first layer of a given class. If that layer is not present,
         then raise a KeyError.
@@ -113,7 +113,7 @@ class Stack(object):
             else:
                 raise
 
-    def get_layers(self, class_: L, became: bool=True) -> List[L]:
+    def get_layers(self, class_: Type[L], became: bool=True) -> List[L]:
         """
         Returns the list of layers of a given class. If no layers are present
         then the list will be empty.

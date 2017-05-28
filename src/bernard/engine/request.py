@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import Text, Any, List
+from typing import Text, Any, List, Type
 from enum import Enum
 from bernard.storage.register import Register
 from bernard.layers import BaseLayer, Stack
@@ -125,19 +125,19 @@ class Request(object):
         tr = self.register.get(Register.TRANSITION, {})
         return tr.get(name, default)
 
-    def has_layer(self, class_: L, became: bool=True) -> bool:
+    def has_layer(self, class_: Type[L], became: bool=True) -> bool:
         """
         Proxy to stack
         """
         return self.stack.has_layer(class_, became)
 
-    def get_layer(self, class_: L, became: bool=True) -> L:
+    def get_layer(self, class_: Type[L], became: bool=True) -> L:
         """
         Proxy to stack
         """
         return self.stack.get_layer(class_, became)
 
-    def get_layers(self, class_: L, became: bool=True) -> List[L]:
+    def get_layers(self, class_: Type[L], became: bool=True) -> List[L]:
         """
         Proxy to stack
         """

@@ -1,6 +1,10 @@
 # coding: utf-8
+import logging
 from typing import Text, Any, Dict, Optional
 from bernard.utils import RoDict
+
+
+logger = logging.getLogger('bernard.storage.register')
 
 
 class Register(RoDict):
@@ -105,6 +109,8 @@ class RegisterContextManager(object):
         await self.store._start(self.key)
         data = await self.store._get(self.key)
         self.register = Register(data)
+
+        logger.debug('Restored register: %s', self.register._data)
         return self.register
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -115,6 +121,7 @@ class RegisterContextManager(object):
 
         try:
             if self.register.replacement is not None:
+                logger.debug('Saving register: %s', self.register.replacement)
                 await self.store._replace(self.key, self.register.replacement)
         finally:
             await self.store._finish(self.key)

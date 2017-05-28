@@ -3,6 +3,7 @@ aiohttp
 aioredis
 ujson
 unidecode
+pyjwt
 
 # For dev
 pytest

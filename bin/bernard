@@ -5,7 +5,15 @@ def init_uvloop():
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
+def init_logger():
+    import logging
+    logging.basicConfig(
+        level=logging.DEBUG,
+    )
+
+
 def main():
+    init_logger()
     init_uvloop()
 
     from aiohttp import web

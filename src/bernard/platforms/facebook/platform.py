@@ -1,6 +1,7 @@
 # coding: utf-8
 import aiohttp
 import ujson
+import logging
 from textwrap import wrap
 from typing import Text, Coroutine, List, Any, Dict
 from bernard.engine.responder import UnacceptableStack, Responder
@@ -15,6 +16,9 @@ from bernard.media.base import BaseMedia, UrlMedia
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
 USER_ENDPOINT = 'https://graph.facebook.com/v2.6/{}'
+
+
+logger = logging.getLogger('bernard.platform.facebook')
 
 
 class FacebookUser(User):
@@ -180,6 +184,7 @@ class FacebookResponder(Responder):
 class Facebook(Platform):
     PATTERNS = {
         'text': '(Text|RawText)+ QuickRepliesList?',
+        'generic_template': 'FbGenericTemplate',
     }
 
     def __init__(self):
@@ -347,6 +352,32 @@ class Facebook(Platform):
 
         await self._send(request, msg)
 
+    async def _send_generic_template(self, request: Request, stack: Stack):
+        """
+        Generates and send a generic template.
+        """
+
+        gt = stack.get_layer(lyr.FbGenericTemplate)
+
+        # noinspection PyUnresolvedReferences
+        payload = {
+            'template_type': 'generic',
+            'elements': [e.serialize(request) for e in gt.elements],
+            'sharable': gt.is_sharable(),
+        }
+
+        if gt.aspect_ratio:
+            payload['image_aspect_ratio'] = gt.aspect_ratio.value
+
+        msg = {
+            'attachment': {
+                'type': 'template',
+                'payload': payload
+            }
+        }
+
+        await self._send(request, msg)
+
     async def _handle_fb_response(self, response: aiohttp.ClientResponse):
         """
         Check that Facebook was OK with the API call we just made and raise
@@ -370,12 +401,12 @@ class Facebook(Platform):
         Actually proceed to sending the message to the Facebook API.
         """
 
-        msg = {
+        msg = ujson.dumps({
             'recipient': {
                 'id': request.conversation.fbid,
             },
             'message': content,
-        }
+        })
 
         headers = {
             'content-type': 'application/json',
@@ -388,9 +419,11 @@ class Facebook(Platform):
         post = self.session.post(
             MESSAGES_ENDPOINT,
             params=params,
-            data=ujson.dumps(msg),
+            data=msg,
             headers=headers,
         )
+
+        logger.debug('Sending: %s', msg)
 
         async with post as r:
             await self._handle_fb_response(r)

@@ -11,6 +11,7 @@ chardet==3.0.3            # via aiohttp
 hiredis==0.2.0            # via aioredis
 multidict==2.1.5          # via aiohttp, yarl
 py==1.4.33                # via pytest
+pyjwt==1.5.0
 pytest==3.1.0
 ujson==1.35
 unidecode==0.4.20
