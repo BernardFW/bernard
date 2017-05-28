@@ -3,7 +3,7 @@ import aiohttp
 import ujson
 import logging
 from textwrap import wrap
-from typing import Text, Coroutine, List, Any, Dict
+from typing import Text, Coroutine, List, Any, Dict, Optional
 from bernard.engine.responder import UnacceptableStack, Responder
 from bernard.engine.request import Request, BaseMessage, User, Conversation
 from bernard.i18n.translator import render
@@ -107,9 +107,10 @@ class FacebookMessage(BaseMessage):
     accompanying layers.
     """
 
-    def __init__(self, event, facebook):
+    def __init__(self, event, facebook, confusing=True):
         self._event = event
         self._facebook = facebook
+        self._confusing = confusing
 
     def get_platform(self) -> Text:
         """
@@ -166,6 +167,12 @@ class FacebookMessage(BaseMessage):
             payload = ujson.loads(self._event['postback']['payload'])
             out.append(lyr.Postback(payload))
 
+        if 'link_click' in self._event:
+            out.append(lyr.LinkClick(
+                self._event['link_click']['url'],
+                self._event['link_click']['slug'],
+            ))
+
         return out
 
     def get_page_id(self) -> Text:
@@ -173,6 +180,18 @@ class FacebookMessage(BaseMessage):
         That's for internal use, extract the Facebook page ID.
         """
         return self._event['recipient']['id']
+
+    def get_url_base(self) -> Optional[Text]:
+        """
+        If available, return the URL base
+        """
+        return self._event.get('url_base')
+
+    def should_confuse(self) -> bool:
+        """
+        The message is marked confusing or not at init
+        """
+        return self._confusing
 
 
 class FacebookResponder(Responder):

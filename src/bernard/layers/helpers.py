@@ -1,6 +1,7 @@
 # coding: utf-8
 import jwt
 import ujson
+from urllib.parse import urljoin
 from typing import Text, Optional, Dict, TYPE_CHECKING, Any, List
 from enum import Enum
 from bernard.conf import settings
@@ -57,6 +58,7 @@ class FbUrlButton(FbBaseButton):
     def __init__(self,
                  title: TransText,
                  url: Text,
+                 slug: Optional[Text]=None,
                  sign_webview: bool=False,
                  webview_height_ratio: Optional[FbWebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
@@ -69,6 +71,9 @@ class FbUrlButton(FbBaseButton):
 
         :param title: Title that will be displayed
         :param url: URL to send the user to
+        :param slug: A slug for the link click events. If specified, the clicks
+                     on this link will be tracked. Please not that this will
+                     make the button un-sharable.
         :param sign_webview: Add a JSON Web Token to the URL with the user ID
                              inside. You can do this if you want to auto-log
                              your user (provided that you extract the data
@@ -82,6 +87,7 @@ class FbUrlButton(FbBaseButton):
         """
         super(FbUrlButton, self).__init__(title)
         self.url = url
+        self.slug = slug
         self.sign_webview = sign_webview
         self.webview_height_ratio = webview_height_ratio
         self.messenger_extensions = messenger_extensions
@@ -91,6 +97,7 @@ class FbUrlButton(FbBaseButton):
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.url == other.url and
+                self.slug == other.slug and
                 self.sign_webview == other.sign_webview and
                 self.webview_height_ratio == other.webview_height_ratio and
                 self.messenger_extensions == other.messenger_exteions and
@@ -99,6 +106,32 @@ class FbUrlButton(FbBaseButton):
 
     def __repr__(self):
         return 'Url({}, {})'.format(repr(self.title), repr(self.url))
+
+    def _make_url(self, url: Text, extra: Dict, request: 'Request') -> Text:
+        """
+        Compute an URL that will go through the redirection system that allows
+        the trigger of the `LinkClick` layer.
+        """
+
+        real_url = patch_qs(url, extra)
+
+        if self.slug:
+            url = urljoin(request.message.get_url_base(), '/links/facebook')
+            url = patch_qs(url, {
+                'l': jwt.encode(
+                    {
+                        'u': request.user.fbid,
+                        'p': request.user.page_id,
+                        'h': real_url,
+                        's': self.slug,
+                    },
+                    settings.WEBVIEW_SECRET_KEY,
+                    algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+                )
+            })
+            return url
+
+        return real_url
 
     def serialize(self, request: 'Request') -> Dict:
         if self.sign_webview:
@@ -118,7 +151,7 @@ class FbUrlButton(FbBaseButton):
         out = {
             'type': 'web_url',
             'title': render(self.title, request),
-            'url': patch_qs(self.url, extra_qs),
+            'url': self._make_url(self.url, extra_qs, request),
         }
 
         if self.webview_height_ratio is not None:
@@ -128,7 +161,8 @@ class FbUrlButton(FbBaseButton):
             out['messenger_extensions'] = self.messenger_extensions
 
         if self.fallback_url is not None:
-            out['fallback_url'] = patch_qs(self.fallback_url, extra_qs)
+            out['fallback_url'] = \
+                self._make_url(self.fallback_url, extra_qs, request)
 
         if self.hide_share or self.sign_webview:
             out['webview_share_button'] = 'hide'
@@ -136,7 +170,11 @@ class FbUrlButton(FbBaseButton):
         return out
 
     def is_sharable(self):
-        return not self.sign_webview
+        """
+        This button can be shared only if it is naive, eg it does not track
+        URLs and does not embed an auto-connect code.
+        """
+        return not self.sign_webview and not self.slug
 
 
 class FbPostbackButton(FbBaseButton):
@@ -198,14 +236,15 @@ class FbCardAction(FbUrlButton):
 
     def __init__(self,
                  url: Text,
+                 slug: Optional[Text]=None,
                  sign_webview: bool=False,
                  webview_height_ratio: Optional[FbWebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
                  fallback_url: Optional[Text]=None,
                  hide_share: Optional[bool]=None):
         super(FbCardAction, self).__init__(
-            '', url, sign_webview, webview_height_ratio, messenger_extensions,
-            fallback_url, hide_share
+            '', url, slug, sign_webview, webview_height_ratio,
+            messenger_extensions, fallback_url, hide_share
         )
 
     def __repr__(self):

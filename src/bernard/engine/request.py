@@ -93,6 +93,16 @@ class BaseMessage(object):
         """
         raise NotImplementedError
 
+    def should_confuse(self) -> bool:
+        """
+        If this returns "True" then the message should trigger a confused state
+        when not understood.
+
+        Otherwise, it is simply ignored.
+        """
+
+        return True
+
 
 class Request(object):
     """

@@ -395,3 +395,24 @@ class FbGenericTemplate(BaseLayer):
         """
         for element in self.elements:
             await element.convert_media(platform)
+
+
+class LinkClick(BaseLayer):
+    """
+    That layer is triggered when the user clicks on a link
+    """
+
+    def __init__(self, url: Text, slug: Optional[Text]=None):
+        self.url = url
+        self.slug = slug
+
+    def _repr_arguments(self):
+        if self.slug:
+            return [self.slug]
+        else:
+            return [self.url]
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.slug == other.slug and
+                self.url == other.url)

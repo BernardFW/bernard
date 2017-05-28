@@ -192,3 +192,19 @@ class Layer(BaseTrigger):
         """
 
         return 1.0 if self.request.has_layer(self.layer_type) else 0.0
+
+
+class LinkClick(BaseTrigger):
+    """
+    This layer is triggered by the user clicking on an URL button.
+    """
+
+    def __init__(self, request: Request, slug: Optional[Text]=None):
+        super(LinkClick, self).__init__(request)
+        self.slug = slug
+
+    def rank(self) -> Optional[float]:
+        if self.request.has_layer(l.LinkClick):
+            if self.request.get_layer(l.LinkClick).slug == self.slug or \
+                    self.slug is None:
+                return 1.0

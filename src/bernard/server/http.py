@@ -10,3 +10,4 @@ router = app.router  # type: UrlDispatcher
 
 router.add_get('/hooks/facebook', fb.check_hook)
 router.add_post('/hooks/facebook', fb.receive_events)
+router.add_get('/links/facebook', fb.redirect)

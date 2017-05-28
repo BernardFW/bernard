@@ -15,6 +15,7 @@ from .definitions import (
     Location,
     FbButtonTemplate,
     FbGenericTemplate,
+    LinkClick,
 )
 from .helpers import (
     FbCard,

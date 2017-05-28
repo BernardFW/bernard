@@ -137,7 +137,11 @@ class FSM(object):
                            message: BaseMessage,
                            responder: Responder,
                            reg: Register) \
-            -> Tuple[BaseState, BaseTrigger, Request]:
+            -> Tuple[
+                Optional[BaseState],
+                Optional[BaseTrigger],
+                Optional[Request]
+            ]:
         """
         Build the state for this request.
         """
@@ -147,6 +151,8 @@ class FSM(object):
         trigger, state_class = await self._find_trigger(request)
 
         if trigger is None:
+            if not message.should_confuse():
+                return None, None, None
             state_class = self._confused_state(request)
             logger.debug('Next state: %s (confused)', state_class.name())
         else:
@@ -220,6 +226,10 @@ class FSM(object):
         async with reg_manager as reg:
             state, trigger, request = \
                 await self._build_state(message, responder, reg)
+
+            if state is None:
+                return
+
             state = await self._run_state(responder, state, trigger, request)
             await responder.flush(request)
 
