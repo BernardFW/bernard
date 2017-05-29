@@ -15,4 +15,5 @@ pyjwt==1.5.0
 pytest==3.1.0
 ujson==1.35
 unidecode==0.4.20
+uvloop==0.8.0
 yarl==0.10.2              # via aiohttp

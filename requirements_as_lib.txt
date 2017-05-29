@@ -3,3 +3,4 @@ aioredis>=0.3,<0.4
 pyjwt>=1.5,<1.6
 ujson>=1.0,<2.0
 unidecode>=0.4,<0.5
+uvloop>=0.8,<0.9

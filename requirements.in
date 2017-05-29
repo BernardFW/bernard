@@ -4,6 +4,7 @@ aioredis
 ujson
 unidecode
 pyjwt
+uvloop
 
 # For dev
 pytest
