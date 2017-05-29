@@ -173,6 +173,11 @@ class FacebookMessage(BaseMessage):
                 self._event['link_click']['slug'],
             ))
 
+        if 'close_webview' in self._event:
+            out.append(lyr.CloseWebview(
+                self._event['close_webview']['slug'],
+            ))
+
         return out
 
     def get_page_id(self) -> Text:

@@ -194,17 +194,36 @@ class Layer(BaseTrigger):
         return 1.0 if self.request.has_layer(self.layer_type) else 0.0
 
 
-class LinkClick(BaseTrigger):
+class BaseSlugTrigger(BaseTrigger):
+    """
+    Common type for slug-based classes that would have exactly the same code
+    otherwise.
+    """
+
+    LAYER_TYPE = None
+
+    def __init__(self, request: Request, slug: Optional[Text]=None):
+        super(BaseSlugTrigger, self).__init__(request)
+        self.slug = slug
+
+    def rank(self) -> Optional[float]:
+        if self.request.has_layer(self.LAYER_TYPE):
+            if self.request.get_layer(self.LAYER_TYPE).slug == self.slug or \
+                    self.slug is None:
+                return 1.0
+
+
+class LinkClick(BaseSlugTrigger):
     """
     This layer is triggered by the user clicking on an URL button.
     """
 
-    def __init__(self, request: Request, slug: Optional[Text]=None):
-        super(LinkClick, self).__init__(request)
-        self.slug = slug
+    LAYER_TYPE = l.LinkClick
 
-    def rank(self) -> Optional[float]:
-        if self.request.has_layer(l.LinkClick):
-            if self.request.get_layer(l.LinkClick).slug == self.slug or \
-                    self.slug is None:
-                return 1.0
+
+class CloseWebview(BaseSlugTrigger):
+    """
+    This layer is triggered by the user closing a webview.
+    """
+
+    LAYER_TYPE = l.CloseWebview

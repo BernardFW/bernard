@@ -12,6 +12,7 @@ from bernard.utils import patch_qs
 if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
+    from bernard.platforms.facebook.platform import FacebookUser
 
 
 class FbWebviewRatio(Enum):
@@ -135,11 +136,14 @@ class FbUrlButton(FbBaseButton):
 
     def serialize(self, request: 'Request') -> Dict:
         if self.sign_webview:
-            user = request.user
+            user = request.user  # type: FacebookUser
             extra_qs = {
                 settings.WEBVIEW_TOKEN_KEY: jwt.encode(
                     {
                         'user_id': user.id,
+                        'fb_psid': user.fbid,
+                        'fb_pid': user.page_id,
+                        'slug': self.slug,
                     },
                     settings.WEBVIEW_SECRET_KEY,
                     algorithm=settings.WEBVIEW_JWT_ALGORITHM,

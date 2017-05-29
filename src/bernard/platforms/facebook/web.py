@@ -1,13 +1,17 @@
 # coding: utf-8
 import hmac
 import jwt
+import re
+import asyncio
+import ujson
+from textwrap import dedent
+from urllib.parse import urljoin
 from hashlib import sha1
 from typing import Text, ByteString
-
-import ujson
+from aiohttp.http_websocket import WSMsgType
 from aiohttp.web_request import Request
 from aiohttp.web_response import json_response, Response
-
+from aiohttp.web_ws import WebSocketResponse
 from bernard.platforms.facebook.platform import FacebookMessage
 from bernard.platforms import manager
 from bernard.conf import settings
@@ -159,3 +163,161 @@ async def redirect(request: Request):
         },
         status=302,
     )
+
+
+async def unload_js(request: Request):
+    """
+    This generates a javascript that you can embed into any webview in order
+    to enable webview closing events.
+
+    You need to sign the webview using the `sign_webview` parameter of an
+    UrlButton.
+    
+    If you want to close/change your page without triggering the page close
+    event, you can call in JS `bernard.unloadNotifier.inhibit()`.
+    """
+
+    request_url = str(request.url)
+    request_url = re.sub(r'^https?://', 'wss://', request_url)
+
+    script = """
+        (function () {
+            function UnloadNotifier() {
+                var self = this,
+                    intervalId,
+                    ws;
+
+                function connect() {
+                    ws = new WebSocket(WS_URL + window.location.search);
+                    ws.onopen = onConnect;
+                }
+
+                function onConnect() {
+                    setInterval(beat, HEARTBEAT_PERIOD * 1000);
+                }
+
+                function beat() {
+                    ws.send('beat');
+                }
+
+                function unload() {
+                    ws.send('unload');
+                }
+
+                function inhibit() {
+                    ws.send('inhibit');
+                    clearInterval(intervalId);
+                    ws.close();
+                }
+
+                self.inhibit = inhibit;
+
+                (function () {
+                    connect();
+                    window.addEventListener('beforeunload', unload);
+                }());
+            }
+
+            window.bernard = {
+                unloadNotifier: new UnloadNotifier()
+            };
+        }());
+    """
+
+    script = script.replace(
+        'WS_URL',
+        ujson.dumps(urljoin(request_url, '/unload/facebook.sock'))
+    )
+    script = script.replace(
+        'HEARTBEAT_PERIOD',
+        ujson.dumps(settings.WEBVIEW_HEARTBEAT_PERIOD)
+    )
+    script = dedent(script).strip()
+
+    return Response(text=script, content_type='text/javascript')
+
+
+async def unload_sock(request: Request):
+    """
+    WebSocket view to detect when Messenger closes the WebView.
+    
+    There is a dual mechanism:
+    
+        - If "unload" is received over the socket, then close instantly
+        - If no heartbeat is received for some time, them close
+
+    The URL must include signed information about the user, like what
+    the `sign_webview` parameter of UrlButton would provide.
+    """
+
+    tk = request.query.get(settings.WEBVIEW_TOKEN_KEY)
+
+    if not tk:
+        return json_response({
+            'error': True,
+            'message': 'Missing "{}"'.format(settings.WEBVIEW_TOKEN_KEY),
+        }, status=400)
+
+    try:
+        tk = jwt.decode(tk, settings.WEBVIEW_SECRET_KEY)
+    except jwt.InvalidTokenError:
+        return json_response({
+            'error': True,
+            'message': 'Provided token is invalid'
+        }, status=400)
+
+    try:
+        user_id = tk['fb_psid']
+        assert isinstance(user_id, Text)
+        page_id = tk['fb_pid']
+        assert isinstance(page_id, Text)
+        slug = tk['slug']
+        assert isinstance(slug, Text) or slug is None
+    except (KeyError, AssertionError):
+        return json_response({
+            'error': True,
+            'message': 'Provided payload is invalid'
+        }, status=400)
+
+    event = {
+        'sender': {
+            'id': user_id,
+        },
+        'recipient': {
+            'id': page_id,
+        },
+        'url_base': str(request.url),
+        'close_webview': {
+            'slug': slug,
+        },
+    }
+
+    ws = WebSocketResponse(timeout=settings.WEBVIEW_HEARTBEAT_TIMEOUT,
+                           receive_timeout=settings.WEBVIEW_HEARTBEAT_TIMEOUT)
+    await ws.prepare(request)
+
+    inhibit = False
+
+    try:
+        # noinspection PyTypeChecker
+        async for msg in ws:
+            # For some reason, the timeout does not work without a print
+            # Yeah, what the fuck right?
+            # TODO make it work properly
+            print('hack print')
+            if msg.type == WSMsgType.TEXT:
+                if msg.data == 'unload':
+                    break
+                if msg.data == 'inhibit':
+                    inhibit = True
+            elif msg.type == WSMsgType.ERROR:
+                break
+    except asyncio.TimeoutError:
+        pass
+
+    if not inhibit:
+        fb = await manager.get_platform('facebook')
+        msg = FacebookMessage(event, fb, False)
+        await fb.handle_event(msg)
+
+    return ws

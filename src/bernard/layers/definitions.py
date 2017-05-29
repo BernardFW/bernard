@@ -416,3 +416,19 @@ class LinkClick(BaseLayer):
         return (self.__class__ == other.__class__ and
                 self.slug == other.slug and
                 self.url == other.url)
+
+
+class CloseWebview(BaseLayer):
+    """
+    Triggered when a webview gets closed.
+    """
+
+    def __init__(self, slug: Optional[Text]):
+        self.slug = slug
+
+    def _repr_arguments(self):
+        return [self.slug]
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.slug == other.slug)

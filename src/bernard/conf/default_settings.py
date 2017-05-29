@@ -71,3 +71,13 @@ WEBVIEW_JWT_ALGORITHM = 'HS256'
 
 # Where to store the webview token
 WEBVIEW_TOKEN_KEY = '_bnd_user'
+
+# Webviews are supposed to send a message when they close. However, it can
+# happen on some shitty devices (follow my eyes) that connections are not
+# closed properly. In this case, if we receive no heartbeat for X seconds then
+# the webview is considered closed.
+WEBVIEW_HEARTBEAT_TIMEOUT = 5.0
+
+# Related to previous setting, the webview sends a heartbeat periodically to
+# let us know that it is still open
+WEBVIEW_HEARTBEAT_PERIOD = 1.0
