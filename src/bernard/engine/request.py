@@ -120,6 +120,7 @@ class Request(object):
         self.user = message.get_user()
         self.stack = Stack(message.get_layers())
         self.register = register
+        self.custom_content = {}
 
         self.stack.transform(self)
 
