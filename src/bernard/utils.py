@@ -2,6 +2,7 @@
 import re
 import importlib
 import asyncio
+from asyncio import iscoroutine
 from collections import Sequence, Mapping
 from itertools import chain
 from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple
@@ -38,10 +39,9 @@ async def run_or_return(task: Union[Coroutine, Any]):
     directly.
     """
 
-    try:
-        task = asyncio.ensure_future(task)
+    if iscoroutine(task):
         return await task
-    except TypeError:
+    else:
         return task
 
 

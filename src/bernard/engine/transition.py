@@ -70,6 +70,7 @@ class Transition(object):
             return 0.0, None, None
 
         trigger = self.factory(request)
-        score *= self.weight * (await run_or_return(trigger.rank()) or 0.0)
+        rank = await run_or_return(trigger.rank())
+        score *= self.weight * (rank or 0.0)
 
         return score, trigger, self.dest
