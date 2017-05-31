@@ -21,6 +21,10 @@ def main():
     from aiohttp import web
     from bernard.server import app
     from bernard.conf import settings
+    from bernard.utils import run
+    from bernard.platforms import start_all
+
+    run(start_all())
 
     # noinspection PyArgumentList
     web.run_app(app, **settings.SERVER_BIND)

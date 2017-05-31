@@ -222,6 +222,8 @@ class Facebook(Platform):
         """
         self.session = aiohttp.ClientSession()
         await self._set_get_started()
+        await self._set_greeting_text()
+        await self._set_persistent_menu()
 
     async def _send_to_messenger_profile(self, page, content):
         """
@@ -266,6 +268,34 @@ class Facebook(Platform):
                     'payload': ujson.dumps(payload),
                 },
             })
+
+            logger.info('Get started set for page %s', page['page_id'])
+
+    async def _set_greeting_text(self):
+        """
+        Set the greeting text of the page
+        """
+
+        for page in settings.FACEBOOK:
+            if 'greeting' in page:
+                await self._send_to_messenger_profile(page, {
+                    'greeting': page['greeting'],
+                })
+
+                logger.info('Greeting text set for page %s', page['page_id'])
+
+    async def _set_persistent_menu(self):
+        """
+        Define the persistent menu for all pages
+        """
+
+        for page in settings.FACEBOOK:
+            if 'menu' in page:
+                await self._send_to_messenger_profile(page, {
+                    'persistent_menu': page['menu'],
+                })
+
+                logger.info('Set menu for page %s', page['page_id'])
 
     def accept(self, stack: Stack):
         """
