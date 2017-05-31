@@ -81,3 +81,6 @@ WEBVIEW_HEARTBEAT_TIMEOUT = 5.0
 # Related to previous setting, the webview sends a heartbeat periodically to
 # let us know that it is still open
 WEBVIEW_HEARTBEAT_PERIOD = 1.0
+
+# Sentry configuration
+SENTRY_DSN = os.getenv('SENTRY_DSN')

@@ -4,8 +4,11 @@ import importlib
 import logging
 from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
 from bernard.conf import settings
+from bernard.i18n.translator import MissingTranslationError
 from bernard.utils import import_class
 from bernard.storage.register import BaseRegisterStore, Register
+from bernard.reporter import reporter
+from bernard.layers import RawText
 from .transition import Transition
 from .triggers import BaseTrigger
 from .state import BaseState
@@ -134,32 +137,30 @@ class FSM(object):
         return import_class(settings.DEFAULT_STATE)
 
     async def _build_state(self,
+                           request: Request,
                            message: BaseMessage,
-                           responder: Responder,
-                           reg: Register) \
+                           responder: Responder) \
             -> Tuple[
                 Optional[BaseState],
                 Optional[BaseTrigger],
-                Optional[Request]
             ]:
         """
         Build the state for this request.
         """
 
-        request = Request(message, reg)
         logger.debug('Incoming message: %s', request.stack)
         trigger, state_class = await self._find_trigger(request)
 
         if trigger is None:
             if not message.should_confuse():
-                return None, None, None
+                return None, None
             state_class = self._confused_state(request)
             logger.debug('Next state: %s (confused)', state_class.name())
         else:
             logger.debug('Next state: %s', state_class.name())
 
         state = state_class(request, responder)
-        return state, trigger, request
+        return state, trigger
 
     async def _run_state(self, responder, state, trigger, request) \
             -> BaseState:
@@ -190,6 +191,7 @@ class FSM(object):
         except Exception:
             logger.exception('Error while handling state "%s"', state.name())
             responder.clear()
+            reporter.report(request, state.name())
             await state.error()
 
         return state
@@ -213,7 +215,7 @@ class FSM(object):
 
     async def _handle_message(self,
                               message: BaseMessage,
-                              responder: Responder) -> Dict:
+                              responder: Responder) -> Optional[Dict]:
         """
         Handles a message: find a state and run it.
 
@@ -224,18 +226,41 @@ class FSM(object):
             .work_on_register(message.get_conversation().id)
 
         async with reg_manager as reg:
-            state, trigger, request = \
-                await self._build_state(message, responder, reg)
+            request = Request(message, reg)
+
+            try:
+                state, trigger = \
+                    await self._build_state(request, message, responder)
+            except Exception:
+                reporter.report(request, None)
+                logger.exception('Error while finding a transition from %s',
+                                 reg.get(Register.STATE))
+                return
 
             if state is None:
                 return
 
             state = await self._run_state(responder, state, trigger, request)
-            await responder.flush(request)
 
-            reg.replacement = \
-                self._build_state_register(state, request, responder)
-            return reg.replacement
+            # noinspection PyBroadException
+            try:
+                await responder.flush(request)
+            except MissingTranslationError as e:
+                responder.clear()
+                responder.send([RawText(str(e))])
+                await responder.flush(request)
+
+                reporter.report(request, state.name())
+                logger.exception('Missing translation in state %s',
+                                 state.name())
+            except Exception:
+                reporter.report(request, state.name())
+                logger.exception('Could not flush content after %s',
+                                 state.name())
+            else:
+                reg.replacement = \
+                    self._build_state_register(state, request, responder)
+                return reg.replacement
 
     def handle_message(self,
                        message: BaseMessage,

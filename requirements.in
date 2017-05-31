@@ -5,6 +5,8 @@ ujson
 unidecode
 pyjwt
 uvloop
+raven
+raven-aiohttp
 
 # For dev
 pytest

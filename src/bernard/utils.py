@@ -125,6 +125,21 @@ def make_ro(obj: Any, forgive_type=False):
                          .format(obj.__class__.__name__))
 
 
+def make_rw(obj: Any):
+    """
+    Copy a RO object into a RW structure made with standard Python classes.
+
+    WARNING there is no protection against recursion.
+    """
+
+    if isinstance(obj, RoDict):
+        return {k: make_rw(v) for k, v in obj.items()}
+    elif isinstance(obj, RoList):
+        return [make_rw(x) for x in obj]
+    else:
+        return obj
+
+
 class ClassExp(object):
     """
     Perform regular expression matching on list of classes.
