@@ -202,6 +202,7 @@ async def unload_js(request: Request):
 
                 function unload() {
                     ws.send('unload');
+                    inhibit();
                 }
 
                 function inhibit() {
@@ -211,6 +212,7 @@ async def unload_js(request: Request):
                 }
 
                 self.inhibit = inhibit;
+                self.unload = unload;
 
                 (function () {
                     connect();

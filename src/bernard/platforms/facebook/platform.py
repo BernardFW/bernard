@@ -190,7 +190,12 @@ class FacebookMessage(BaseMessage):
         """
         If available, return the URL base
         """
-        return self._event.get('url_base')
+        url : Text = self._event.get('url_base')
+
+        if url and url.startswith('http://'):
+            url = 'https://' + url[7:]
+
+        return url
 
     def should_confuse(self) -> bool:
         """
@@ -224,6 +229,7 @@ class Facebook(Platform):
         await self._set_get_started()
         await self._set_greeting_text()
         await self._set_persistent_menu()
+        await self._set_whitelist()
 
     async def _send_to_messenger_profile(self, page, content):
         """
@@ -296,6 +302,21 @@ class Facebook(Platform):
                 })
 
                 logger.info('Set menu for page %s', page['page_id'])
+
+    async def _set_whitelist(self):
+        """
+        Whitelist domains for the messenger extensions
+        """
+
+        for page in settings.FACEBOOK:
+            if 'whitelist' in page:
+                await self._send_to_messenger_profile(page, {
+                    'whitelisted_domains': page['whitelist'],
+                })
+
+                logger.info('Whitelisted %s for page %s',
+                            page['whitelist'],
+                            page['page_id'])
 
     def accept(self, stack: Stack):
         """
