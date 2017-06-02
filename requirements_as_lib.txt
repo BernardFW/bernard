@@ -1,6 +1,9 @@
 aiohttp>=2.0,<2.1
 aioredis>=0.3,<0.4
+babel>=2.4,<2.5
 pyjwt>=1.5,<1.6
+python-dateutil>=2.6,<2.7
+pytz
 ujson>=1.0,<2.0
 unidecode>=0.4,<0.5
 uvloop>=0.8,<0.9

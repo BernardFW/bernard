@@ -18,6 +18,9 @@ I18N_TRANSLATION_LOADERS = []
 # List of intents loaders.
 I18N_INTENTS_LOADERS = []
 
+# Default lang
+I18N_DEFAULT_LANG = 'en'
+
 # How long should a register lock last? Registers are locked when starting to
 # answer a message and freed when the response is sent. One minute sounds
 # reasonable.

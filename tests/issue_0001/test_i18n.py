@@ -1,12 +1,17 @@
 # coding: utf-8
 import os
 import pytest
+import pytz
+import datetime
+# noinspection PyProtectedMember
+from bernard.i18n._formatter import make_date, I18nFormatter
 from bernard.i18n.translator import *
 from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
     BaseIntentsLoader, CsvIntentsLoader
 from bernard.i18n.intents import Intent, IntentsMaker, IntentsDb
 from bernard.conf.utils import patch_conf
 from bernard.utils import run
+from dateutil import tz
 from unittest.mock import Mock
 
 
@@ -289,3 +294,30 @@ def test_intents_maker_singleton():
 
         from bernard.i18n import intents as i
         assert i.FOO.strings() == ['bar', 'baz']
+
+
+def test_make_date():
+    d = datetime.date(2000, 1, 1)
+    assert make_date(d) == d
+
+    d2 = datetime.datetime(2000, 1, 1, 0, 0)
+    assert make_date(d2) == d
+
+    d3 = '2000-01-01T00:00:00.000000Z'
+    assert make_date(d3) == d
+
+    test_tz = pytz.timezone('America/Cancun')
+    assert make_date(d3, test_tz) != d
+
+    test_tz = tz.tzoffset('IST', -3600)
+    assert make_date(d3, test_tz) != d
+
+
+def test_format_date():
+    test_tz = tz.tzoffset('IST', -3600)
+    f = I18nFormatter('fr', test_tz)
+
+    d = '2000-01-01T00:00:00.000000Z'
+
+    assert f.format('Posté le {post_date:date:medium}', post_date=d) == \
+        'Posté le 1 janv. 2000'

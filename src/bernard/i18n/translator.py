@@ -3,7 +3,9 @@ from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union
 from collections import Mapping
 from bernard.conf import settings
 from bernard.utils import import_class, run
+from string import Formatter
 from .loaders import BaseTranslationLoader
+from ._formatter import I18nFormatter
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -58,12 +60,17 @@ class WordDictionary(object):
 
         self.dict.update(new_data)
 
-    def get(self, key: Text, count: Optional[int]=None, **params) -> Text:
+    def get(self,
+            key: Text,
+            count: Optional[int]=None,
+            formatter: Formatter=None,
+            **params) -> Text:
         """
         Get the appropriate translation given the specified parameters.
 
         :param key: Translation key
         :param count: Count for plurals
+        :param formatter: Optional string formatter to use
         :param params: Params to be substituted
         """
 
@@ -77,7 +84,10 @@ class WordDictionary(object):
                                           .format(key))
 
         try:
-            out = out.format(**params)
+            if not formatter:
+                out = out.format(**params)
+            else:
+                out = formatter.format(out, **params)
         except KeyError as e:
             raise MissingParamError(
                 'Parameter "{}" missing to translate "{}"'
@@ -142,7 +152,8 @@ class StringToTranslate(object):
         :param request: Bot request.
         """
 
-        return [self.wd.get(self.key, self.count, **self.params)]
+        f = I18nFormatter(settings.I18N_DEFAULT_LANG)
+        return [self.wd.get(self.key, self.count, f, **self.params)]
 
 
 class Translator(object):

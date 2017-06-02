@@ -7,6 +7,7 @@
 aiohttp==2.0.7
 aioredis==0.3.1
 async-timeout==1.2.1      # via aiohttp
+babel==2.4.0
 chardet==3.0.3            # via aiohttp
 contextlib2==0.5.5        # via raven
 hiredis==0.2.0            # via aioredis
@@ -14,8 +15,11 @@ multidict==2.1.5          # via aiohttp, yarl
 py==1.4.33                # via pytest
 pyjwt==1.5.0
 pytest==3.1.0
+python-dateutil==2.6.0
+pytz==2017.2
 raven-aiohttp==0.5.0
 raven==6.1.0
+six==1.10.0               # via python-dateutil
 ujson==1.35
 unidecode==0.4.20
 uvloop==0.8.0
