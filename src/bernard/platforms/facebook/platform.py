@@ -371,7 +371,7 @@ class Facebook(Platform):
                                      'page "{}", which is not configured.'
                                      .format(page_id))
 
-    def _make_qr(self, qr: lyr.QuickRepliesList.BaseOption, request: Request):
+    async def _make_qr(self, qr: lyr.QuickRepliesList.BaseOption, request: Request):
         """
         Generate a single quick reply's content.
         """
@@ -379,7 +379,7 @@ class Facebook(Platform):
         if isinstance(qr, lyr.QuickRepliesList.TextOption):
             return {
                 'content_type': 'text',
-                'title': render(qr.text, request),
+                'title': await render(qr.text, request),
                 'payload': qr.slug,
             }
         elif isinstance(qr, lyr.QuickRepliesList.LocationOption):
@@ -400,7 +400,7 @@ class Facebook(Platform):
 
         for layer in stack.layers:
             if isinstance(layer, (lyr.Text, lyr.RawText)):
-                text = render(layer.text, request)
+                text = await render(layer.text, request)
                 for part in wrap(text, 320):
                     parts.append(part)
 
@@ -422,7 +422,7 @@ class Facebook(Platform):
         else:
             # noinspection PyUnresolvedReferences
             msg['quick_replies'] = [
-                self._make_qr(o, request) for o in qr.options
+                await self._make_qr(o, request) for o in qr.options
             ]
 
         await self._send(request, msg)
@@ -437,7 +437,7 @@ class Facebook(Platform):
         # noinspection PyUnresolvedReferences
         payload = {
             'template_type': 'generic',
-            'elements': [e.serialize(request) for e in gt.elements],
+            'elements': [await e.serialize(request) for e in gt.elements],
             'sharable': gt.is_sharable(),
         }
 

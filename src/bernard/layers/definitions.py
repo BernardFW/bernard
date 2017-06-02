@@ -27,7 +27,7 @@ class BaseLayer(object):
     def _repr_arguments(self):
         raise NotImplementedError
 
-    def patch_register(self, register: Dict, request: 'Request') -> Dict:
+    async def patch_register(self, register: Dict, request: 'Request') -> Dict:
         """
         If you want to put a value in the transition register, you can overload
         this function and patch the provided register.
@@ -63,7 +63,7 @@ class BaseLayer(object):
         """
         return []
 
-    def become(self, layer_type: Type[L], request: 'Request') -> L:
+    async def become(self, layer_type: Type[L], request: 'Request') -> L:
         """
         Transform this layer into another layer type
         """
@@ -98,7 +98,7 @@ class Text(BaseLayer):
         """
         return [RawText]
 
-    def become(self, layer_type: Type[L], request: 'Request'):
+    async def become(self, layer_type: Type[L], request: 'Request'):
         """
         Transforms the translatable string into an actual string and put it
         inside a RawText.
@@ -106,7 +106,7 @@ class Text(BaseLayer):
         if layer_type != RawText:
             super(Text, self).become(layer_type, request)
 
-        return RawText(render(self.text, request))
+        return RawText(await render(self.text, request))
 
 
 class RawText(BaseLayer):
@@ -200,7 +200,7 @@ class QuickRepliesList(BaseLayer):
     def _repr_arguments(self):
         return self.options
 
-    def patch_register(self, register: Dict, request: 'Request'):
+    async def patch_register(self, register: Dict, request: 'Request'):
         """
         Store all options in the "choices" sub-register. We store both the
         text and the potential intent, in order to match both regular
@@ -212,7 +212,7 @@ class QuickRepliesList(BaseLayer):
         register['choices'] = {
             o.slug: {
                 'intent': o.intent.key if o.intent else None,
-                'text': render(o.text, request),
+                'text': await render(o.text, request),
             } for o in self.options
             if isinstance(o, QuickRepliesList.TextOption)
         }

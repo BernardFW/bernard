@@ -120,15 +120,18 @@ class MockEmptyMessage(BaseMockMessage):
 # noinspection PyShadowingNames
 @pytest.fixture('module')
 def text_request(reg):
-    return Request(
+    req = Request(
         MockTextMessage('foo'),
         reg,
     )
+    run(req.transform())
+    return req
 
 
 # noinspection PyShadowingNames
 def test_request_trans_reg(reg):
     req = Request(MockTextMessage('foo'), reg)
+    run(req.transform())
     assert req.get_trans_reg('foo') == 42
     assert req.get_trans_reg('bar') is None
     assert req.get_trans_reg('bar', True) is True
@@ -137,6 +140,7 @@ def test_request_trans_reg(reg):
 # noinspection PyShadowingNames
 def test_request_stack(reg):
     req = Request(MockTextMessage('foo'), reg)
+    run(req.transform())
     assert req.has_layer(l.Text)
     assert req.get_layer(l.Text).text == 'foo'
     assert len(req.get_layers(l.Text)) == 1
@@ -155,26 +159,28 @@ def test_text_trigger(text_request):
     with patch_conf(LOADER_CONFIG):
         tt_factory = trig.Text.builder(intents.BAZ)
         tt = tt_factory(text_request)
-        assert tt.rank() == 1.0
+        assert run(tt.rank()) == 1.0
 
         tt_factory = trig.Text.builder(intents.FOO)
         tt = tt_factory(text_request)
-        assert tt.rank() == 0.0
+        assert run(tt.rank()) == 0.0
 
 
 # noinspection PyShadowingNames
 def test_choice_trigger(reg):
     with patch_conf(LOADER_CONFIG):
         req = Request(MockTextMessage('foo', True), reg)
+        run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
-        assert ct.rank() == 1.0
+        assert run(ct.rank()) == 1.0
         assert ct.slug == 'foo'
 
         req = Request(MockTextMessage('some other stuff'), reg)
+        run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
-        assert ct.rank() == 1.0
+        assert run(ct.rank()) == 1.0
         assert ct.slug == 'bar'
 
 
@@ -193,12 +199,14 @@ def test_fsm_find_trigger(reg):
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
         req = Request(MockTextMessage('hello'), reg)
+        run(req.transform())
 
         trigger, state = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Text)
         assert state == Hello
 
         req = Request(MockChoiceMessage(), reg)
+        run(req.transform())
         trigger, state = run(fsm._find_trigger(req))
         assert trigger is None
         assert state is None
@@ -220,6 +228,7 @@ def test_fsm_find_trigger(reg):
         })
 
         req = Request(MockChoiceMessage(), reg)
+        run(req.transform())
         trigger, state = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Choice)
         assert state == Great
@@ -232,10 +241,12 @@ def test_fsm_confused_state():
 
         reg = Register({})
         req = Request(MockEmptyMessage(), reg)
+        run(req.transform())
         assert fsm._confused_state(req) == BaseTestState
 
         reg = Register({Register.STATE: 'tests.issue_0001.states.Hello'})
         req = Request(MockEmptyMessage(), reg)
+        run(req.transform())
         assert fsm._confused_state(req) == Hello
 
 

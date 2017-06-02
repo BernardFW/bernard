@@ -194,7 +194,7 @@ def test_translate_render():
         wd = WordDictionary()
         t = Translator(wd)
 
-        assert t.FOO.render() == 'éléphant'
+        assert run(t.FOO.render()) == 'éléphant'
 
 
 def test_translate_singleton():

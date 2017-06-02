@@ -70,7 +70,7 @@ class Responder(object):
         for stack in self._stacks:
             await self.platform.send(request, stack)
 
-    def make_transition_register(self, request: 'Request'):
+    async def make_transition_register(self, request: 'Request'):
         """
         Use all underlying stacks to generate the next transition register.
         """
@@ -78,6 +78,6 @@ class Responder(object):
         register = {}
 
         for stack in self._stacks:
-            register = stack.patch_register(register, request)
+            register = await stack.patch_register(register, request)
 
         return register

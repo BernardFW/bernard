@@ -122,7 +122,8 @@ class Request(object):
         self.register = register
         self.custom_content = {}
 
-        self.stack.transform(self)
+    async def transform(self):
+        await self.stack.transform(self)
 
     def get_trans_reg(self, name: Text, default: Any=None) -> Any:
         """

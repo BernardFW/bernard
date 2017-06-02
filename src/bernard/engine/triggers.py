@@ -55,7 +55,7 @@ class Text(BaseTrigger):
         super(Text, self).__init__(request)
         self.intent = intent
 
-    def rank(self) -> Optional[float]:
+    async def rank(self) -> Optional[float]:
         """
         If there is a text layer inside the request, try to find a matching
         text in the specified intent.
@@ -106,7 +106,7 @@ class Choice(BaseTrigger):
         except KeyError:
             pass
 
-    def _rank_text(self, choices):
+    async def _rank_text(self, choices):
         """
         Try to match the TextLayer with choice's intents.
         """
@@ -125,7 +125,7 @@ class Choice(BaseTrigger):
                 strings.append(params['text'])
 
             matcher = Matcher([Trigram(x) for x in strings])
-            score = matcher % Trigram(render(tl.text, self.request))
+            score = matcher % Trigram(await render(tl.text, self.request))
 
             if score > best:
                 self.chosen = params
@@ -136,7 +136,7 @@ class Choice(BaseTrigger):
             return best
 
     # noinspection PyUnresolvedReferences
-    def rank(self):
+    async def rank(self):
         """
         Try to find a choice in what the user did:
 
@@ -152,7 +152,7 @@ class Choice(BaseTrigger):
         if self.request.has_layer(l.QuickReply):
             return self._rank_qr(choices)
         elif self.request.has_layer(l.RawText):
-            return self._rank_text(choices)
+            return await self._rank_text(choices)
 
 
 class Action(BaseTrigger):

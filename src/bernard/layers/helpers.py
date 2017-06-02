@@ -37,7 +37,7 @@ class FbBaseButton(object):
     def __repr__(self):
         raise NotImplementedError
 
-    def serialize(self, request: 'Request') -> Dict:
+    async def serialize(self, request: 'Request') -> Dict:
         """
         Transforms the object into a JSON-serializable structure
         """
@@ -134,7 +134,7 @@ class FbUrlButton(FbBaseButton):
 
         return real_url
 
-    def serialize(self, request: 'Request') -> Dict:
+    async def serialize(self, request: 'Request') -> Dict:
         if self.sign_webview:
             user = request.user  # type: FacebookUser
             extra_qs = {
@@ -154,7 +154,7 @@ class FbUrlButton(FbBaseButton):
 
         out = {
             'type': 'web_url',
-            'title': render(self.title, request),
+            'title': await render(self.title, request),
             'url': self._make_url(self.url, extra_qs, request),
         }
 
@@ -191,10 +191,10 @@ class FbPostbackButton(FbBaseButton):
         super(FbPostbackButton, self).__init__(title)
         self.payload = payload
 
-    def serialize(self, request: 'Request'):
+    async def serialize(self, request: 'Request'):
         return {
             'type': 'postback',
-            'title': render(self.title, request),
+            'title': await render(self.title, request),
             'payload': ujson.dumps(self.payload),
         }
 
@@ -216,10 +216,10 @@ class FbCallButton(FbBaseButton):
         super(FbCallButton, self).__init__(title)
         self.phone_number = phone_number
 
-    def serialize(self, request: 'Request'):
+    async def serialize(self, request: 'Request'):
         return {
             'type': 'phone_number',
-            'title': render(self.title, request),
+            'title': await render(self.title, request),
             'payload': self.phone_number,
         }
 
@@ -254,7 +254,7 @@ class FbCardAction(FbUrlButton):
     def __repr__(self):
         return 'CardAction({})'.format(repr(self.url))
 
-    def serialize(self, request: 'Request'):
+    async def serialize(self, request: 'Request'):
         out = super(FbCardAction, self).serialize(request)
         del out['title']
         return out
@@ -291,20 +291,20 @@ class FbCard(object):
         if self.image:
             self.image = await platform.ensure_usable_media(self.image)
 
-    def serialize(self, request: 'Request'):
+    async def serialize(self, request: 'Request'):
         out = {
-            'title': render(self.title, request)
+            'title': await render(self.title, request)
         }
 
         if self.subtitle:
-            out['subtitle'] = render(self.subtitle, request)
+            out['subtitle'] = await render(self.subtitle, request)
 
         if self.image:
             assert isinstance(self.image, UrlMedia)
             out['image_url'] = self.image.url
 
         if self.buttons:
-            out['buttons'] = [b.serialize(request) for b in self.buttons]
+            out['buttons'] = [await b.serialize(request) for b in self.buttons]
 
         if self.default_action:
             out['default_action'] = \

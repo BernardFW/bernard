@@ -196,7 +196,7 @@ class FSM(object):
 
         return state
 
-    def _build_state_register(self,
+    async def _build_state_register(self,
                               state: BaseState,
                               request: Request,
                               responder: Responder) -> Dict:
@@ -210,7 +210,8 @@ class FSM(object):
 
         return {
             Register.STATE: state.name(),
-            Register.TRANSITION: responder.make_transition_register(request),
+            Register.TRANSITION:
+                await responder.make_transition_register(request),
         }
 
     async def _handle_message(self,
@@ -227,6 +228,7 @@ class FSM(object):
 
         async with reg_manager as reg:
             request = Request(message, reg)
+            await request.transform()
 
             try:
                 state, trigger = \
@@ -259,7 +261,7 @@ class FSM(object):
                                  state.name())
             else:
                 reg.replacement = \
-                    self._build_state_register(state, request, responder)
+                    await self._build_state_register(state, request, responder)
                 return reg.replacement
 
     def handle_message(self,

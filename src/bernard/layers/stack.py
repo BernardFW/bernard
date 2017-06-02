@@ -75,12 +75,12 @@ class Stack(object):
 
         return out
 
-    def transform(self, request):
+    async def transform(self, request):
         out = {}
 
         for layer in self._layers:  # type: BaseLayer
             for become in layer.can_become():
-                b_layer = layer.become(become, request)
+                b_layer = await layer.become(become, request)
                 out[become] = out.get(become, []) + [b_layer]
 
         self._transformed = out
@@ -134,9 +134,9 @@ class Stack(object):
             s.__class__.__name__ for s in self._layers
         )
 
-    def patch_register(self, register: Dict, request: 'Request'):
+    async def patch_register(self, register: Dict, request: 'Request'):
         for layer in self._layers:  # type: BaseLayer
-            register = layer.patch_register(register, request)
+            register = await layer.patch_register(register, request)
         return register
 
     def match_exp(self, expression: Text):

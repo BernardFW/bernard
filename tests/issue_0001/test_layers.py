@@ -7,6 +7,7 @@ from bernard.storage.register import Register
 from bernard.engine.request import Request, Conversation, User, BaseMessage
 from bernard.conf.utils import patch_conf
 from bernard.i18n import intents
+from bernard.utils import run
 
 
 LOADER_CONFIG = {
@@ -65,16 +66,18 @@ class MockTextMessage(BaseMessage):
 # noinspection PyShadowingNames
 @pytest.fixture('module')
 def text_request(reg):
-    return Request(
+    req = Request(
         MockTextMessage(),
         reg,
     )
+    run(req.transform())
+    return req
 
 
 # noinspection PyShadowingNames
 def test_text_layer_patch(text_request):
     l = layers.Text('hello')
-    assert l.patch_register({}, text_request) == {}
+    assert run(l.patch_register({}, text_request)) == {}
 
 
 # noinspection PyShadowingNames
@@ -85,7 +88,7 @@ def test_quick_replies_player_patch(text_request):
         layers.QuickRepliesList.LocationOption(),
     ])
 
-    assert l.patch_register({}, text_request) == {
+    assert run(l.patch_register({}, text_request)) == {
         'choices': {
             'foo': {
                 'intent': None,
@@ -132,6 +135,7 @@ def test_transform_layers(reg):
             MockTextMessage(),
             reg,
         )
+        run(req.transform())
         stack = req.stack
 
         assert layers.RawText in stack._transformed

@@ -132,7 +132,7 @@ class StringToTranslate(object):
 
         return 't({})'.format(', '.join(parts))
 
-    def render(self, request=None):
+    async def render(self, request=None):
         """
         Render the translation for the specified request. If no request is
         specified, do as good as possible.
@@ -141,10 +141,10 @@ class StringToTranslate(object):
                         so far.
         """
 
-        return self.LINE_SEPARATOR.join(self.render_list(request))
+        return self.LINE_SEPARATOR.join(await self.render_list(request))
 
     # noinspection PyUnusedLocal
-    def render_list(self, request=None) -> List[Text]:
+    async def render_list(self, request=None) -> List[Text]:
         """
         Render the translation as a list if there is multiple strings for this
         single key.
@@ -263,7 +263,7 @@ def unserialize(wd: WordDictionary, text: Dict):
         raise ValueError('Not enough information to unserialize')
 
 
-def render(text: TransText, request: 'Request'):
+async def render(text: TransText, request: 'Request'):
     """
     Render either a normal string either a string to translate into an actual
     string for the specified request.
@@ -272,4 +272,4 @@ def render(text: TransText, request: 'Request'):
     if isinstance(text, str):
         return text
     elif isinstance(text, StringToTranslate):
-        return text.render(request)
+        return await text.render(request)
