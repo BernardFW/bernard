@@ -152,7 +152,12 @@ class StringToTranslate(object):
         :param request: Bot request.
         """
 
-        f = I18nFormatter(settings.I18N_DEFAULT_LANG)
+        if request:
+            tz = await request.user.get_timezone()
+        else:
+            tz = None
+
+        f = I18nFormatter(settings.I18N_DEFAULT_LANG, tz)
         return [self.wd.get(self.key, self.count, f, **self.params)]
 
 

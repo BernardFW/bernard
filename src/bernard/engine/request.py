@@ -1,5 +1,6 @@
 # coding: utf-8
-from typing import Text, Any, List, Type
+from typing import Text, Any, List, Type, Optional
+from datetime import tzinfo
 from enum import Enum
 from bernard.storage.register import Register
 from bernard.layers import BaseLayer, Stack
@@ -54,6 +55,12 @@ class User(object):
     async def get_full_name(self) -> Text:
         """
         Computes an administrative full name (like "Name: Rémy Sanchez")
+        """
+        raise NotImplementedError
+
+    async def get_timezone(self) -> Optional[tzinfo]:
+        """
+        Return the current time zone of the user
         """
         raise NotImplementedError
 

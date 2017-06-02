@@ -15,6 +15,9 @@ class TestUser(User):
     Mock user object
     """
 
+    async def get_timezone(self):
+        return None
+
 
 class TestConversation(Conversation):
     """

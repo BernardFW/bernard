@@ -4,6 +4,8 @@ import ujson
 import logging
 from textwrap import wrap
 from typing import Text, Coroutine, List, Any, Dict, Optional
+from dateutil import tz
+from datetime import tzinfo
 from bernard.engine.responder import UnacceptableStack, Responder
 from bernard.engine.request import Request, BaseMessage, User, Conversation
 from bernard.i18n.translator import render
@@ -82,6 +84,18 @@ class FacebookUser(User):
             return User.Gender(u.get('gender'))
         except ValueError:
             return User.Gender.unknown
+
+    async def get_timezone(self) -> Optional[tzinfo]:
+        """
+        We can't exactly know the time zone of the user from what Facebook
+        gives (fucking morons) but we can still give something that'll work
+        until next DST.
+        """
+
+        u = await self._get_user()
+        diff = float(u.get('timezone', 0)) * 3600.0
+
+        return tz.tzoffset('ITC', diff)
 
 
 class FacebookConversation(Conversation):
