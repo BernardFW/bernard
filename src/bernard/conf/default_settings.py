@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import sys
 
 # Are we in debug mode?
 # So far it changes nothing, but hey who knows.
@@ -20,6 +21,10 @@ I18N_INTENTS_LOADERS = []
 
 # Default lang
 I18N_DEFAULT_LANG = 'en'
+
+# Enable automatic reload of translation/intents files
+I18N_LIVE_RELOAD = (DEBUG and sys.platform in {'linux', 'linux2'}) or \
+                   os.getenv('I18N_LIVE_RELOAD') == 'yes'
 
 # How long should a register lock last? Registers are locked when starting to
 # answer a message and freed when the response is sent. One minute sounds

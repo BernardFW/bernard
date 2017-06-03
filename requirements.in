@@ -10,6 +10,7 @@ raven-aiohttp
 babel
 python-dateutil
 pytz
+aionotify
 
 # For dev
 pytest

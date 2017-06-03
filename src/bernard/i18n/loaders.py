@@ -1,10 +1,90 @@
 # coding: utf-8
 import csv
+import aionotify
+import asyncio
+import logging
+import os.path
+from bernard.conf import settings
 from typing import Callable, Dict, Text, List
+
+
+logger = logging.getLogger('bernard.i18n.loaders')
 
 
 TransDict = Dict[Text, Text]
 IntentDict = Dict[Text, List[Text]]
+
+
+class LiveFileLoaderMixin(object):
+    """
+    A mixin to help detecting live changes in translations and update them
+    directly when saved.
+    """
+
+    THING = 'file'
+
+    def __init__(self, *args, **kwargs):
+        # noinspection PyArgumentList
+        super(LiveFileLoaderMixin, self).__init__(*args, **kwargs)
+        self._watcher = None
+        self._file_path = None
+        self._running = False
+
+    async def _load(self):
+        """
+        In this method you load the data from your file. You have to implement
+        it. You can do whatever you want with it.
+        """
+
+        raise NotImplementedError
+
+    async def _watch(self):
+        """
+        Start the watching loop.
+        """
+
+        file_name = os.path.basename(self._file_path)
+        logger.info(
+            'Watching %s "%s"',
+            self.THING,
+            self._file_path,
+        )
+
+        while self._running:
+            evt = await self._watcher.get_event()
+
+            if evt.name == file_name:
+                await self._load()
+                logger.info(
+                    'Reloading changed %s from "%s"',
+                    self.THING,
+                    self._file_path
+                )
+
+    async def start(self, file_path):
+        """
+        Setup the watching utilities, start the loop and load data a first
+        time.
+        """
+
+        self._file_path = os.path.realpath(file_path)
+
+        if settings.I18N_LIVE_RELOAD:
+            loop = asyncio.get_event_loop()
+
+            self._running = True
+            self._watcher = aionotify.Watcher()
+            self._watcher.watch(
+                path=os.path.dirname(self._file_path),
+                flags=aionotify.Flags.MOVED_TO | aionotify.Flags.MODIFY,
+            )
+            await self._watcher.setup(loop)
+            await self._load()
+
+            loop.create_task(self._watch())
+        else:
+            await self._load()
+
 
 
 class BaseTranslationLoader(object):
@@ -46,22 +126,29 @@ class BaseTranslationLoader(object):
         raise NotImplementedError
 
 
-class CsvTranslationLoader(BaseTranslationLoader):
+class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
     """
     Loads data from a CSV file
     """
 
-    async def load(self, file_path: Text):
+    THING = 'CSV translation'
+
+    async def _load(self):
         """
         Load data from a Excel-formatted CSV file.
-
-        :param file_path: path to the file to read 
         """
 
-        with open(file_path, newline='', encoding='utf-8') as f:
+        with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
             data = {k: v for k, v in reader}
         self._update(data)
+
+    async def load(self, file_path):
+        """
+        Start the loading/watching process
+        """
+
+        await self.start(file_path)
 
 
 class BaseIntentsLoader(object):
@@ -103,19 +190,19 @@ class BaseIntentsLoader(object):
         raise NotImplementedError
 
 
-class CsvIntentsLoader(BaseIntentsLoader):
+class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
     """
     Load intents from a CSV
     """
 
-    async def load(self, file_path: Text):
+    THING = 'CSV intents'
+
+    async def _load(self):
         """
         Load data from a Excel-formatted CSV file.
-
-        :param file_path: path to the file to read 
         """
 
-        with open(file_path, newline='', encoding='utf-8') as f:
+        with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
             data = {}
 
@@ -123,3 +210,10 @@ class CsvIntentsLoader(BaseIntentsLoader):
                 data[k] = data.get(k, []) + [v]
 
         self._update(data)
+
+    async def load(self, file_path):
+        """
+        Start the loading/watching process
+        """
+
+        await self.start(file_path)

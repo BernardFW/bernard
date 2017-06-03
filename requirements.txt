@@ -5,6 +5,7 @@
 #    pip-compile --output-file requirements.txt requirements.in
 #
 aiohttp==2.0.7
+aionotify==0.2.0
 aioredis==0.3.1
 async-timeout==1.2.1      # via aiohttp
 babel==2.4.0
