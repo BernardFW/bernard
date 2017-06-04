@@ -6,6 +6,16 @@ import sys
 # So far it changes nothing, but hey who knows.
 DEBUG = os.getenv('DEBUG') == 'yes'
 
+# Enable live reloading of the code
+CODE_LIVE_RELOAD = (DEBUG and sys.platform in {'linux', 'linux2'}) or \
+                   os.getenv('CODE_LIVE_RELOAD') == 'yes'
+
+# How long to wait before starting the reload
+CODE_RELOAD_DEBOUNCE = 1.0
+
+# Live reload exit code
+CODE_RELOAD_EXIT = 42
+
 # Bind to this host/port by default
 SERVER_BIND = {
     'host': '::1',

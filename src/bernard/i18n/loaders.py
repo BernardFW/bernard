@@ -86,7 +86,6 @@ class LiveFileLoaderMixin(object):
             await self._load()
 
 
-
 class BaseTranslationLoader(object):
     """
     Base skeleton for a translations loader.

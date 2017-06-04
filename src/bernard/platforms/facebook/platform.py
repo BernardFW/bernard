@@ -1,5 +1,6 @@
 # coding: utf-8
 import aiohttp
+import asyncio
 import ujson
 import logging
 from textwrap import wrap
@@ -240,6 +241,14 @@ class Facebook(Platform):
         outgoing connexions to FB alive.
         """
         self.session = aiohttp.ClientSession()
+        asyncio.get_event_loop().create_task(self._deferred_init())
+
+    async def _deferred_init(self):
+        """
+        Run those things in a sepearate tasks as they are not required for the
+        bot to work and they take a lot of time to run.
+        """
+
         await self._set_get_started()
         await self._set_greeting_text()
         await self._set_persistent_menu()
