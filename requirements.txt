@@ -11,17 +11,24 @@ async-timeout==1.2.1      # via aiohttp
 babel==2.4.0
 chardet==3.0.3            # via aiohttp
 contextlib2==0.5.5        # via raven
+google-api-python-client==1.6.2
 hiredis==0.2.0            # via aioredis
+httplib2==0.10.3          # via google-api-python-client, oauth2client
 multidict==2.1.5          # via aiohttp, yarl
+oauth2client==4.1.0       # via google-api-python-client
 py==1.4.33                # via pytest
+pyasn1-modules==0.0.9     # via oauth2client
+pyasn1==0.2.3             # via oauth2client, pyasn1-modules, rsa
 pyjwt==1.5.0
 pytest==3.1.0
 python-dateutil==2.6.0
 pytz==2017.2
 raven-aiohttp==0.5.0
 raven==6.1.0
-six==1.10.0               # via python-dateutil
+rsa==3.4.2                # via oauth2client
+six==1.10.0               # via google-api-python-client, oauth2client, python-dateutil
 ujson==1.35
 unidecode==0.4.20
+uritemplate==3.0.0        # via google-api-python-client
 uvloop==0.8.0
 yarl==0.10.2              # via aiohttp
