@@ -20,9 +20,9 @@ class SheetDownloader(object):
     """
     Download Google sheets into CSV files.
 
-    Follow the tutorial here: 
+    Follow the tutorial here:
     https://developers.google.com/sheets/api/quickstart/python
-    
+
     You must take the JSON credential file's content and put it in the
     settings under GOOGLE_SHEET_SYNC['credentials'].
 
@@ -53,10 +53,10 @@ class SheetDownloader(object):
     def _get_credentials(self):
         """
         Gets valid user credentials from storage.
-    
+
         If nothing has been stored, or if the stored credentials are invalid,
         the OAuth2 flow is completed to obtain the new credentials.
-    
+
         Returns:
             Credentials, the obtained credential.
         """
@@ -102,7 +102,7 @@ class SheetDownloader(object):
         values = result.get('values', [])
 
         with open(file_path, newline='', encoding='utf-8', mode='w') as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, lineterminator='\n')
 
             for row in values:
                 writer.writerow(row)
