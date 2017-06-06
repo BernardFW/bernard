@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
 import argparse
-from bernard.cli import main as main_run
-from bernard.misc.sheet_sync import main as main_sheet
 
 
 def make_parser():
@@ -60,8 +58,10 @@ def main():
         exit(1)
 
     if args.action == 'sheet':
+        from bernard.misc.sheet_sync import main as main_sheet
         main_sheet(args)
     elif args.action == 'run':
+        from bernard.cli import main as main_run
         main_run()
 
 
