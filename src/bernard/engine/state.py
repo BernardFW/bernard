@@ -1,4 +1,6 @@
 # coding: utf-8
+from typing import Optional
+from bernard.engine.triggers import BaseTrigger
 from bernard.layers import BaseLayer, Text
 from .responder import Responder
 from .request import Request
@@ -15,9 +17,13 @@ class BaseState(object):
     `DEFAULT_STATE` in the configuration.
     """
 
-    def __init__(self, request: Request, responder: Responder):
+    def __init__(self,
+                 request: Request,
+                 responder: Responder,
+                 trigger: Optional[BaseTrigger]=None):
         self.request = request
         self.responder = responder
+        self.trigger = trigger
 
     @classmethod
     def name(cls):

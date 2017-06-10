@@ -159,7 +159,7 @@ class FSM(object):
         else:
             logger.debug('Next state: %s', state_class.name())
 
-        state = state_class(request, responder)
+        state = state_class(request, responder, trigger)
         return state, trigger
 
     async def _run_state(self, responder, state, trigger, request) \
