@@ -10,8 +10,7 @@ from typing import Text, Iterable, Tuple, TypeVar, Optional, List
 from unidecode import unidecode
 
 
-RE_WHITESPACES = re.compile(r'\s+')
-RE_PUNCTUATION = re.compile(r' *([.,;?!\'"«»\-_]) *')
+RE_WHITESPACES = re.compile(r'[\W.,;?!\'"«»\-_\s]+')
 
 T = TypeVar('T')
 
@@ -19,7 +18,7 @@ T = TypeVar('T')
 def normalize(string: Text) -> Text:
     """
     Normalizes a string to encompass various things humans tend to get wrong:
-    
+
     - Put everything lowercase
     - Drop accents
     - Transform all whitespaces sequences into a single space
@@ -29,9 +28,12 @@ def normalize(string: Text) -> Text:
     string = string.lower()
     string = unidecode(string)
     string = RE_WHITESPACES.sub(' ', string).strip()
-    string = RE_PUNCTUATION.sub('\\1', string)
 
     return string
+
+
+def make_words(string: Text) -> List[Text]:
+    return string.split(' ')
 
 
 def make_trigrams(i: Iterable[T]) \
@@ -47,7 +49,7 @@ def make_trigrams(i: Iterable[T]) \
     def nxt():
         q.append(x)
         q.popleft()
-        return tuple(q)
+        return tuple(c if c is not None else ' ' for c in q)
 
     for x in i:
         yield nxt()
@@ -66,7 +68,11 @@ class Trigram(object):
     def __init__(self, string):
         self._string = string
         self._norm = normalize(string)
-        self._trigrams = set(make_trigrams(self._norm))
+        self._words = make_words(self._norm)
+        self._trigrams = set(t for w in self._words for t in make_trigrams(w))
+
+    def __repr__(self):
+        return f'Trigram({repr(self._norm)})'
 
     def similarity(self, other: 'Trigram') -> float:
         """

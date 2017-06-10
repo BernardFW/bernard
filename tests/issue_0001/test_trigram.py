@@ -1,45 +1,92 @@
 # coding: utf-8
-from bernard.trigram import normalize, make_trigrams, Trigram, Matcher
+import pytest
+from bernard.trigram import normalize, make_trigrams, Trigram, Matcher, \
+    make_words
 
 
 def test_normalize():
     assert normalize('TOTO') == 'toto'
     assert normalize('éléphant') == 'elephant'
-    assert normalize('salut, bonjour') == 'salut,bonjour'
     assert normalize('     salut    bonjour    ') == 'salut bonjour'
-    assert normalize('  SALUT,  ÉLÉPHANT   ') == 'salut,elephant'
+    assert normalize('  SALUT,  ÉLÉPHANT   ') == 'salut elephant'
+    assert normalize('aimes-tu les saucisses ?') == 'aimes tu les saucisses'
+
+
+def test_make_words():
+    assert make_words('aimes tu les saucisses') == \
+           ['aimes', 'tu', 'les', 'saucisses']
 
 
 def test_make_trigrams():
     assert list(make_trigrams('bonjour')) == [
-        (None, None, 'b'),
-        (None, 'b', 'o'),
+        (' ', ' ', 'b'),
+        (' ', 'b', 'o'),
         ('b', 'o', 'n'),
         ('o', 'n', 'j'),
         ('n', 'j', 'o'),
         ('j', 'o', 'u'),
         ('o', 'u', 'r'),
-        ('u', 'r', None),
+        ('u', 'r', ' '),
     ]
 
     assert list(make_trigrams('')) == []
 
     assert list(make_trigrams('a')) == [
-        (None, None, 'a'),
-        (None, 'a', None),
+        (' ', ' ', 'a'),
+        (' ', 'a', ' '),
     ]
 
     assert list(make_trigrams('ab')) == [
-        (None, None, 'a'),
-        (None, 'a', 'b'),
-        ('a', 'b', None),
+        (' ', ' ', 'a'),
+        (' ', 'a', 'b'),
+        ('a', 'b', ' '),
     ]
 
 
+
+def test_make_trigrams_like_psql():
+    text = 'aimes-tu les saucisses ?  aimes-tu les bananes ?'
+    trgms = set(tuple(x) for x in [
+        '  a',
+        '  b',
+        '  l',
+        '  s',
+        '  t',
+        ' ai',
+        ' ba',
+        ' le',
+        ' sa',
+        ' tu',
+        'aim',
+        'ana',
+        'ane',
+        'auc',
+        'ban',
+        'cis',
+        'es ',
+        'ime',
+        'iss',
+        'les',
+        'mes',
+        'nan',
+        'nes',
+        'sau',
+        'ses',
+        'sse',
+        'tu ',
+        'uci',
+    ])
+
+    t = Trigram(text)
+    assert t._trigrams == trgms
+
+
 def test_similarity():
-    # TODO make this test more comprehensive (in particular, this is not
-    # consistent with PostgreSQL)
     assert Trigram('bonjour') % Trigram('bnjour') == 0.5
+
+    sim = Trigram('Aimes-tu les saucisses ?') % \
+          Trigram('Aimes-tu les bananes ?')
+    assert sim == pytest.approx(0.428571, 0.00001)
 
 
 def test_matcher():
