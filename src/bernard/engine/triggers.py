@@ -1,10 +1,12 @@
 # coding: utf-8
-from typing import Optional, Text as TextT, Callable, Type
+import asyncio
+from typing import Optional, Text as TextT, Callable, Type, List, Any
 from bernard.i18n.intents import Intent
 from bernard.i18n import intents, render
 from bernard.trigram import Matcher, Trigram
 from bernard.engine.request import Request
 from bernard import layers as l
+from bernard.utils import run_or_return
 
 
 class BaseTrigger(object):
@@ -20,7 +22,7 @@ class BaseTrigger(object):
 
     def rank(self) -> Optional[float]:
         """
-        Given the current request, ranks on a scale from 0 to 1 how likely it 
+        Given the current request, ranks on a scale from 0 to 1 how likely it
         is that this trigger matches it.
         """
         raise NotImplementedError
@@ -32,6 +34,87 @@ class BaseTrigger(object):
         it.
         """
         pass
+
+
+class SharedTrigger(BaseTrigger):
+    """
+    Sometimes, you have several instances of a trigger calling a web service.
+    As you might not want to make useless calls (which could even cause
+    consistency issues), this helper class helps to create triggers that will
+    share the same call to the remote API.
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        """
+        Computes a unique name for this class
+        """
+
+        return f'{cls.__module__}.{cls.__qualname__}'
+
+    @property
+    def content_key(self) -> str:
+        """
+        That's the key used to store the content in the request
+        """
+
+        return f'{self.name()}::content'
+
+    @property
+    def lock_key(self) -> str:
+        """
+        That's the key to store the lock of this trigger
+        """
+
+        return f'{self.name()}::lock'
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        """
+        Return and generate if required the lock for this request.
+        """
+
+        if self.lock_key not in self.request.custom_content:
+            self.request.custom_content[self.lock_key] = asyncio.Lock()
+
+        return self.request.custom_content[self.lock_key]
+
+    async def call_api(self) -> Any:
+        """
+        You need to implement here the call to your API. The value it returns
+        will be passed to `compute_rank()` later on.
+        """
+
+        raise NotImplementedError
+
+    async def compute_rank(self, value: Any) -> float:
+        """
+        Compute the rank from the cached value from the API call.
+        """
+
+        raise NotImplementedError
+
+    async def get_value(self):
+        """
+        Get the value from the API. Make sure to use a lock in order not to
+        fetch the value twice at the same time.
+        """
+
+        cc = self.request.custom_content
+
+        async with self.lock:
+            if self.content_key not in cc:
+                cc[self.content_key] = await self.call_api()
+
+        return cc[self.content_key]
+
+    async def rank(self):
+        """
+        Compute the rank based on the (cached) value and on the overriden
+        rank computation function.
+        """
+
+        return await self.compute_rank(await self.get_value())
 
 
 class Anything(BaseTrigger):
@@ -227,3 +310,37 @@ class CloseWebview(BaseSlugTrigger):
     """
 
     LAYER_TYPE = l.CloseWebview
+
+
+class Worst(BaseTrigger):
+    """
+    Run several triggers and only keep the worst one. Queries are not made
+    in parallel, and execution stops when 0.0 is reached.
+
+    This allows to put simple conditions first before doing more expensive
+    tests.
+    """
+
+    def __init__(self,
+                 request: Request,
+                 triggers: List[Callable[[Request], 'BaseTrigger']]):
+        super(Worst, self).__init__(request)
+        self.triggers = triggers
+
+    async def rank(self):
+        m = 1.0
+
+        for t in self.triggers:
+            r = await run_or_return(t(self.request).rank())
+
+            if not r:
+                return 0.0
+            elif r < m:
+                m = r
+
+        return m
+
+        return min(x or 0.0 for x in await asyncio.gather(*(
+            run_or_return(x(self.request).rank())
+            for x in self.triggers
+        )))
