@@ -63,7 +63,7 @@ async def receive_events(request: Request):
     """
     Here Facebook might send us a bunch of events/messages that we need to
     handle.
-    
+
     The JSON's body is checked using the signature provided in the headers then
     different message objects are created and forwarded to the FSM.
     """
@@ -172,7 +172,7 @@ async def unload_js(request: Request):
 
     You need to sign the webview using the `sign_webview` parameter of an
     UrlButton.
-    
+
     If you want to close/change your page without triggering the page close
     event, you can call in JS `bernard.unloadNotifier.inhibit()`.
     """
@@ -182,14 +182,37 @@ async def unload_js(request: Request):
 
     script = """
         (function () {
+            var STORAGE_KEY = '_bnd_user';
+            
             function UnloadNotifier() {
                 var self = this,
                     intervalId,
                     ws;
+                    
+                function getSearch() {
+                    if (window.location.search.indexOf('_bnd_user=') >= 0) {
+                        sessionStorage.setItem(
+                            STORAGE_KEY, 
+                            window.location.search
+                        );
+                        
+                        return window.location.search;
+                    }
+                    
+                    var q = sessionStorage.getItem(STORAGE_KEY);
+                    
+                    if (q) {
+                        return q;
+                    }
+                }
 
                 function connect() {
-                    ws = new WebSocket(WS_URL + window.location.search);
-                    ws.onopen = onConnect;
+                    search = getSearch();
+                    
+                    if (search) {
+                        ws = new WebSocket(WS_URL + search);
+                        ws.onopen = onConnect;
+                    }
                 }
 
                 function onConnect() {
@@ -242,9 +265,9 @@ async def unload_js(request: Request):
 async def unload_sock(request: Request):
     """
     WebSocket view to detect when Messenger closes the WebView.
-    
+
     There is a dual mechanism:
-    
+
         - If "unload" is received over the socket, then close instantly
         - If no heartbeat is received for some time, them close
 
