@@ -14,6 +14,7 @@ from bernard.layers import Stack, BaseLayer
 from bernard import layers as lyr
 from bernard.engine.platform import Platform, PlatformOperationError
 from bernard.conf import settings
+from bernard.layers.definitions import BaseMediaLayer
 from bernard.media.base import BaseMedia, UrlMedia
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
@@ -229,6 +230,7 @@ class Facebook(Platform):
     PATTERNS = {
         'text': '(Text|RawText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
+        'attachment': '(Image|Audio|Video|File)',
     }
 
     def __init__(self):
@@ -258,8 +260,8 @@ class Facebook(Platform):
         """
         The messenger profile API handles all meta-information about the bot,
         like the menu. This allows to submit data to this API endpoint.
-        
-        :param page: page dict from the configuration 
+
+        :param page: page dict from the configuration
         :param content: content to be sent to Facebook (as dict)
         """
 
@@ -413,7 +415,7 @@ class Facebook(Platform):
     async def _send_text(self, request: Request, stack: Stack):
         """
         Send text layers to the user. Each layer will go in its own bubble.
-        
+
         Also, Facebook limits messages to 320 chars, so if any message is
         longer than that it will be split into as many messages as needed to
         be accepted by Facebook.
@@ -472,6 +474,29 @@ class Facebook(Platform):
                 'type': 'template',
                 'payload': payload
             }
+        }
+
+        await self._send(request, msg)
+
+    async def _send_attachment(self, request: Request, stack: Stack):
+        types = {
+            lyr.Image: 'image',
+            lyr.Audio: 'audio',
+            lyr.File: 'file',
+            lyr.Video: 'video',
+        }
+
+        l: BaseMediaLayer = stack.layers[0]
+        media = await self.ensure_usable_media(l.media)
+
+        # noinspection PyTypeChecker
+        msg = {
+            'attachment': {
+                'type': types[l.__class__],
+                'payload': {
+                    'url': media.url,
+                }
+            },
         }
 
         await self._send(request, msg)
