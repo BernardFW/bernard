@@ -2,8 +2,7 @@ Get Started
 ===========
 
 This part of the doc will guide you through understanding the basics of how
-Bernard works. There is of course more to add but this should cover the
-fundamentals.
+Bernard works.
 
 A good starting point is the [demobot](../demobot). In this documentation,
 we'll go through the code of the bot and then we'll dig into the more
@@ -33,7 +32,7 @@ Other files are present for technical reasons:
 - [`__init__.py`](../demobot/__init__.py) makes the folder into a Python
   module, it's ok if it's empty.
 - Language files. Those are subject to serious changes in the future, as
-  currently the translation system is fare from being feature-complete.
+  currently the translation system is far from being feature-complete.
     - [`i18n/fr/intents.csv`](../demobot/i18n/fr/intents.csv) are the intents,
       or rather the list of sentences the user might say to trigger a specific
       intent. More on that later.
