@@ -44,7 +44,7 @@ Other files are present for technical reasons:
 
 This bot can be specified with the following diagram:
 
-![demobot flow](./fsm-hello.svg)
+![demobot flow](https://raw.githubusercontent.com/BernardFW/bernard/develop/doc/fsm-hello.svg)
 
 Read it this way:
 
