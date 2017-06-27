@@ -348,8 +348,57 @@ $ cd ~/dev/mybot
 $ BERNARD_SETTINGS_FILE=./settings.py bernard run
 ```
 
+If all goes well, the bot should start right now. However you still need to
+connect it to Facebook in order to use it.
+
+#### Connecting to Facebook
+
+In order to connect your bot to Facebook, you'll need to provide a webhook
+URL. It's an URL that Facebook will call every time that you receive a message.
+
+##### Creating a tunnel
+
+The problem when you develop on your local machine is that it's pretty hard
+to get a public URL. The easiest solution is to use a service like
+[ngrok](https://ngrok.com/).
+
+If you chose to use it:
+
+```console
+$ ngrok http 8666
+```
+
+##### Configuring Facebook
+
+You need to go back to your app dashboard and to configure the webhook. To do
+so, go to the "Messenger" section of your app, down to the "Webhook" and then
+give an address like:
+
+```
+https://domain.of.your.bot/hooks/facebook
+```
+
+With `domain.of.your.bot` being the domain of your bot, by example the one that
+was assigned to you by `ngrok`.
+
+It will also ask you for a token. Give the value that you set to
+`FB_SECURITY_TOKEN`.
+
+And it will ask you to choose the events you want. Choose `messages` and
+`messaging_postbacks`.
+
+Once you validate, it should send a test request to your bot (you can see it
+in the bot console) and then tell you that all is fine.
+
+After that, you just need to subscribe your app to your page to receive events.
+
+#### Talking to the bot
+
+Now you're finally ready to talk to the bot. In order to do that you'll need
+to go to `https://m.me/YOUR_PAGE_ID`.
+
 ## What next
 
 So far, not much. You can read the
-[unfinished old version of the get started](./get_started_old.md). It explores more concepts (although
-unfinished).
+[unfinished old version of the get started](./get_started_old.md). It explores
+more concepts (although unfinished).
