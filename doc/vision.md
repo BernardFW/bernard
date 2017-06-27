@@ -46,14 +46,14 @@ instantiate the story. However, transitions still need mostly what stories have 
 user, and so on).
 
 The idea is to make them a sub-class of another story with a conventional name. This sub-class will
-be instantiated every time there is 
+be instantiated every time there is
 
 ```python
 transitions = [
     trans(origin=None, dest=HelloStory, factory=TextTransition.builder(intent='foo')),
     trans(origin=HelloStory, dest=YesStory, factory=ChoiceTransition.builder(when='yes')),
     trans(origin=HelloStory, dest=NoStory, factory=ChoiceTransition.builder(when='no')),
-    trans(origin=None, dest=InsultStory, factory=TextTransition.builder(intent='insult'), 
+    trans(origin=None, dest=InsultStory, factory=TextTransition.builder(intent='insult'),
           weight=0.6, desc="When the user becomes insulting"),
     trans(origin=InsultStory, dest=FuckYouStory, factory=AnyTransition.builder()),
 ]
@@ -102,16 +102,16 @@ class TextTransition(BaseTransition):
 
         if msg.has_layer(layers.Text):
             return self._compare_text(msg.get_layer(layers.Text).text)
-            
+
 class ChoiceTransition(BaseTransition):
     def __init__(self, request, when=None):
         super(ChoiceTransition, self).__init__(request)
         self.when = when
         self.choice = None
-        
+
     def _rank_choice(self, choice):
         return 1  # todo implement ranking logic
-        
+
     def rank(self):
         choices = self.request.get_trans_register('choices', [])
 
@@ -300,8 +300,8 @@ could get something like that:
 
 | Key                           | Male              | Female             | Unknown             |
 | ----------------------------- | ----------------- | ------------------ | ------------------- |
-| SUBSTITUTE_ME_PLURALIZE\[0,1] | {name} le grand   | {name} la grande   | {name} en grandeur  | 
-| SUBSTITUTE_ME_PLURALIZE\[2,]  | {name} les grands | {name} les grandes | {name} en grandeurs | 
+| SUBSTITUTE_ME_PLURALIZE\[0,1] | {name} le grand   | {name} la grande   | {name} en grandeur  |
+| SUBSTITUTE_ME_PLURALIZE\[2,]  | {name} les grands | {name} les grandes | {name} en grandeurs |
 | HELLO                         |                   |                    | Bonjour             |
 | RANDOM+1                      |                   |                    | Rand 1, Bubble 1    |
 | RANDOM+1                      |                   |                    | Rand 1, Bubble 2    |
@@ -320,7 +320,7 @@ Python-side, we'll get an API that does two things:
 
 - `.render()` which always produces a single merged string of everything (with `\n` between)
 - `.render_list()` which produces a list of strings (even if there is only one) so that things like
-  `layers.Text` can split that into several bubbles. 
+  `layers.Text` can split that into several bubbles.
 
 The randomization system will work as follow:
 
@@ -398,7 +398,7 @@ We'll use the Python 3 logging tools, as Sanic does. The configuration must be i
 
 ## Single/Multi-user conversations
 
-Although the main focus is 1:1 conversations, let's not set aside the possibility of group 
+Although the main focus is 1:1 conversations, let's not set aside the possibility of group
 conversations too fast.
 
 For each message, platform handlers will construct:
@@ -419,20 +419,20 @@ The framework will maintain 2 contexts
   related to a single user.
 - One for the user. It can store user-specific preferences that will also be available in other
   conversations involving this user.
-  
+
 Now, how to access that in practice?
 
 ```python
 async def handle(self):
     # Access user ID
     print(self.user.id)
-    
+
     # Access conversation ID
     print(self.conversation.id)
-    
+
     # Get user's friendly name
     print(await self.user.get_friendly_name())
-    
+
     # Access conversation's context
     print(await self.conversation.context.get('some_key'))
     print(await self.conversation.context.set('some_key', {'some_json': True}, timeout=20 * 60))
@@ -515,7 +515,7 @@ that will come back inside a special layer if the layer ever gets read.
 
 Each platform will have the freedom to implement a way to know if webviews get closed, and trigger
 the appropriate layer.
- 
+
 ## State redirection
 
 If a handler returns the class of another state, then the engine will immediately transition to this

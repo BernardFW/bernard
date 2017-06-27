@@ -6,13 +6,15 @@ from bernard.i18n import translate as t, intents
 
 class BaseTestState(BaseState):
     async def error(self) -> None:
+        """Triggered when there is an internal error"""
         self.send(lyr.Text(t.ERROR))
+
+    async def confused(self) -> None:
+        """Triggered when the bot does not understand what the user says"""
+        self.send(lyr.Text(t.CONFUSED))
 
     async def handle(self) -> None:
         raise NotImplementedError
-
-    async def confused(self) -> None:
-        self.send(lyr.Text(t.CONFUSED))
 
 
 class Hello(BaseTestState):
