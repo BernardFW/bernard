@@ -102,3 +102,9 @@ WEBVIEW_HEARTBEAT_PERIOD = 1.0
 
 # Sentry configuration
 SENTRY_DSN = os.getenv('SENTRY_DSN')
+
+# Google Analytics ID
+GOOGLE_ANALYTICS_ID = os.getenv('GOOGLE_ANALYTICS_ID')
+
+# Domain name under which to log all Google Analytics activity
+GOOGLE_ANALYTICS_DOMAIN = os.getenv('GOOGLE_ANALYTICS_DOMAIN')
