@@ -64,6 +64,12 @@ class User(object):
         """
         raise NotImplementedError
 
+    async def get_locale(self) -> Text:
+        """
+        Returns a locale-descripting string
+        """
+        raise NotImplementedError
+
 
 class BaseMessage(object):
     """

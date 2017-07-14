@@ -65,7 +65,11 @@ class GoogleAnalytics(object):
         return h.hexdigest()
 
     @run_ga
-    async def page_view(self, url: str, title: str, user_id: str) -> None:
+    async def page_view(self,
+                        url: str,
+                        title: str,
+                        user_id: str,
+                        user_lang: str='') -> None:
         """
         Log a page view.
 
@@ -77,6 +81,8 @@ class GoogleAnalytics(object):
 
         args = {
             'v': '1',
+            'ds': 'web',
+            'de': 'UTF-8',
             'tid': self.ga_id,
             'cid': self.hash_user_id(user_id),
 
@@ -85,6 +91,9 @@ class GoogleAnalytics(object):
             'dp': url,
             'dt': title,
         }
+
+        if user_lang:
+            args['ul'] = user_lang
 
         logger.debug('GA settings = %s', urlencode(args))
 

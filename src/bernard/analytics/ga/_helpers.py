@@ -19,9 +19,16 @@ def page_view(url):
         @wraps(func)
         async def wrapper(self: BaseState, *args, **kwargs):
             user_id = self.request.user.id
+
+            try:
+                user_lang = await self.request.user.get_locale()
+            except NotImplementedError:
+                user_lang = ''
+
             title = self.__class__.__name__
             ga = await GoogleAnalytics.instance()
-            await ga.page_view(url, title, user_id)
+            await ga.page_view(url, title, user_id, user_lang)
+
             return await func(self, *args, **kwargs)
         return wrapper
     return decorator

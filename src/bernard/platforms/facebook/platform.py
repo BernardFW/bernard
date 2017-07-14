@@ -99,6 +99,10 @@ class FacebookUser(User):
 
         return tz.tzoffset('ITC', diff)
 
+    async def get_locale(self) -> Text:
+        u = await self._get_user()
+        return u.get('locale', '')
+
 
 class FacebookConversation(Conversation):
     """
