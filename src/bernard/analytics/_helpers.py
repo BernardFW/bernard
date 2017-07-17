@@ -2,7 +2,7 @@
 from functools import wraps
 from bernard.engine.state import BaseState
 
-from ._ga import GoogleAnalytics
+from bernard.analytics.base import providers
 
 
 def page_view(url):
@@ -26,8 +26,10 @@ def page_view(url):
                 user_lang = ''
 
             title = self.__class__.__name__
-            ga = await GoogleAnalytics.instance()
-            await ga.page_view(url, title, user_id, user_lang)
+
+            # noinspection PyTypeChecker
+            async for p in providers():
+                await p.page_view(url, title, user_id, user_lang)
 
             return await func(self, *args, **kwargs)
         return wrapper

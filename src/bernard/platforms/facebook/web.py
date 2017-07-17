@@ -15,6 +15,7 @@ from aiohttp.web_ws import WebSocketResponse
 from bernard.platforms.facebook.platform import FacebookMessage
 from bernard.platforms import manager
 from bernard.conf import settings
+from bernard.analytics.base import providers as analytics_providers
 
 
 def sign_message(body: ByteString, secret: Text) -> Text:
@@ -346,3 +347,71 @@ async def unload_sock(request: Request):
         await fb.handle_event(msg)
 
     return ws
+
+
+async def analytics_collect(request: Request):
+    """
+    That's supposed to handle all analytics requests but so far it can only
+    handle the Facebook ones. Nonetheless, it's exposed with a non-FB URL for
+    future compatibility.
+    """
+
+    tk = request.query.get(settings.WEBVIEW_TOKEN_KEY)
+
+    if not tk:
+        return json_response({
+            'error': True,
+            'message': 'Missing "{}"'.format(settings.WEBVIEW_TOKEN_KEY),
+        }, status=400)
+
+    try:
+        tk = jwt.decode(tk, settings.WEBVIEW_SECRET_KEY)
+    except jwt.InvalidTokenError:
+        return json_response({
+            'error': True,
+            'message': 'Provided token is invalid'
+        }, status=400)
+
+    try:
+        user_id = tk['fb_psid']
+        assert isinstance(user_id, Text)
+        page_id = tk['fb_pid']
+        assert isinstance(page_id, Text)
+    except (KeyError, AssertionError):
+        return json_response({
+            'error': True,
+            'message': 'Provided payload is invalid'
+        }, status=400)
+
+    try:
+        data = await request.json()
+        path = data['path']
+        a_event = data['event']
+    except (ValueError, KeyError, TypeError):
+        return json_response({
+            'error': True,
+            'message': 'Invalid data'
+        }, status=400)
+
+    event = {
+        'sender': {
+            'id': user_id,
+        },
+        'recipient': {
+            'id': page_id,
+        },
+    }
+
+    fb = await manager.get_platform('facebook')
+    msg = FacebookMessage(event, fb, False)
+    user = msg.get_user()
+
+    user_id = user.id
+    user_lang = await user.get_locale()
+
+    # noinspection PyTypeChecker
+    async for p in analytics_providers():
+        if a_event == 'page_view':
+            await p.page_view(path, '', user_id, user_lang)
+
+    return Response()
