@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 import sys
+from urllib.parse import urlparse
 
 # Are we in debug mode?
 # So far it changes nothing, but hey who knows.
@@ -69,10 +70,22 @@ DEFAULT_STATE = 'bernard.engine.state.DefaultState'
 # }
 FACEBOOK = []
 
+redis_params = {}
+redis_url = os.getenv('REDIS_URL')
+
+if redis_url:
+    parsed_url = urlparse(redis_url)
+    path = parsed_url.path[1:].split('?', 2)[0]
+    redis_params = {
+        'host': parsed_url.hostname or 'localhost',
+        'port': int(parsed_url.port or 6379),
+        'db_id': int(path or 0),
+    }
+
 # By default, store the register in local redis
 REGISTER_STORE = {
     'class': 'bernard.storage.register.RedisRegisterStore',
-    'params': {},
+    'params': redis_params,
 }
 
 # Max internal jumps allowed. This is to avoid infinite loops in poorly
