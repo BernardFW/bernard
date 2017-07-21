@@ -12,6 +12,7 @@ from aiohttp.http_websocket import WSMsgType
 from aiohttp.web_request import Request
 from aiohttp.web_response import json_response, Response
 from aiohttp.web_ws import WebSocketResponse
+from bernard.engine.platform import PlatformOperationError
 from bernard.platforms.facebook.platform import FacebookMessage
 from bernard.platforms import manager
 from bernard.conf import settings
@@ -407,7 +408,12 @@ async def analytics_collect(request: Request):
     user = msg.get_user()
 
     user_id = user.id
-    user_lang = await user.get_locale()
+
+    try:
+        user_lang = await user.get_locale()
+        assert user_lang
+    except (PlatformOperationError, AssertionError):
+        user_lang = ''
 
     # noinspection PyTypeChecker
     async for p in analytics_providers():
