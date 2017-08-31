@@ -198,6 +198,9 @@ class FacebookMessage(BaseMessage):
                 self._event['close_webview']['slug'],
             ))
 
+        if 'optin' in self._event:
+            out.append(lyr.OptIn(self._event['optin']['ref']))
+
         return out
 
     def get_page_id(self) -> Text:

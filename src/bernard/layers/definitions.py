@@ -432,3 +432,20 @@ class CloseWebview(BaseLayer):
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.slug == other.slug)
+
+
+class OptIn(BaseLayer):
+    """
+    That kind of layers indicates that the bot now has a right to talk to the
+    specified user, even if the user did not start a conversation right now.
+    """
+
+    def __init__(self, ref=''):
+        self.ref = ref
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.ref == other.ref)
+
+    def _repr_arguments(self):
+        return [self.ref]
