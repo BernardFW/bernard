@@ -88,6 +88,15 @@ REGISTER_STORE = {
     'params': redis_params,
 }
 
+# Default time to live for the context
+CONTEXT_DEFAULT_TTL = 20 * 60
+
+# By default, store the context in local redis
+CONTEXT_STORE = {
+    'class': 'bernard.storage.context.RedisContextStore',
+    'params': redis_params,
+}
+
 # Max internal jumps allowed. This is to avoid infinite loops in poorly
 # configured transitions.
 MAX_INTERNAL_JUMPS = 10

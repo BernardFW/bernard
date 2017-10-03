@@ -1,5 +1,6 @@
 # coding: utf-8
-from typing import Optional
+from typing import Optional, Iterator
+from bernard.core.health_check import HealthCheckFail
 from bernard.engine.triggers import BaseTrigger
 from bernard.layers import BaseLayer, Text
 from .responder import Responder
@@ -36,6 +37,22 @@ class BaseState(object):
             cls.__module__,
             cls.__qualname__,
         )
+
+    @classmethod
+    async def health_check(cls) -> Iterator[HealthCheckFail]:
+        """
+        Perform checks of the state itself. So far:
+
+        - For each method of the class, check for the presence of a
+          health_check() method. If the method is present then call it. This is
+          used to allow the context decorator to make some checks on the
+          structure of the class.
+        """
+
+        for k, v in cls.__dict__.items():
+            if hasattr(v, 'health_check') and callable(v.health_check):
+                async for check in v.health_check(cls):
+                    yield check
 
     async def error(self) -> None:
         """

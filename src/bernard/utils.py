@@ -106,7 +106,7 @@ def make_ro(obj: Any, forgive_type=False):
     """
     Make a json-serializable type recursively read-only
 
-    :param obj: Any json-serializable type 
+    :param obj: Any json-serializable type
     :param forgive_type: If you can forgive a type to be unknown (instead of
                          raising an exception)
     """
