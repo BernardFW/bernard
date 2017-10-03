@@ -1,7 +1,8 @@
 # coding: utf-8
 from functools import wraps
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, Iterator
 from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
 from bernard.engine.state import BaseState
 from bernard.utils import import_class
 
@@ -120,8 +121,19 @@ class BaseContextStore(object):
         See `create_context_store()` for a full example.
         """
 
-        # TODO check fail exists
         def decorator(func):
+            async def health_check(cls) -> Iterator[HealthCheckFail]:
+                if not callable(getattr(cls, fail, None)):
+                    yield HealthCheckFail(
+                        '00001',
+                        f'State "{cls.__name__}" has no method "{fail}" to '
+                        f'fall back to if required attributes are missing '
+                        f'from the context.'
+                    )
+
+            if require:
+                func.health_check = health_check
+
             @wraps(func)
             async def wrapper(state: BaseState, **kwargs):
                 conv_id = state.request.conversation.id

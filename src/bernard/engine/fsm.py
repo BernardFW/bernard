@@ -4,6 +4,7 @@ import importlib
 import logging
 from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
 from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
 from bernard.i18n.translator import MissingTranslationError
 from bernard.utils import import_class
 from bernard.storage.register import BaseRegisterStore, Register
@@ -49,6 +50,20 @@ class FSM(object):
         self.register = self._make_register()
         self.transitions = self._make_transitions()
         self._allowed_states = set(self._make_allowed_states())
+
+    async def health_check(self) -> Iterator[HealthCheckFail]:
+        """
+        Perform the checks. So far:
+
+        - Make a list of the unique destination states from the transitions
+          list, then check the health of each of them.
+        """
+
+        states = set(t.dest for t in self.transitions)
+
+        for state in states:
+            async for check in state.health_check():
+                yield check
 
     async def async_init(self):
         """
