@@ -238,11 +238,17 @@ class Facebook(Platform):
         'text': '(Text|RawText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
         'attachment': '(Image|Audio|Video|File)',
+        'sleep': 'Sleep',
     }
 
     def __init__(self):
         super(Facebook, self).__init__()
         self.session = None
+
+    async def _send_sleep(self, request: Request, stack: Stack):
+        print('sleep')
+        time = stack.get_layer(lyr.Sleep).duration
+        await asyncio.sleep(time)
 
     async def async_init(self):
         """
