@@ -237,6 +237,7 @@ class Facebook(Platform):
     PATTERNS = {
         'text': '(Text|RawText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
+        'button_template': 'FbButtonTemplate',
         'attachment': '(Image|Audio|Video|File)',
         'sleep': 'Sleep',
     }
@@ -466,16 +467,29 @@ class Facebook(Platform):
         """
 
         gt = stack.get_layer(lyr.FbGenericTemplate)
+        payload = await gt.serialize(request)
 
-        # noinspection PyUnresolvedReferences
-        payload = {
-            'template_type': 'generic',
-            'elements': [await e.serialize(request) for e in gt.elements],
-            'sharable': gt.is_sharable(),
+        msg = {
+            'attachment': {
+                'type': 'template',
+                'payload': payload
+            }
         }
 
-        if gt.aspect_ratio:
-            payload['image_aspect_ratio'] = gt.aspect_ratio.value
+        await self._send(request, msg)
+
+    async def _send_button_template(self, request: Request, stack: Stack):
+        """
+               Generates and send a button template.
+        """
+
+        gt = stack.get_layer(lyr.FbButtonTemplate)
+
+        payload = {
+            'template_type': 'button',
+            'text': await render(gt.text, request),
+            'buttons': [await b.serialize(request) for b in gt.buttons],
+        }
 
         msg = {
             'attachment': {
