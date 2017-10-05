@@ -471,16 +471,7 @@ class Facebook(Platform):
         """
 
         gt = stack.get_layer(lyr.FbGenericTemplate)
-
-        # noinspection PyUnresolvedReferences
-        payload = {
-            'template_type': 'generic',
-            'elements': [await e.serialize(request) for e in gt.elements],
-            'sharable': gt.is_sharable(),
-        }
-
-        if gt.aspect_ratio:
-            payload['image_aspect_ratio'] = gt.aspect_ratio.value
+        payload = await gt.serialize(request)
 
         msg = {
             'attachment': {
