@@ -13,7 +13,7 @@ from aiohttp.web_request import Request
 from aiohttp.web_response import json_response, Response
 from aiohttp.web_ws import WebSocketResponse
 from bernard.engine.platform import PlatformOperationError
-from bernard.platforms.facebook.platform import FacebookMessage
+from bernard.platforms.facebook.platform import FacebookMessage, Facebook
 from bernard.platforms import manager
 from bernard.conf import settings
 from bernard.analytics.base import providers as analytics_providers
@@ -419,5 +419,55 @@ async def analytics_collect(request: Request):
     async for p in analytics_providers():
         if a_event == 'page_view':
             await p.page_view(path, '', user_id, user_lang)
+
+    return Response()
+
+
+async def postback(request: Request):
+    tk = request.query.get('token')
+
+    if not tk:
+        return json_response({
+            'error': True,
+            'message': 'Missing "{}"'.format('token'),
+        }, status=400)
+
+    try:
+        tk = jwt.decode(tk, settings.WEBVIEW_SECRET_KEY)
+    except jwt.InvalidTokenError:
+        return json_response({
+            'error': True,
+            'message': 'Provided token is invalid'
+        }, status=400)
+
+    try:
+        user_id = tk['fb_psid']
+        assert isinstance(user_id, Text)
+        page_id = tk['fb_pid']
+        assert isinstance(page_id, Text)
+    except (KeyError, AssertionError):
+        return json_response({
+            'error': True,
+            'message': 'Provided payload is invalid'
+        }, status=400)
+
+    payload = await request.read()
+
+    event = {
+        'sender': {
+            'id': user_id,
+        },
+        'recipient': {
+            'id': page_id,
+        },
+        'url_base': str(request.url),
+        'postback': {
+            'payload': payload,
+        },
+    }
+
+    fb: Facebook = await manager.get_platform('facebook')
+    msg = FacebookMessage(event, fb, False)
+    await fb.handle_event(msg)
 
     return Response()
