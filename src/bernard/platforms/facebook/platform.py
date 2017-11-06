@@ -1,10 +1,15 @@
 # coding: utf-8
+
 import aiohttp
 import asyncio
 import ujson
 import logging
+import jwt
 from textwrap import wrap
 from typing import Text, Coroutine, List, Any, Dict, Optional
+from urllib.parse import urljoin
+
+from bernard.utils import patch_qs
 from dateutil import tz
 from datetime import tzinfo
 from bernard.engine.responder import UnacceptableStack, Responder
@@ -31,10 +36,15 @@ class FacebookUser(User):
     ID.
     """
 
-    def __init__(self, fbid: Text, page_id: Text, facebook: 'Facebook'):
+    def __init__(self,
+                 fbid: Text,
+                 page_id: Text,
+                 facebook: 'Facebook',
+                 message: 'FacebookMessage'):
         self.fbid = fbid
         self.page_id = page_id
         self.facebook = facebook
+        self.message = message
         self._cache = None
         super(FacebookUser, self).__init__(self._fbid_to_id(fbid))
 
@@ -103,6 +113,26 @@ class FacebookUser(User):
         u = await self._get_user()
         return u.get('locale', '')
 
+    async def get_postback_url(self) -> Text:
+        content = {
+            'user_id': self.id,
+            'fb_psid': self.fbid,
+            'fb_pid': self.page_id,
+        }
+
+        token = jwt.encode(
+            content,
+            settings.WEBVIEW_SECRET_KEY,
+            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+        )
+
+        url = patch_qs(
+            urljoin(self.message.get_url_base(), '/postback/facebook'),
+            {'token': token}
+        )
+
+        return url
+
 
 class FacebookConversation(Conversation):
     """
@@ -146,6 +176,7 @@ class FacebookMessage(BaseMessage):
             self._event['sender']['id'],
             self.get_page_id(),
             self._facebook,
+            self,
         )
 
     def get_conversation(self) -> FacebookConversation:

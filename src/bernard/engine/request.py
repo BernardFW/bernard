@@ -70,6 +70,14 @@ class User(object):
         """
         raise NotImplementedError
 
+    async def get_postback_url(self) -> Text:
+        """
+        Returns a URL which can be POSTed to. The POST body must be a JSON
+        message that will be used as payload for a synthetic postback layer
+        from this user.
+        """
+        raise NotImplementedError
+
 
 class BaseMessage(object):
     """
