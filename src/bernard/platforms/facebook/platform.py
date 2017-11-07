@@ -278,7 +278,6 @@ class Facebook(Platform):
         self.session = None
 
     async def _send_sleep(self, request: Request, stack: Stack):
-        print('sleep')
         time = stack.get_layer(lyr.Sleep).duration
         await asyncio.sleep(time)
 
