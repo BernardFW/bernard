@@ -30,9 +30,6 @@ I18N_TRANSLATION_LOADERS = []
 # List of intents loaders.
 I18N_INTENTS_LOADERS = []
 
-# Default lang
-I18N_DEFAULT_LANG = 'en'
-
 # Enable automatic reload of translation/intents files
 I18N_LIVE_RELOAD = (DEBUG and sys.platform in {'linux', 'linux2'}) or \
                    os.getenv('I18N_LIVE_RELOAD') == 'yes'

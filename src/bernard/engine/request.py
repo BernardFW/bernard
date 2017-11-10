@@ -143,6 +143,8 @@ class Request(object):
         self.register = register
         self.custom_content = {}
 
+        self._locale_override = None
+
     async def transform(self):
         await self.stack.transform(self)
 
@@ -175,3 +177,26 @@ class Request(object):
         Proxy to stack
         """
         return self.stack.get_layers(class_, became)
+
+    def set_locale_override(self, locale: Text) -> None:
+        """
+        This allows to override manually the locale that will be used in
+        replies.
+
+        :param locale: Name of the locale (format 'fr' or 'fr_FR')
+        """
+
+        self._locale_override = locale
+
+    async def get_locale(self) -> Text:
+        """
+        Get the locale to use for this request. It's either the overriden locale
+        or the locale provided by the platform.
+
+        :return: Locale to use for this request
+        """
+
+        if self._locale_override:
+            return self._locale_override
+        else:
+            return await self.user.get_locale()

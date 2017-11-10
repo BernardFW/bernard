@@ -1,6 +1,8 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union
-from collections import Mapping
+import re
+from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Tuple, \
+    Iterator
+from collections import Mapping, defaultdict
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from string import Formatter
@@ -29,6 +31,32 @@ class MissingParamError(TranslationError):
     """
 
 
+def split_locale(locale: Text) -> Tuple[Text, Text]:
+    """Split a locale in an array: (lang, country)"""
+
+    return re.split(r'[_\-]', locale.lower(), 1)
+
+
+def compare_locales(a, b):
+    """
+    Compares two locales to find the level of compatibility
+
+    :param a: First locale
+    :param b: Second locale
+    :return: 2 full match, 1 lang match, no match
+    """
+
+    a = split_locale(a)
+    b = split_locale(b)
+
+    if a == b:
+        return 2
+    elif a[0] == b[0]:
+        return 1
+    else:
+        return 0
+
+
 class WordDictionary(object):
     """
     That's where the actual translation happens. It stores all translations in
@@ -36,9 +64,10 @@ class WordDictionary(object):
     """
 
     def __init__(self):
-        self.dict = {}
+        self.dict = defaultdict(lambda: {})
         self.loaders = []  # type: List[BaseTranslationLoader]
         self._init_loaders()
+        self._choice_cache = {}
 
     def _init_loaders(self) -> None:
         """
@@ -51,19 +80,53 @@ class WordDictionary(object):
             instance.on_update(self.update)
             run(instance.load(**loader['params']))
 
-    def update(self, new_data: Dict[Text, Text]):
+    def update(self, new_data: Dict[Text, Dict[Text, Text]]):
         """
         Receive an update from a loader.
 
         :param new_data: New translation data from the loader
         """
 
-        self.dict.update(new_data)
+        for locale, data in new_data.items():
+            self.dict[locale].update(data)
+
+    def list_locales(self) -> Iterator[Text]:
+        """
+        Returns the list of available locales.
+        """
+
+        return self.dict.keys()
+
+    def choose_locale(self, locale: Text) -> Text:
+        """
+        Returns the best matching locale in what is available.
+
+        :param locale: Locale to match
+        :return: Locale to use
+        """
+        # TODO the "input" order is not respected so it doesn't allow to have a
+        # default locale
+
+        if locale not in self._choice_cache:
+            best_choice = None
+            best_level = 0
+
+            for candidate in self.list_locales():
+                cmp = compare_locales(locale, candidate)
+
+                if cmp > best_level:
+                    best_choice = candidate
+                    best_level = cmp
+
+            self._choice_cache[locale] = best_choice
+
+        return self._choice_cache[locale]
 
     def get(self,
             key: Text,
             count: Optional[int]=None,
             formatter: Formatter=None,
+            locale: Text=None,
             **params) -> Text:
         """
         Get the appropriate translation given the specified parameters.
@@ -71,14 +134,17 @@ class WordDictionary(object):
         :param key: Translation key
         :param count: Count for plurals
         :param formatter: Optional string formatter to use
+        :param locale: Prefered locale to get the string from
         :param params: Params to be substituted
         """
 
         if count is not None:
             raise TranslationError('Count parameter is not supported yet')
 
+        locale = self.choose_locale(locale)
+
         try:
-            out = self.dict[key]
+            out = self.dict[locale][key]
         except KeyError:
             raise MissingTranslationError('Translation "{}" does not exist'
                                           .format(key))
@@ -154,11 +220,13 @@ class StringToTranslate(object):
 
         if request:
             tz = await request.user.get_timezone()
+            locale = await request.get_locale()
         else:
             tz = None
+            locale = next(self.wd.list_locales())
 
-        f = I18nFormatter(settings.I18N_DEFAULT_LANG, tz)
-        return [self.wd.get(self.key, self.count, f, **self.params)]
+        f = I18nFormatter(locale, tz)
+        return [self.wd.get(self.key, self.count, f, locale, **self.params)]
 
 
 class Translator(object):
