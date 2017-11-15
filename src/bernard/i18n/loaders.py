@@ -141,7 +141,7 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
 
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            data = {k: v for k, v in reader}
+            data = {x[0]: x[1] for x in reader if len(x) >= 2}
         self._update({self._locale: data})
 
     async def load(self, file_path, locale=None):
