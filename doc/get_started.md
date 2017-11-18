@@ -4,9 +4,9 @@ Get Started
 This part of the doc will guide you through understanding the basics of how
 Bernard works.
 
-A good starting point is the [demobot](../demobot). In this documentation,
-we'll go through the code of the bot and then we'll dig into the more
-theoretical concepts.
+A good starting point is the [demobot](../examples/demobot). In this
+documentation, we'll go through the code of the bot and then we'll dig into the
+more theoretical concepts.
 
 It is a Facebook Messenger bot, which means that you'll only be able to talk
 to it through Facebook and you'll need to setup a bot on their platform.
@@ -19,24 +19,24 @@ world.
 
 The core of the bot is in two files:
 
-- [`states.py`](../demobot/states.py) has the code of the bot for each state,
-  that's basically the code that drives what the bot does
-- [`transitions.py`](../demobot/transitions.py) lists the transitions between
-  states. That's how you describe the user flow.
+- [`states.py`](../examples/demobot/states.py) has the code of the bot for each
+  state, that's basically the code that drives what the bot does
+- [`transitions.py`](../examples/demobot/transitions.py) lists the transitions
+  between states. That's how you describe the user flow.
 
 Other files are present for technical reasons:
 
-- [`settings.py`](../demobot/settings.py) are simply the settings, which
-  covers pretty much everything from the API tokens to any single timeout. To
-  start a project, you only need to fill a few variables.
-- [`__init__.py`](../demobot/__init__.py) makes the folder into a Python
-  module, it's ok if it's empty.
+- [`settings.py`](../examples/demobot/settings.py) are simply the settings,
+  which covers pretty much everything from the API tokens to any single
+  timeout. To start a project, you only need to fill a few variables.
+- [`__init__.py`](../examples/demobot/__init__.py) makes the folder into a
+  Python module, it's ok if it's empty.
 - Language files. Those are subject to serious changes in the future, as
   currently the translation system is far from being feature-complete.
-    - [`i18n/fr/intents.csv`](../demobot/i18n/fr/intents.csv) are the intents,
-      or rather the list of sentences the user might say to trigger a specific
-      intent. More on that later.
-    - [`i18n/fr/responses.csv`](../demobot/i18n/responses.csv) are the
+    - [`i18n/fr/intents.csv`](../examples/demobot/i18n/fr/intents.csv) are the
+      intents, or rather the list of sentences the user might say to trigger a
+      specific intent. More on that later.
+    - [`i18n/fr/responses.csv`](../examples/demobot/i18n/responses.csv) are the
       response strings we'll send to the user.
 
 ### Specs
@@ -278,20 +278,20 @@ $ pip install bernard
 
 ### Setup environment
 
-The first thing to do is to copy the [demobot](../demobot) file into a new
+The first thing to do is to copy the [demobot](../examples/demobot) file into a new
 directory, which will be your project. To help you download it, there is a
-[**downloadable tarball**](../demobot.tar.gz).
+[**downloadable tarball**](../examples/demobot.tar.gz).
 
 Suppose that you store your development projects in `~/dev`, then you can run
 
 ```console
-$ curl https://raw.githubusercontent.com/BernardFW/bernard/develop/demobot.tar.gz | tar -C /tmp -x -z
+$ curl https://raw.githubusercontent.com/BernardFW/bernard/develop/examples/demobot.tar.gz | tar -C /tmp -x -z
 $ mv /tmp/demobot ~/dev/mybot
 ```
 
 ### Configuration
 
-You'll find the configuration in [`settings.py`](../demobot/settings.py). You
+You'll find the configuration in [`settings.py`](../examples/demobot/settings.py). You
 can use it as a boilerplate for your future bots. In this version, it reads
 the configuration from environment variables. You have two choices: either
 define the right environment variables (using your IDE, your process
