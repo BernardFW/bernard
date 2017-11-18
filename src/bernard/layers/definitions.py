@@ -412,6 +412,19 @@ class FbGenericTemplate(BaseLayer):
         for element in self.elements:
             await element.convert_media(platform)
 
+    async def serialize(self, request: 'Request'):
+
+        payload = {
+            'template_type': 'generic',
+            'elements': [await e.serialize(request) for e in self.elements],
+            'sharable': self.is_sharable(),
+        }
+
+        if self.aspect_ratio:
+            payload['image_aspect_ratio'] = self.aspect_ratio.value
+
+        return payload
+
 
 class LinkClick(BaseLayer):
     """

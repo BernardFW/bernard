@@ -11,7 +11,7 @@ from typing import Callable, Dict, Text, List
 logger = logging.getLogger('bernard.i18n.loaders')
 
 
-TransDict = Dict[Text, Text]
+TransDict = Dict[Text, Dict[Text, Text]]
 IntentDict = Dict[Text, List[Text]]
 
 
@@ -29,6 +29,7 @@ class LiveFileLoaderMixin(object):
         self._watcher = None
         self._file_path = None
         self._running = False
+        self._locale = None
 
     async def _load(self):
         """
@@ -61,13 +62,14 @@ class LiveFileLoaderMixin(object):
                     self._file_path
                 )
 
-    async def start(self, file_path):
+    async def start(self, file_path, locale=None):
         """
         Setup the watching utilities, start the loop and load data a first
         time.
         """
 
         self._file_path = os.path.realpath(file_path)
+        self._locale = locale
 
         if settings.I18N_LIVE_RELOAD:
             loop = asyncio.get_event_loop()
@@ -139,15 +141,15 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
 
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            data = {k: v for k, v in reader}
-        self._update(data)
+            data = {x[0]: x[1] for x in reader if len(x) >= 2}
+        self._update({self._locale: data})
 
-    async def load(self, file_path):
+    async def load(self, file_path, locale=None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path)
+        await self.start(file_path, locale)
 
 
 class BaseIntentsLoader(object):
