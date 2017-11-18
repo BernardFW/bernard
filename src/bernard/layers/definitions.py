@@ -344,7 +344,7 @@ class FbButtonTemplate(BaseLayer):
     Represents the Facebook "button template"
     """
     def __init__(self,
-                 text: Text,
+                 text: TransText,
                  buttons: List[FbBaseButton],
                  sharable: bool=False):
         self.text = text

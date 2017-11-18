@@ -405,7 +405,9 @@ class Facebook(Platform):
                                      'page "{}", which is not configured.'
                                      .format(page_id))
 
-    async def _make_qr(self, qr: lyr.QuickRepliesList.BaseOption, request: Request):
+    async def _make_qr(self,
+                       qr: lyr.QuickRepliesList.BaseOption,
+                       request: Request):
         """
         Generate a single quick reply's content.
         """
@@ -480,7 +482,7 @@ class Facebook(Platform):
 
     async def _send_button_template(self, request: Request, stack: Stack):
         """
-               Generates and send a button template.
+        Generates and send a button template.
         """
 
         gt = stack.get_layer(lyr.FbButtonTemplate)
