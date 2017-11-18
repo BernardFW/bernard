@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
     from bernard.platforms.facebook.platform import FacebookUser
-
+    from bernard.layers.definitions import FbGenericTemplate
 
 class FbWebviewRatio(Enum):
     """
@@ -67,7 +67,7 @@ class FbUrlButton(FbBaseButton):
                  hide_share: Optional[bool]=None):
         """
         Please refer to the FB doc for more info.
-        
+
         TODO write some more detailed doc about `sign_webview`.
 
         :param title: Title that will be displayed
@@ -320,3 +320,39 @@ class FbCard(object):
             return (all(b.is_sharable() for b in self.buttons) and
                     self.default_action and
                     self.default_action.is_sharable())
+
+
+class FbShareButton(FbBaseButton):
+    """
+    That's a Facebook Share button. When the user clicks on it, the FbCard
+    is share to an other user who can go to the bot.
+
+    Parameter share_content define what will be share and must be a generic
+    template.
+    """
+
+    def __init__(self, share_content: Optional['FbGenericTemplate'] = None):
+        super(FbShareButton, self).__init__('')
+        self.share_content = share_content
+
+    async def serialize(self, request: 'Request'):
+        out = {
+            'type': 'element_share'
+        }
+
+        if self.share_content:
+            out['share_contents'] = {
+                'attachment': {
+                    'type': 'template',
+                    'payload': await self.share_content.serialize(request),
+                }
+            }
+
+        return out
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.share_content == other.share_content)
+
+    def __repr__(self):
+        return 'FbShareButton()'

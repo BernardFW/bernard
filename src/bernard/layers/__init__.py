@@ -25,6 +25,7 @@ from .helpers import (
     FbCardAction,
     FbUrlButton,
     FbPostbackButton,
+    FbShareButton,
     FbCallButton,
     FbWebviewRatio,
 )
