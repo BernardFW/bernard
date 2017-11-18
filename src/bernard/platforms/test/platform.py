@@ -18,6 +18,9 @@ class TestUser(User):
     async def get_timezone(self):
         return None
 
+    async def get_locale(self):
+        return None
+
 
 class TestConversation(Conversation):
     """

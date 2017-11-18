@@ -31,10 +31,20 @@ class MissingParamError(TranslationError):
     """
 
 
-def split_locale(locale: Text) -> Tuple[Text, Text]:
-    """Split a locale in an array: (lang, country)"""
+def split_locale(locale: Text) -> Tuple[Text, Optional[Text]]:
+    """
+    Decompose the locale into a normalized tuple.
 
-    return re.split(r'[_\-]', locale.lower(), 1)
+    The first item is the locale (as lowercase letters) while the second item
+    is either the country as lower case either None if no country was supplied.
+    """
+
+    items = re.split(r'[_\-]', locale.lower(), 1)
+
+    try:
+        return items[0], items[1]
+    except IndexError:
+        return items[0], None
 
 
 def compare_locales(a, b):
@@ -43,8 +53,14 @@ def compare_locales(a, b):
 
     :param a: First locale
     :param b: Second locale
-    :return: 2 full match, 1 lang match, no match
+    :return: 2 full match, 1 lang match, 0 no match
     """
+
+    if a is None or b is None:
+        if a == b:
+            return 2
+        else:
+            return 0
 
     a = split_locale(a)
     b = split_locale(b)
@@ -90,12 +106,19 @@ class WordDictionary(object):
         for locale, data in new_data.items():
             self.dict[locale].update(data)
 
-    def list_locales(self) -> Iterator[Text]:
+    def list_locales(self) -> List[Optional[Text]]:
         """
-        Returns the list of available locales.
+        Returns the list of available locales. The first locale is the default
+        locale to be used. If no locales are known, then `None` will be the
+        first item.
         """
 
-        return self.dict.keys()
+        locales = list(self.dict.keys())
+
+        if not locales:
+            locales.append(None)
+
+        return locales
 
     def choose_locale(self, locale: Text) -> Text:
         """
@@ -223,7 +246,7 @@ class StringToTranslate(object):
             locale = await request.get_locale()
         else:
             tz = None
-            locale = next(self.wd.list_locales())
+            locale = self.wd.list_locales()[0]
 
         f = I18nFormatter(locale, tz)
         return [self.wd.get(self.key, self.count, f, locale, **self.params)]
