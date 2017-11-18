@@ -131,10 +131,12 @@ class WordDictionary(object):
         """
 
         if locale not in self._choice_cache:
-            best_choice = None
+            locales = self.list_locales()
+
+            best_choice = locales[0]
             best_level = 0
 
-            for candidate in self.list_locales():
+            for candidate in locales:
                 cmp = compare_locales(locale, candidate)
 
                 if cmp > best_level:
