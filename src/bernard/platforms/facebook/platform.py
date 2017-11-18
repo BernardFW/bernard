@@ -245,11 +245,6 @@ class Facebook(Platform):
         super(Facebook, self).__init__()
         self.session = None
 
-    async def _send_sleep(self, request: Request, stack: Stack):
-        print('sleep')
-        time = stack.get_layer(lyr.Sleep).duration
-        await asyncio.sleep(time)
-
     async def async_init(self):
         """
         During async init we just need to create a HTTP session so we can keep
@@ -513,6 +508,14 @@ class Facebook(Platform):
         }
 
         await self._send(request, msg)
+
+    async def _send_sleep(self, request: Request, stack: Stack):
+        """
+        Sleep for the amount of time specified in the Sleep layer
+        """
+
+        duration = stack.get_layer(lyr.Sleep).duration
+        await asyncio.sleep(duration)
 
     async def _handle_fb_response(self, response: aiohttp.ClientResponse):
         """
