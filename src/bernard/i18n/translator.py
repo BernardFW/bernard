@@ -1,8 +1,7 @@
 # coding: utf-8
 import re
-from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Tuple, \
-    Iterator
-from collections import Mapping, defaultdict
+from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Tuple
+from collections import Mapping, OrderedDict
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from string import Formatter
@@ -80,7 +79,7 @@ class WordDictionary(object):
     """
 
     def __init__(self):
-        self.dict = defaultdict(lambda: {})
+        self.dict = OrderedDict()
         self.loaders = []  # type: List[BaseTranslationLoader]
         self._init_loaders()
         self._choice_cache = {}
@@ -104,6 +103,9 @@ class WordDictionary(object):
         """
 
         for locale, data in new_data.items():
+            if locale not in self.dict:
+                self.dict[locale] = {}
+
             self.dict[locale].update(data)
 
     def list_locales(self) -> List[Optional[Text]]:
@@ -127,8 +129,6 @@ class WordDictionary(object):
         :param locale: Locale to match
         :return: Locale to use
         """
-        # TODO the "input" order is not respected so it doesn't allow to have a
-        # default locale
 
         if locale not in self._choice_cache:
             best_choice = None
