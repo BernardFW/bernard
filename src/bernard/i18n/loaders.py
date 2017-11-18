@@ -5,14 +5,14 @@ import asyncio
 import logging
 import os.path
 from bernard.conf import settings
-from typing import Callable, Dict, Text, List
+from typing import Callable, Dict, Text, List, Optional
 
 
 logger = logging.getLogger('bernard.i18n.loaders')
 
 
-TransDict = Dict[Text, Dict[Text, Text]]
-IntentDict = Dict[Text, List[Text]]
+TransDict = Dict[Optional[Text], Dict[Text, Text]]
+IntentDict = Dict[Optional[Text], Dict[Text, List[Text]]]
 
 
 class LiveFileLoaderMixin(object):
@@ -210,11 +210,11 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
             for k, v in reader:
                 data[k] = data.get(k, []) + [v]
 
-        self._update(data)
+        self._update({self._locale: data})
 
-    async def load(self, file_path):
+    async def load(self, file_path, locale=None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path)
+        await self.start(file_path, locale)

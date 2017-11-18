@@ -149,7 +149,7 @@ class Text(BaseTrigger):
 
         tl = self.request.get_layer(l.RawText)
         matcher = Matcher([
-            Trigram(x) for x in self.intent.strings(self.request)
+            Trigram(x) for x in await self.intent.strings(self.request)
         ])
 
         return matcher % Trigram(tl.text)
@@ -202,7 +202,7 @@ class Choice(BaseTrigger):
 
             if params['intent']:
                 intent = getattr(intents, params['intent'])
-                strings += intent.strings(self.request)
+                strings += await intent.strings(self.request)
 
             if params['text']:
                 strings.append(params['text'])
