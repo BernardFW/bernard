@@ -17,6 +17,7 @@ from .definitions import (
     FbGenericTemplate,
     LinkClick,
     CloseWebview,
+    OptIn,
 )
 from .helpers import (
     FbCard,

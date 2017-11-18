@@ -1,8 +1,12 @@
 # coding: utf-8
+import logging
 from typing import Text
 from bernard.engine.fsm import FSM
 from bernard.engine.platform import PlatformDoesNotExist
 from bernard.platforms.facebook.platform import Facebook
+
+
+logger = logging.getLogger('bernard.platform.health')
 
 
 class PlatformManager(object):
@@ -25,7 +29,6 @@ class PlatformManager(object):
     def _is_init(self):
         """
         Check if initialization was done
-        :return: 
         """
         return self.fsm is not None
 
@@ -33,8 +36,22 @@ class PlatformManager(object):
         """
         Creates the FSM and the cache. It can be called several times to reset
         stuff (like for unit tests...).
+
+        It also runs all the health checks in order to see if everything is fit
+        for running.
         """
         self.fsm = FSM()
+
+        checks = []
+
+        # noinspection PyTypeChecker
+        async for check in self.fsm.health_check():
+            checks.append(check)
+            logger.error('HEALTH CHECK FAIL #%s: %s', check.code, check.reason)
+
+        if checks:
+            exit(1)
+
         await self.fsm.async_init()
 
         self.platforms = {}

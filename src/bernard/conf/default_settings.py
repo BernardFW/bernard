@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 import sys
+from urllib.parse import urlparse
 
 # Are we in debug mode?
 # So far it changes nothing, but hey who knows.
@@ -69,10 +70,31 @@ DEFAULT_STATE = 'bernard.engine.state.DefaultState'
 # }
 FACEBOOK = []
 
+redis_params = {}
+redis_url = os.getenv('REDIS_URL')
+
+if redis_url:
+    parsed_url = urlparse(redis_url)
+    path = parsed_url.path[1:].split('?', 2)[0]
+    redis_params = {
+        'host': parsed_url.hostname or 'localhost',
+        'port': int(parsed_url.port or 6379),
+        'db_id': int(path or 0),
+    }
+
 # By default, store the register in local redis
 REGISTER_STORE = {
     'class': 'bernard.storage.register.RedisRegisterStore',
-    'params': {},
+    'params': redis_params,
+}
+
+# Default time to live for the context
+CONTEXT_DEFAULT_TTL = 20 * 60
+
+# By default, store the context in local redis
+CONTEXT_STORE = {
+    'class': 'bernard.storage.context.RedisContextStore',
+    'params': redis_params,
 }
 
 # Max internal jumps allowed. This is to avoid infinite loops in poorly
@@ -102,3 +124,17 @@ WEBVIEW_HEARTBEAT_PERIOD = 1.0
 
 # Sentry configuration
 SENTRY_DSN = os.getenv('SENTRY_DSN')
+
+# Configure analytics
+ANALYTICS_PROVIDERS = [
+        {
+            'class': 'bernard.analytics.ga.GoogleAnalytics',
+            'args': [
+                os.getenv('GOOGLE_ANALYTICS_ID'),
+                os.getenv('GOOGLE_ANALYTICS_DOMAIN'),
+            ]
+        }
+    ] \
+    if (os.getenv('GOOGLE_ANALYTICS_ID') and
+        os.getenv('GOOGLE_ANALYTICS_DOMAIN')) \
+    else []

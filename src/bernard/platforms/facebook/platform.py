@@ -99,6 +99,10 @@ class FacebookUser(User):
 
         return tz.tzoffset('ITC', diff)
 
+    async def get_locale(self) -> Text:
+        u = await self._get_user()
+        return u.get('locale', '')
+
 
 class FacebookConversation(Conversation):
     """
@@ -193,6 +197,9 @@ class FacebookMessage(BaseMessage):
             out.append(lyr.CloseWebview(
                 self._event['close_webview']['slug'],
             ))
+
+        if 'optin' in self._event:
+            out.append(lyr.OptIn(self._event['optin']['ref']))
 
         return out
 
