@@ -238,6 +238,7 @@ class Facebook(Platform):
         'text': '(Text|RawText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
         'attachment': '(Image|Audio|Video|File)',
+        'sleep': 'Sleep',
     }
 
     def __init__(self):
@@ -507,6 +508,14 @@ class Facebook(Platform):
         }
 
         await self._send(request, msg)
+
+    async def _send_sleep(self, request: Request, stack: Stack):
+        """
+        Sleep for the amount of time specified in the Sleep layer
+        """
+
+        duration = stack.get_layer(lyr.Sleep).duration
+        await asyncio.sleep(duration)
 
     async def _handle_fb_response(self, response: aiohttp.ClientResponse):
         """

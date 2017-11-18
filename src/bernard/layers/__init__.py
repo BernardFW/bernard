@@ -5,6 +5,7 @@ from .definitions import (
     BaseLayer,
     Text,
     RawText,
+    Sleep,
     QuickReply,
     QuickRepliesList,
     Postback,

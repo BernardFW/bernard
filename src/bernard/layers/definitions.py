@@ -125,6 +125,22 @@ class RawText(BaseLayer):
         return [self.text]
 
 
+class Sleep(BaseLayer):
+    """
+    Permit to slow down the debit of the message
+    """
+
+    def __init__(self, duration: float):
+        self.duration = duration
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.duration == other.duration)
+
+    def _repr_arguments(self):
+        return [self.duration]
+
+
 class QuickRepliesList(BaseLayer):
     """
     This layer is a bunch of quick replies options that will be presented to
