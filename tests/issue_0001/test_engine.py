@@ -117,10 +117,15 @@ class MockEmptyMessage(BaseMockMessage):
         return []
 
 
+class MockRequest(Request):
+    async def get_locale(self):
+        return None
+
+
 # noinspection PyShadowingNames
 @pytest.fixture('module')
 def text_request(reg):
-    req = Request(
+    req = MockRequest(
         MockTextMessage('foo'),
         reg,
     )
@@ -130,7 +135,7 @@ def text_request(reg):
 
 # noinspection PyShadowingNames
 def test_request_trans_reg(reg):
-    req = Request(MockTextMessage('foo'), reg)
+    req = MockRequest(MockTextMessage('foo'), reg)
     run(req.transform())
     assert req.get_trans_reg('foo') == 42
     assert req.get_trans_reg('bar') is None
@@ -139,7 +144,7 @@ def test_request_trans_reg(reg):
 
 # noinspection PyShadowingNames
 def test_request_stack(reg):
-    req = Request(MockTextMessage('foo'), reg)
+    req = MockRequest(MockTextMessage('foo'), reg)
     run(req.transform())
     assert req.has_layer(l.Text)
     assert req.get_layer(l.Text).text == 'foo'
@@ -169,14 +174,14 @@ def test_text_trigger(text_request):
 # noinspection PyShadowingNames
 def test_choice_trigger(reg):
     with patch_conf(LOADER_CONFIG):
-        req = Request(MockTextMessage('foo', True), reg)
+        req = MockRequest(MockTextMessage('foo', True), reg)
         run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
         assert run(ct.rank()) == 1.0
         assert ct.slug == 'foo'
 
-        req = Request(MockTextMessage('some other stuff'), reg)
+        req = MockRequest(MockTextMessage('some other stuff'), reg)
         run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
@@ -198,14 +203,14 @@ def test_fsm_init():
 def test_fsm_find_trigger(reg):
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
-        req = Request(MockTextMessage('hello'), reg)
+        req = MockRequest(MockTextMessage('hello'), reg)
         run(req.transform())
 
         trigger, state = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Text)
         assert state == Hello
 
-        req = Request(MockChoiceMessage(), reg)
+        req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
         trigger, state = run(fsm._find_trigger(req))
         assert trigger is None
@@ -227,7 +232,7 @@ def test_fsm_find_trigger(reg):
             },
         })
 
-        req = Request(MockChoiceMessage(), reg)
+        req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
         trigger, state = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Choice)

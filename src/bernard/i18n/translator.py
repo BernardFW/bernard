@@ -5,6 +5,7 @@ from bernard.conf import settings
 from bernard.utils import import_class, run
 from string import Formatter
 from .loaders import BaseTranslationLoader
+from .utils import LocalesDict
 from ._formatter import I18nFormatter
 
 if TYPE_CHECKING:
@@ -29,14 +30,14 @@ class MissingParamError(TranslationError):
     """
 
 
-class WordDictionary(object):
+class WordDictionary(LocalesDict):
     """
     That's where the actual translation happens. It stores all translations in
     memory, puts the parameters in place and so on.
     """
 
     def __init__(self):
-        self.dict = {}
+        super(WordDictionary, self).__init__()
         self.loaders = []  # type: List[BaseTranslationLoader]
         self._init_loaders()
 
@@ -51,19 +52,11 @@ class WordDictionary(object):
             instance.on_update(self.update)
             run(instance.load(**loader['params']))
 
-    def update(self, new_data: Dict[Text, Text]):
-        """
-        Receive an update from a loader.
-
-        :param new_data: New translation data from the loader
-        """
-
-        self.dict.update(new_data)
-
     def get(self,
             key: Text,
             count: Optional[int]=None,
             formatter: Formatter=None,
+            locale: Text=None,
             **params) -> Text:
         """
         Get the appropriate translation given the specified parameters.
@@ -71,14 +64,17 @@ class WordDictionary(object):
         :param key: Translation key
         :param count: Count for plurals
         :param formatter: Optional string formatter to use
+        :param locale: Prefered locale to get the string from
         :param params: Params to be substituted
         """
 
         if count is not None:
             raise TranslationError('Count parameter is not supported yet')
 
+        locale = self.choose_locale(locale)
+
         try:
-            out = self.dict[key]
+            out = self.dict[locale][key]
         except KeyError:
             raise MissingTranslationError('Translation "{}" does not exist'
                                           .format(key))
@@ -154,11 +150,13 @@ class StringToTranslate(object):
 
         if request:
             tz = await request.user.get_timezone()
+            locale = await request.get_locale()
         else:
             tz = None
+            locale = self.wd.list_locales()[0]
 
-        f = I18nFormatter(settings.I18N_DEFAULT_LANG, tz)
-        return [self.wd.get(self.key, self.count, f, **self.params)]
+        f = I18nFormatter(locale, tz)
+        return [self.wd.get(self.key, self.count, f, locale, **self.params)]
 
 
 class Translator(object):

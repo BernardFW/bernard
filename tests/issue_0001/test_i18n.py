@@ -4,7 +4,7 @@ import pytest
 import pytz
 import datetime
 # noinspection PyProtectedMember
-from bernard.i18n._formatter import make_date, I18nFormatter
+from bernard.i18n._formatter import make_date
 from bernard.i18n.translator import *
 from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
     BaseIntentsLoader, CsvIntentsLoader
@@ -66,7 +66,7 @@ LOADER_CONFIG_3 = {
 # noinspection PyProtectedMember
 def test_translations_events_spreading():
     mock_cb = Mock()
-    data = {'updated': 'yes'}
+    data = {None: {'updated': 'yes'}}
 
     loader = BaseTranslationLoader()
     loader.on_update(mock_cb)
@@ -78,7 +78,7 @@ def test_translations_events_spreading():
 # noinspection PyProtectedMember
 def test_intents_events_spreading():
     mock_cb = Mock()
-    data = {'updated': ['yes']}
+    data = {None: {'updated': ['yes']}}
 
     loader = BaseIntentsLoader()
     loader.on_update(mock_cb)
@@ -98,7 +98,7 @@ def test_load_translations_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=TRANS_FILE_PATH))
 
-    mock_cb.assert_called_once_with(data)
+    mock_cb.assert_called_once_with({None: data})
 
 
 def test_base_translations_loader_is_abstract():
@@ -130,7 +130,7 @@ def test_load_intents_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=file_path))
 
-    mock_cb.assert_called_once_with(data)
+    mock_cb.assert_called_once_with({None: data})
 
 
 def test_word_dict():
@@ -269,21 +269,21 @@ def test_unserialize():
 def test_intents_db():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
-        assert db.get('FOO') == ['bar', 'baz']
+        assert db.get('FOO', None) == ['bar', 'baz']
 
 
 def test_intent():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         intent = Intent(db, 'FOO')
-        assert intent.strings() == ['bar', 'baz']
+        assert run(intent.strings()) == ['bar', 'baz']
 
 
 def test_intents_maker():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         maker = IntentsMaker(db)
-        assert maker.FOO.strings() == ['bar', 'baz']
+        assert run(maker.FOO.strings()) == ['bar', 'baz']
 
 
 def test_intents_maker_singleton():
@@ -293,7 +293,7 @@ def test_intents_maker_singleton():
             del modules['bernard.i18n']
 
         from bernard.i18n import intents as i
-        assert i.FOO.strings() == ['bar', 'baz']
+        assert run(i.FOO.strings()) == ['bar', 'baz']
 
 
 def test_make_date():

@@ -3,19 +3,20 @@ from typing import List, Text, Optional, TYPE_CHECKING
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from .loaders import BaseIntentsLoader, IntentDict
+from .utils import LocalesDict
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
 
 
-class IntentsDb(object):
+class IntentsDb(LocalesDict):
     """
     Database of intents. In the future it will handle different langs but right
     now it only handles one.
     """
 
     def __init__(self):
-        self.dict = {}  # type: IntentDict
+        super(IntentsDb, self).__init__()
         self.loaders = []  # type: List[BaseIntentsLoader]
         self._init_loaders()
 
@@ -35,14 +36,20 @@ class IntentsDb(object):
         Receive an update from the loaders.
         """
 
-        self.dict.update(new_data)
+        for locale, data in new_data.items():
+            if locale not in self.dict:
+                self.dict[locale] = {}
 
-    def get(self, key: Text):
+            self.dict[locale].update(data)
+
+    def get(self, key: Text, locale: Optional[Text]):
         """
         Get a single set of intents.
         """
 
-        return self.dict[key]
+        locale = self.choose_locale(locale)
+
+        return self.dict[locale][key]
 
 
 class Intent(object):
@@ -62,13 +69,18 @@ class Intent(object):
         return 'Intent({})'.format(repr(self.key))
 
     # noinspection PyUnusedLocal
-    def strings(self, request: Optional['Request']=None):
+    async def strings(self, request: Optional['Request']=None):
         """
         For the given request, find the list of strings of that intent. If the
         intent does not exist, it will raise a KeyError.
         """
 
-        return self.db.get(self.key)
+        if request:
+            locale = await request.get_locale()
+        else:
+            locale = None
+
+        return self.db.get(self.key, locale)
 
 
 class IntentsMaker(object):
@@ -95,7 +107,7 @@ class IntentsMaker(object):
         Generate an intent. Use it this way:
 
         >>> i = IntentsMaker()
-        >>> print(i.FOO.strings())
+        >>> print(await i.FOO.strings())
         """
 
         return Intent(self.db, key)
