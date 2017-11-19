@@ -5,11 +5,12 @@ import asyncio
 from asyncio import iscoroutine
 from collections import Sequence, Mapping
 from itertools import chain
-from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple
+from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple, \
+    Type
 from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode
 
 
-def import_class(name: Text) -> type:
+def import_class(name: Text) -> Type:
     """
     Import a class based on its full name.
 

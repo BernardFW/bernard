@@ -234,6 +234,8 @@ class FacebookResponder(Responder):
 
 
 class Facebook(Platform):
+    NAME = 'facebook'
+
     PATTERNS = {
         'text': '(Text|RawText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
@@ -297,7 +299,7 @@ class Facebook(Platform):
         Set the "get started" action for all configured pages.
         """
 
-        for page in settings.FACEBOOK:
+        for page in self.settings():
             if 'get_started' in page:
                 payload = page['get_started']
             else:
@@ -316,7 +318,7 @@ class Facebook(Platform):
         Set the greeting text of the page
         """
 
-        for page in settings.FACEBOOK:
+        for page in self.settings():
             if 'greeting' in page:
                 await self._send_to_messenger_profile(page, {
                     'greeting': page['greeting'],
@@ -329,7 +331,7 @@ class Facebook(Platform):
         Define the persistent menu for all pages
         """
 
-        for page in settings.FACEBOOK:
+        for page in self.settings():
             if 'menu' in page:
                 await self._send_to_messenger_profile(page, {
                     'persistent_menu': page['menu'],
@@ -342,7 +344,7 @@ class Facebook(Platform):
         Whitelist domains for the messenger extensions
         """
 
-        for page in settings.FACEBOOK:
+        for page in self.settings():
             if 'whitelist' in page:
                 await self._send_to_messenger_profile(page, {
                     'whitelisted_domains': page['whitelist'],
@@ -397,7 +399,7 @@ class Facebook(Platform):
             msg = request.message  # type: FacebookMessage
             page_id = msg.get_page_id()
 
-        for page in settings.FACEBOOK:
+        for page in self.settings():
             if page['page_id'] == page_id:
                 return page['page_token']
 

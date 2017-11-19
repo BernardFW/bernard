@@ -13,7 +13,7 @@ from aiohttp.web_request import Request
 from aiohttp.web_response import json_response, Response
 from aiohttp.web_ws import WebSocketResponse
 from bernard.engine.platform import PlatformOperationError
-from bernard.platforms.facebook.platform import FacebookMessage
+from bernard.platforms.facebook.platform import FacebookMessage, Facebook
 from bernard.platforms import manager
 from bernard.conf import settings
 from bernard.analytics.base import providers as analytics_providers
@@ -34,7 +34,7 @@ def find_secret(page_id: Text):
     Find the matching secret of a page ID.
     """
 
-    for page in settings.FACEBOOK:
+    for page in Facebook.settings():
         if page['page_id'] == page_id:
             return page['app_secret']
 
@@ -52,7 +52,7 @@ async def check_hook(request: Request):
             'error': 'No verification token was provided',
         }, status=400)
 
-    for page in settings.FACEBOOK:
+    for page in Facebook.settings():
         if verify_token == page['security_token']:
             return Response(text=request.query.get('hub.challenge', ''))
 

@@ -3,12 +3,17 @@
 from os import getenv, path
 
 
-FACEBOOK = [
+PLATFORMS = [
     {
-        'security_token': getenv('FB_SECURITY_TOKEN'),
-        'app_secret': getenv('FB_APP_SECRET'),
-        'page_id': getenv('FB_PAGE_ID'),
-        'page_token': getenv('FB_PAGE_TOKEN'),
+        'class': 'bernard.platforms.facebook.platform.Facebook',
+        'settings': [
+            {
+                'security_token': getenv('FB_SECURITY_TOKEN'),
+                'app_secret': getenv('FB_APP_SECRET'),
+                'page_id': getenv('FB_PAGE_ID'),
+                'page_token': getenv('FB_PAGE_TOKEN'),
+            }
+        ],
     }
 ]
 

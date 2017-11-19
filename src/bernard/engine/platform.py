@@ -5,6 +5,7 @@ from bernard.engine.request import Request
 from bernard.engine.responder import Responder
 from bernard.layers import Stack
 from bernard.media.base import BaseMedia
+from bernard.utils import import_class
 from .request import BaseMessage
 
 
@@ -29,6 +30,8 @@ class Platform(object):
           for unit tests.
     """
 
+    NAME = None
+
     fsm_creates_task = True
 
     def __init__(self):
@@ -37,6 +40,20 @@ class Platform(object):
 
     async def init(self):
         pass
+
+    @classmethod
+    def settings(cls):
+        """
+        Find the settings for the current class inside the platforms
+        configuration.
+        """
+
+        from bernard.platforms.management import get_platform_settings
+
+        for platform in get_platform_settings():
+            candidate = import_class(platform['class'])
+            if candidate == cls:
+                return platform.get('settings', {})
 
     def on_message(self, cb: MessageCallback):
         """
