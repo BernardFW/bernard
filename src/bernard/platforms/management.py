@@ -101,7 +101,7 @@ class PlatformManager(object):
         for platform in get_platform_settings():
             try:
                 name = platform['class']
-                cls = import_class(name)
+                cls: Type[Platform] = import_class(name)
             except KeyError:
                 yield HealthCheckFail(
                     '00004',
@@ -120,14 +120,21 @@ class PlatformManager(object):
                     )
                 platforms.add(cls)
 
+                # noinspection PyTypeChecker
+                async for check in cls.self_check():
+                    yield check
+
     async def build_platform(self, cls):
         """
         Build the Facebook platform. Nothing fancy.
         """
 
+        from bernard.server.http import router
+
         p = cls()
         await p.async_init()
         p.on_message(self.fsm.handle_message)
+        p.hook_up(router)
         return p
 
     def get_class(self, platform):

@@ -12,8 +12,7 @@ from bernard.engine.request import Request, BaseMessage, User, Conversation
 from bernard.i18n.translator import render
 from bernard.layers import Stack, BaseLayer
 from bernard import layers as lyr
-from bernard.engine.platform import Platform, PlatformOperationError
-from bernard.conf import settings
+from bernard.engine.platform import PlatformOperationError, SimplePlatform
 from bernard.layers.definitions import BaseMediaLayer
 from bernard.media.base import BaseMedia, UrlMedia
 
@@ -233,7 +232,7 @@ class FacebookResponder(Responder):
     """
 
 
-class Facebook(Platform):
+class Facebook(SimplePlatform):
     NAME = 'facebook'
 
     PATTERNS = {
@@ -243,18 +242,6 @@ class Facebook(Platform):
         'attachment': '(Image|Audio|Video|File)',
         'sleep': 'Sleep',
     }
-
-    def __init__(self):
-        super(Facebook, self).__init__()
-        self.session = None
-
-    async def async_init(self):
-        """
-        During async init we just need to create a HTTP session so we can keep
-        outgoing connexions to FB alive.
-        """
-        self.session = aiohttp.ClientSession()
-        asyncio.get_event_loop().create_task(self._deferred_init())
 
     async def _deferred_init(self):
         """
@@ -353,35 +340,6 @@ class Facebook(Platform):
                 logger.info('Whitelisted %s for page %s',
                             page['whitelist'],
                             page['page_id'])
-
-    def accept(self, stack: Stack):
-        """
-        Checks that the stack can be accepted according to the `PATTERNS`.
-
-        If the pattern is found, then its name is stored in the `annotation`
-        attribute of the stack.
-        """
-
-        for name, pattern in self.PATTERNS.items():
-            if stack.match_exp(pattern):
-                stack.annotation = name
-                return True
-        return False
-
-    def send(self, request: Request, stack: Stack) -> Coroutine:
-        """
-        Send a stack to Facebook
-
-        Actually this will delegate to one of the `_send_*` functions depending
-        on what the stack looks like.
-        """
-
-        if stack.annotation not in self.PATTERNS:
-            if not self.accept(stack):
-                raise UnacceptableStack('Cannot accept stack {}'.format(stack))
-
-        func = getattr(self, '_send_' + stack.annotation)
-        return func(request, stack)
 
     async def handle_event(self, event: FacebookMessage):
         """

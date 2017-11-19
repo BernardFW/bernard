@@ -27,3 +27,8 @@ to specify a platform that exist or to fix your Python PATH.
 ## 00004 - Missing class name
 
 In the `PLATFORMS` list, you need to specify a class name.
+
+## 00005 - Incorrect config
+
+Something is missing in the configuration. The error message should give you
+information about what exactly is missing.

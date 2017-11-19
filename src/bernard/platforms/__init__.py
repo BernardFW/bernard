@@ -3,7 +3,7 @@ from typing import Type
 
 from .management import PlatformManager, get_platform_settings
 from ..utils import import_class
-from ..engine.platform import Platform
+from ..engine.platform import Platform, SimplePlatform
 
 manager = PlatformManager()
 

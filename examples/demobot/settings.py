@@ -3,8 +3,10 @@
 from os import getenv, path
 
 
-PLATFORMS = [
-    {
+PLATFORMS = []
+
+if getenv('FB_PAGE_TOKEN'):
+    PLATFORMS.append({
         'class': 'bernard.platforms.facebook.platform.Facebook',
         'settings': [
             {
@@ -12,11 +14,19 @@ PLATFORMS = [
                 'app_secret': getenv('FB_APP_SECRET'),
                 'page_id': getenv('FB_PAGE_ID'),
                 'page_token': getenv('FB_PAGE_TOKEN'),
-            }
+            },
         ],
-    }
-]
+    })
 
+if getenv('TELEGRAM_TOKEN'):
+    PLATFORMS.append({
+        'class': 'bernard.platforms.telegram.platform.Telegram',
+        'settings': {
+            'token': getenv('TELEGRAM_TOKEN'),
+        },
+    })
+
+BERNARD_BASE_URL = getenv('BERNARD_BASE_URL')
 
 SERVER_BIND = {
     'host': '127.0.0.1',
