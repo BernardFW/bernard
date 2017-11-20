@@ -109,6 +109,7 @@ class FSM(object):
             -> Tuple[
                 Optional[BaseTrigger],
                 Optional[Type[BaseState]],
+                Optional[bool],
             ]:
         """
         Find the best trigger for this request, or go away.
@@ -128,12 +129,12 @@ class FSM(object):
         ))
 
         if len(results):
-            score, trigger, state = max(results, key=lambda x: x[0])
+            score, trigger, state, dnr = max(results, key=lambda x: x[0])
 
             if score >= settings.MINIMAL_TRIGGER_SCORE:
-                return trigger, state
+                return trigger, state, dnr
 
-        return None, None
+        return None, None, None
 
     # noinspection PyTypeChecker
     def _confused_state(self, request: Request) -> Type[BaseState]:
@@ -158,24 +159,25 @@ class FSM(object):
             -> Tuple[
                 Optional[BaseState],
                 Optional[BaseTrigger],
+                Optional[bool],
             ]:
         """
         Build the state for this request.
         """
 
         logger.debug('Incoming message: %s', request.stack)
-        trigger, state_class = await self._find_trigger(request)
+        trigger, state_class, dnr = await self._find_trigger(request)
 
         if trigger is None:
             if not message.should_confuse():
-                return None, None
+                return None, None, None
             state_class = self._confused_state(request)
             logger.debug('Next state: %s (confused)', state_class.name())
         else:
             logger.debug('Next state: %s', state_class.name())
 
         state = state_class(request, responder, trigger)
-        return state, trigger
+        return state, trigger, dnr
 
     async def _run_state(self, responder, state, trigger, request) \
             -> BaseState:
@@ -194,7 +196,7 @@ class FSM(object):
                 if i == settings.MAX_INTERNAL_JUMPS:
                     raise MaxInternalJump()
 
-                trigger, state_class = \
+                trigger, state_class, dnr = \
                     await self._find_trigger(request, state.name(), True)
 
                 if not trigger:
@@ -246,7 +248,7 @@ class FSM(object):
             await request.transform()
 
             try:
-                state, trigger = \
+                state, trigger, dnr = \
                     await self._build_state(request, message, responder)
             except Exception:
                 reporter.report(request, None)
@@ -275,8 +277,12 @@ class FSM(object):
                 logger.exception('Could not flush content after %s',
                                  state.name())
             else:
-                reg.replacement = \
-                    await self._build_state_register(state, request, responder)
+                if not dnr:
+                    reg.replacement = await self._build_state_register(
+                        state,
+                        request,
+                        responder,
+                    )
                 return reg.replacement
 
     def handle_message(self,

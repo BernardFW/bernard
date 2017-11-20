@@ -18,7 +18,8 @@ class Transition(object):
                  origin: Type[BaseState]=None,
                  weight: float=1.0,
                  desc: Text='',
-                 internal: bool=False):
+                 internal: bool=False,
+                 do_not_register: bool=False):
         """
         Create the transition.
 
@@ -29,6 +30,8 @@ class Transition(object):
         :param desc: A textual description for documentation
         :param internal: That transition is an internal jump (eg it is only
                          triggered right after handling another state).
+        :param do_not_register: The transition won't be saved into the
+                                register.
         """
 
         self.origin = origin
@@ -37,6 +40,7 @@ class Transition(object):
         self.weight = weight
         self.desc = desc
         self.internal = internal
+        self.do_not_register = do_not_register
 
         if self.origin:
             self.origin_name = self.origin.name()
@@ -51,7 +55,12 @@ class Transition(object):
         )
 
     async def rank(self, request, origin: Optional[Text]) \
-            -> Tuple[float, Optional[BaseTrigger], Optional[type]]:
+            -> Tuple[
+                float,
+                Optional[BaseTrigger],
+                Optional[type],
+                Optional[bool],
+            ]:
         """
         Computes the rank of this transition for a given request.
 
@@ -67,10 +76,10 @@ class Transition(object):
         elif self.origin_name is None:
             score = settings.JUMPING_TRIGGER_PENALTY
         else:
-            return 0.0, None, None
+            return 0.0, None, None, None
 
         trigger = self.factory(request)
         rank = await run_or_return(trigger.rank())
         score *= self.weight * (rank or 0.0)
 
-        return score, trigger, self.dest
+        return score, trigger, self.dest, self.do_not_register
