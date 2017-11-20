@@ -129,3 +129,22 @@ class AnswerCallbackQuery(BaseLayer):
 
     def _repr_arguments(self):
         return [self.text]
+
+
+class Update(BaseLayer):
+    """
+    Add this layer in the stack if you want to update a previous text message.
+    Only one text message can be updated at once so please make sure that your
+    stack has only one text message (unless you want some unexpected
+    behaviour).
+    """
+
+    def __init__(self):
+        self.message_id = None
+        self.chat_id = None
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__
+
+    def _repr_arguments(self):
+        return []

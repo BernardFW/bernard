@@ -1,4 +1,5 @@
 TEXT,This is a text
+KEYBOARD,The time is {now:datetime:medium}
 LOCALE,Your locale is {locale}
 ERROR,Un truc s'est tres mal passé...
 CONFUSED,"Je n'ai pas compris, peux-tu formuler autrement ?"

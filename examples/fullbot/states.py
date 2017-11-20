@@ -1,4 +1,6 @@
 # coding: utf-8
+from datetime import datetime
+from typing import List
 from bernard.engine import BaseState
 from bernard import layers as lyr
 from bernard.platforms.telegram import layers as tgr
@@ -32,34 +34,42 @@ class Locale(BaseTestState):
 
 class Keyboard(BaseTestState):
     async def handle(self):
+        stack: List[lyr.BaseLayer] = [
+            lyr.Text(t('KEYBOARD', now=datetime.now())),
+            tgr.InlineKeyboard([
+                [
+                    tgr.InlineKeyboardButton(
+                        text='Notif',
+                        callback_data={
+                            'action': 'notif'
+                        },
+                    ),
+                    tgr.InlineKeyboardButton(
+                        text='Alert',
+                        callback_data={
+                            'action': 'alert'
+                        },
+                    ),
+                ],
+            ])
+        ]
+
         if self.request.has_layer(lyr.Postback):
             pb = self.request.get_layer(lyr.Postback)
             action = pb.payload['action']
 
+            stack.append(tgr.Update())
+
             if action == 'notif':
-                self.send(
+                stack.append(
                     tgr.AnswerCallbackQuery('This is a notification'),
                 )
             elif action == 'alert':
-                self.send(
+                stack.append(
                     tgr.AnswerCallbackQuery(
                         'This is a notification',
                         show_alert=True,
                     ),
                 )
-        else:
-            self.send(
-                lyr.Text(t.TEXT),
-                tgr.InlineKeyboard([
-                    [
-                        tgr.InlineKeyboardButton(
-                            text='Notif',
-                            callback_data={'action': 'notif'},
-                        ),
-                        tgr.InlineKeyboardButton(
-                            text='Alert',
-                            callback_data={'action': 'alert'},
-                        ),
-                    ],
-                ])
-            )
+
+        self.send(*stack)

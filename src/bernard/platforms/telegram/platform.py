@@ -21,7 +21,7 @@ from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
-from bernard.platforms.telegram.layers import AnswerCallbackQuery
+from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
 
@@ -186,6 +186,12 @@ class TelegramResponder(Responder):
         if not isinstance(stack, Stack):
             stack = Stack(stack)
 
+        if 'callback_query' in self._update and stack.has_layer(Update):
+            layer = stack.get_layer(Update)
+            msg = self._update['callback_query']['message']
+            layer.chat_id = msg['chat']['id']
+            layer.message_id = msg['message_id']
+
         if stack.has_layer(AnswerCallbackQuery):
             self._acq = stack.get_layer(AnswerCallbackQuery)
             stack = Stack([
@@ -215,7 +221,8 @@ class TelegramResponder(Responder):
 class Telegram(SimplePlatform):
     NAME = 'telegram'
     PATTERNS = {
-        'plain_text': '(Text|RawText)+ InlineKeyboard?',
+        'plain_text': '^(Text|RawText)+ InlineKeyboard?$'
+                      '|^(Text|RawText) InlineKeyboard? Update$',
     }
 
     @classmethod
@@ -396,7 +403,12 @@ class Telegram(SimplePlatform):
                 'inline_keyboard': keyboard.serialize(),
             }
 
-        await self.call('sendMessage', **msg)
+        if stack.has_layer(Update):
+            update = stack.get_layer(Update)
+            msg['message_id'] = update.message_id
+            await self.call('editMessageText', **msg)
+        else:
+            await self.call('sendMessage', **msg)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError

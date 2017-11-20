@@ -10,8 +10,8 @@ transitions = [
     Tr(dest=Locale, factory=triggers.Text.builder(intents.LOCALE)),
 
     Tr(Keyboard, triggers.Text.builder(intents.KEYBOARD)),
-    Tr(origin=Keyboard, dest=Keyboard,
+    Tr(dest=Keyboard,
        factory=triggers.Action.builder('notif')),
-    Tr(origin=Keyboard, dest=Keyboard,
+    Tr(dest=Keyboard,
        factory=triggers.Action.builder('alert')),
 ]
