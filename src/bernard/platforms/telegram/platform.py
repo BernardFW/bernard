@@ -5,6 +5,8 @@ from hashlib import sha256
 from typing import Text, Any, Dict, List, Optional
 from urllib.parse import quote, urljoin
 
+from asyncio import Lock
+
 from aiohttp.web_request import Request
 from aiohttp.web_response import json_response
 from aiohttp.web_urldispatcher import UrlDispatcher
@@ -12,13 +14,16 @@ from aiohttp.web_urldispatcher import UrlDispatcher
 from bernard.core.health_check import HealthCheckFail
 from bernard.engine.platform import PlatformOperationError
 from bernard.conf import settings
-from bernard.engine.request import BaseMessage, Conversation, User
-from bernard.engine.responder import Responder
+from bernard.engine.request import BaseMessage, Conversation, User, \
+    Request as BernardRequest
+from bernard.engine.responder import Responder, Layers
 from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
+from bernard.platforms.telegram.layers import AnswerCallbackQuery
 from ...platforms import SimplePlatform
+from .layers import InlineKeyboard
 
 
 TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
@@ -40,18 +45,49 @@ class TelegramConversation(Conversation):
 
 
 class TelegramUser(User):
-    def __init__(self, user):
+    def __init__(self, user, chat, telegram: 'Telegram'):
         self._user = user
+        self._chat = chat
+        self._telegram = telegram
+        self._full_user = None
+        self._lock = Lock()
         super(TelegramUser, self).__init__(self._make_id())
 
     def _make_id(self):
         return f'telegram:user:{self._user["id"]}'
 
+    async def _get_full_user(self) -> Dict:
+        """
+        Sometimes Telegram does not provide all the user info with the message.
+        In order to get the full profile (aka the language code) you need to
+        call this method which will make sure that the full User object is
+        loaded.
+
+        The result is cached for the lifetime of the object, so if the function
+        is called multiple times it will only fetch the user once. There is
+        a locking mechanism around the cache to allow concurrent calls.
+        """
+
+        if 'language_code' in self._user:
+            return self._user
+
+        async with self._lock:
+            if self._full_user is None:
+                cm = await self._telegram.call(
+                    'getChatMember',
+                    user_id=self._user['id'],
+                    chat_id=self._chat['id'],
+                )
+                self._full_user = cm['result']['user']
+
+            return self._full_user
+
     async def get_friendly_name(self) -> Text:
         return self._user.get('first_name')
 
     async def get_locale(self) -> Text:
-        return self._user.get('language_code', None)
+        user = await self._get_full_user()
+        return user.get('language_code', None)
 
     async def get_formal_name(self) -> Text:
         parts = [
@@ -77,34 +113,109 @@ class TelegramMessage(BaseMessage):
         # TODO create a MarkdownText layer
 
         out = []
-        msg = self._update.get('message', {})
 
-        if 'text' in msg:
-            out.append(lyr.RawText(msg['text']))
+        if 'message' in self._update:
+            msg = self._update.get('message', {})
+
+            if 'text' in msg:
+                out.append(lyr.RawText(msg['text']))
+
+        if 'callback_query' in self._update:
+            payload = self._update['callback_query']['data']
+            out.append(lyr.Postback(ujson.loads(payload)))
 
         return out
 
     def get_platform(self) -> Text:
         return self._telegram.NAME
 
+    def _get_chat(self) -> Dict:
+        """
+        As Telegram changes where the chat object is located in the response,
+        this method tries to be smart about finding it in the right place.
+        """
+
+        if 'callback_query' in self._update:
+            return self._update['callback_query']['message']['chat']
+        elif 'message' in self._update:
+            return self._update['message']['chat']
+
+    def _get_user(self) -> Dict:
+        """
+        Same thing as for `_get_chat()` but for the user related to the
+        message.
+        """
+
+        if 'callback_query' in self._update:
+            return self._update['callback_query']['from']
+        elif 'message' in self._update:
+            return self._update['message']['from']
+
     def get_conversation(self) -> Conversation:
-        return TelegramConversation(self._update['message']['chat'])
+        return TelegramConversation(self._get_chat())
 
     def get_user(self) -> User:
-        return TelegramUser(self._update['message']['from'])
+        return TelegramUser(self._get_user(), self._get_chat(), self._telegram)
 
     def get_chat_id(self) -> Text:
-        return self._update['message']['chat']['id']
+        return self._get_chat()['id']
 
 
 class TelegramResponder(Responder):
-    pass
+    """
+    This responder handles most of the magic behind Telegram messages
+    acknowledgements and so on.
+    """
+
+    def __init__(self, update, platform):
+        super(TelegramResponder, self).__init__(platform)
+
+        self._update = update
+
+        if 'callback_query' in update:
+            self._acq = AnswerCallbackQuery()
+        else:
+            self._acq = None
+
+    def send(self, stack: Layers):
+        """
+        Intercept any potential "AnswerCallbackQuery" before adding the stack
+        to the output buffer.
+        """
+
+        if not isinstance(stack, Stack):
+            stack = Stack(stack)
+
+        if stack.has_layer(AnswerCallbackQuery):
+            self._acq = stack.get_layer(AnswerCallbackQuery)
+            stack = Stack([
+                l for l in stack.layers
+                if not isinstance(l, AnswerCallbackQuery)
+            ])
+
+        if stack.layers:
+            return super(TelegramResponder, self).send(stack)
+
+    async def flush(self, request: BernardRequest):
+        """
+        If there's a AnswerCallbackQuery scheduled for reply, place the call
+        before actually flushing the buffer.
+        """
+
+        if self._acq and 'callback_query' in self._update:
+            cbq_id = self._update['callback_query']['id']
+            await self.platform.call(
+                'answerCallbackQuery',
+                **self._acq.serialize(cbq_id)
+            )
+
+        return await super(TelegramResponder, self).flush(request)
 
 
 class Telegram(SimplePlatform):
     NAME = 'telegram'
     PATTERNS = {
-        'plain_text': '(Text|RawText)+',
+        'plain_text': '(Text|RawText)+ InlineKeyboard?',
     }
 
     @classmethod
@@ -157,8 +268,10 @@ class Telegram(SimplePlatform):
                 'message': 'Cannot decode body',
             }, status=400)
 
+        logger.debug('Received from Telegram: %s', content)
+
         message = TelegramMessage(content, self)
-        responder = TelegramResponder(self)
+        responder = TelegramResponder(content, self)
         await self._notify(message, responder)
 
         return json_response({
@@ -186,6 +299,8 @@ class Telegram(SimplePlatform):
 
         :return: Returns the API response
         """
+
+        logger.debug('Calling Telegram %s(%s)', method, params)
 
         url = self.make_url(method)
 
@@ -252,21 +367,36 @@ class Telegram(SimplePlatform):
         Sends a plain text message
         """
 
-        # TODO escape Markdown
-
         parts = []
+        chat_id = request.message.get_chat_id()
 
         for layer in stack.layers:
             if isinstance(layer, (lyr.Text, lyr.RawText)):
                 text = await render(layer.text, request)
                 parts.append(text)
 
-        for part in parts:
+        for part in parts[:-1]:
             await self.call(
                 'sendMessage',
                 text=part,
-                chat_id=request.message.get_chat_id(),
+                chat_id=chat_id,
             )
+
+        msg = {
+            'text': parts[-1],
+            'chat_id': chat_id,
+        }
+
+        try:
+            keyboard = stack.get_layer(InlineKeyboard)
+        except KeyError:
+            pass
+        else:
+            msg['reply_markup'] = {
+                'inline_keyboard': keyboard.serialize(),
+            }
+
+        await self.call('sendMessage', **msg)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError

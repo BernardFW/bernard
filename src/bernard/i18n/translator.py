@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union
+from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Any
 from collections import Mapping
 from bernard.conf import settings
 from bernard.utils import import_class, run
@@ -57,7 +57,7 @@ class WordDictionary(LocalesDict):
             count: Optional[int]=None,
             formatter: Formatter=None,
             locale: Text=None,
-            **params) -> Text:
+            params: Dict[Text, Any]=None) -> Text:
         """
         Get the appropriate translation given the specified parameters.
 
@@ -67,6 +67,9 @@ class WordDictionary(LocalesDict):
         :param locale: Prefered locale to get the string from
         :param params: Params to be substituted
         """
+
+        if params is None:
+            params = {}
 
         if count is not None:
             raise TranslationError('Count parameter is not supported yet')
@@ -105,7 +108,10 @@ class StringToTranslate(object):
                  wd: WordDictionary,
                  key: Text,
                  count: Optional[int]=None,
-                 **params):
+                 params: Dict[Text, Any] = None):
+        if params is None:
+            params = {}
+
         self.wd = wd
         self.key = key
         self.count = count
@@ -156,7 +162,7 @@ class StringToTranslate(object):
             locale = self.wd.list_locales()[0]
 
         f = I18nFormatter(locale, tz)
-        return [self.wd.get(self.key, self.count, f, locale, **self.params)]
+        return [self.wd.get(self.key, self.count, f, locale, self.params)]
 
 
 class Translator(object):
@@ -203,7 +209,7 @@ class Translator(object):
         :param params: Params to substitute
         """
 
-        return StringToTranslate(self.wd, key, count, **params)
+        return StringToTranslate(self.wd, key, count, params)
 
 
 TransText = Union[StringToTranslate, Text]
@@ -258,7 +264,7 @@ def unserialize(wd: WordDictionary, text: Dict):
                 wd=wd,
                 key=text['key'],
                 count=text['count'],
-                **text['params'],
+                params=text['params'],
             )
         else:
             raise ValueError('Unknown type "{}"'.format(t))
