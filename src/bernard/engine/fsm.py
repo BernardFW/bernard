@@ -247,6 +247,9 @@ class FSM(object):
             request = Request(message, reg)
             await request.transform()
 
+            if not request.stack.layers:
+                return
+
             try:
                 state, trigger, dnr = \
                     await self._build_state(request, message, responder)

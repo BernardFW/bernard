@@ -222,6 +222,7 @@ class Telegram(SimplePlatform):
     NAME = 'telegram'
     PATTERNS = {
         'plain_text': '^(Text|RawText)+ InlineKeyboard?$'
+                      '|^(Text|RawText)* InlineKeyboard$'
                       '|^(Text|RawText) InlineKeyboard? Update$',
     }
 
