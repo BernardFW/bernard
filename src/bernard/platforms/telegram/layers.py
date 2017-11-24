@@ -1,11 +1,13 @@
 import ujson
 from typing import Text, Any, Optional, List, Dict
-
+from hashlib import md5
 from bernard.engine.request import Request
 from bernard.i18n.intents import Intent
 from bernard.i18n.translator import TransText, render
+from bernard.layers import Stack, Text as TextLayer
 from bernard.layers.definitions import BaseLayer
 from bernard.utils import patch_dict
+from ._utils import set_reply_markup
 
 
 class InlineKeyboardButton(object):
@@ -325,5 +327,153 @@ class ReplyKeyboardRemove(BaseLayer):
 
         if self.selective is not None:
             out['selective'] = self.selective
+
+        return out
+
+
+class InlineQuery(BaseLayer):
+    def __init__(self, inline_query):
+        self.inline_query = inline_query
+
+    @property
+    def query(self):
+        return self.inline_query['query']
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+               and self.inline_query == other.inline_query
+
+    def _repr_arguments(self):
+        return [self.query]
+
+
+class InlineQueryResult(object):
+    TYPE = None
+
+    def __init__(self, identifiers: Dict, input_stack: Stack):
+        self.identifiers = identifiers
+        self.input_stack = input_stack
+
+    @property
+    def unique_id(self):
+        h = md5()
+
+        for k in sorted(self.identifiers.keys()):
+            h.update(f'{k}={self.identifiers[k]}'.encode())
+
+        return h.hexdigest()
+
+    def __eq__(self, other):
+        raise NotImplementedError
+
+    def __repr__(self):
+        raise NotImplementedError
+
+    async def serialize(self, request: Optional[Request] = None):
+        out = {
+            'type': self.TYPE,
+            'id': self.unique_id,
+        }
+
+        await set_reply_markup(out, request, self.input_stack)
+
+        if self.input_stack.has_layer(TextLayer):
+            txt = self.input_stack.get_layer(TextLayer)
+            out['input_message_content'] = {
+                'message_text': await render(txt.text, request),
+            }
+
+        return out
+
+
+class InlineQueryResultArticle(InlineQueryResult):
+    TYPE = 'article'
+
+    def __init__(self,
+                 identifiers: Dict,
+                 input_stack: Stack,
+                 title: TransText,
+                 url: Optional[Text] = None,
+                 hide_url: Optional[bool] = None,
+                 description: Optional[Text] = None,
+                 thumb_url: Optional[Text] = None,
+                 thumb_width: Optional[int] = None,
+                 thumb_height: Optional[int] = None):
+        super(InlineQueryResultArticle, self) \
+            .__init__(identifiers, input_stack)
+
+        self.title = title
+        self.url = url
+        self.hide_url = hide_url
+        self.description = description
+        self.thumb_url = thumb_url
+        self.thumb_width = thumb_width
+        self.thumb_height = thumb_height
+
+    async def serialize(self, request: Optional[Request] = None):
+        out = await super(InlineQueryResultArticle, self).serialize(request)
+
+        out['title'] = await render(self.title, request)
+        fields = ['url', 'hide_url', 'description', 'thumb_url', 'thumb_width',
+                  'thumb_height']
+
+        for field in fields:
+            if getattr(self, field) is not None:
+                out[field] = getattr(self, field)
+
+        return out
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+               and self.identifiers == other.identifiers \
+               and self.input_stack == other.input_stack \
+               and self.title == other.title \
+               and self.url == other.url \
+               and self.hide_url == other.hide_url \
+               and self.description == other.description \
+               and self.thumb_url == other.thumb_url \
+               and self.thumb_width == other.thumb_width \
+               and self.thumb_height == other.thumb_height
+
+    def __repr__(self):
+        return self.title
+
+
+class AnswerInlineQuery(BaseLayer):
+    def __init__(self,
+                 results: List[InlineQueryResult],
+                 cache_time: Optional[int] = None,
+                 is_personal: Optional[bool] = None):
+        self.inline_query_id = None
+        self.results = results
+        self.cache_time = cache_time
+        self.is_personal = is_personal
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+               and self.inline_query_id == other.inline_query_id \
+               and self.results == other.results \
+               and self.cache_time == other.cache_time \
+               and self.is_personal == other.is_personal
+
+    def _repr_arguments(self):
+        return self.results
+
+    async def serialize(self, request: Optional[Request] = None):
+        results = []
+
+        for result in self.results:
+            results.append(await result.serialize(request))
+
+        out = {
+            'inline_query_id': self.inline_query_id,
+            'results': results,
+        }
+
+        if self.cache_time is not None:
+            out['cache_time'] = self.cache_time
+
+        if self.is_personal is not None:
+            out['is_personal'] = self.is_personal
 
         return out

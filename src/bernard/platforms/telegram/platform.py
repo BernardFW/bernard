@@ -21,10 +21,13 @@ from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
+from bernard.platforms.telegram._utils import set_reply_markup
 from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update, \
-    ReplyKeyboard, ReplyKeyboardRemove
+    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery
+from bernard.utils import patch_dict
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
+from ._utils import set_reply_markup
 
 
 TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
@@ -42,7 +45,10 @@ class TelegramConversation(Conversation):
         super(TelegramConversation, self).__init__(self._make_id())
 
     def _make_id(self):
-        return f'telegram:conversation:{self._chat["id"]}'
+        if 'is_inline_query' in self._chat:
+            return f'telegram:inline_query:{self._chat["id"]}'
+        else:
+            return f'telegram:conversation:{self._chat["id"]}'
 
 
 class TelegramUser(User):
@@ -125,6 +131,9 @@ class TelegramMessage(BaseMessage):
             payload = self._update['callback_query']['data']
             out.append(lyr.Postback(ujson.loads(payload)))
 
+        if 'inline_query' in self._update:
+            out.append(InlineQuery(self._update['inline_query']))
+
         return out
 
     def get_platform(self) -> Text:
@@ -138,6 +147,11 @@ class TelegramMessage(BaseMessage):
 
         if 'callback_query' in self._update:
             return self._update['callback_query']['message']['chat']
+        elif 'inline_query' in self._update:
+            return patch_dict(
+                self._update['inline_query']['from'],
+                is_inline_query=True,
+            )
         elif 'message' in self._update:
             return self._update['message']['chat']
 
@@ -149,6 +163,8 @@ class TelegramMessage(BaseMessage):
 
         if 'callback_query' in self._update:
             return self._update['callback_query']['from']
+        elif 'inline_query' in self._update:
+            return self._update['inline_query']['from']
         elif 'message' in self._update:
             return self._update['message']['from']
 
@@ -200,6 +216,11 @@ class TelegramResponder(Responder):
                 if not isinstance(l, AnswerCallbackQuery)
             ])
 
+        if 'inline_query' in self._update \
+                and stack.has_layer(AnswerInlineQuery):
+            a = stack.get_layer(AnswerInlineQuery)
+            a.inline_query_id = self._update['inline_query']['id']
+
         if stack.layers:
             return super(TelegramResponder, self).send(stack)
 
@@ -226,6 +247,7 @@ class Telegram(SimplePlatform):
                       '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)?$'
         
                       '|^(Text|RawText) InlineKeyboard? Update$',
+        'inline_answer': '^AnswerInlineQuery$',
     }
 
     @classmethod
@@ -397,26 +419,7 @@ class Telegram(SimplePlatform):
             'chat_id': chat_id,
         }
 
-        try:
-            keyboard = stack.get_layer(InlineKeyboard)
-        except KeyError:
-            pass
-        else:
-            msg['reply_markup'] = await keyboard.serialize(request)
-
-        try:
-            keyboard = stack.get_layer(ReplyKeyboard)
-        except KeyError:
-            pass
-        else:
-            msg['reply_markup'] = await keyboard.serialize(request)
-
-        try:
-            remove = stack.get_layer(ReplyKeyboardRemove)
-        except KeyError:
-            pass
-        else:
-            msg['reply_markup'] = remove.serialize()
+        await set_reply_markup(msg, request, stack)
 
         if stack.has_layer(Update):
             update = stack.get_layer(Update)
@@ -424,6 +427,11 @@ class Telegram(SimplePlatform):
             await self.call('editMessageText', **msg)
         else:
             await self.call('sendMessage', **msg)
+
+    async def _send_inline_answer(self, request: Request, stack: Stack):
+        aiq = stack.get_layer(AnswerInlineQuery)
+        answer = await aiq.serialize(request)
+        await self.call('answerInlineQuery', **answer)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError
