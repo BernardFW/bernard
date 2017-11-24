@@ -13,62 +13,84 @@ class InlineKeyboardButton(object):
     Represents an inline keyboard button
     """
 
-    def __init__(
-        self,
-        text: TransText,
-        url: Optional[Text] = None,
-        callback_data: Optional[Any] = None,
-        switch_inline_query: Optional[Text] = None,
-        switch_inline_query_current_chat: Optional[Text] = None,
-        pay: Optional[bool] = None,
-    ):
+    def __init__(self, text: TransText):
         """
         See https://core.telegram.org/bots/api#inlinekeyboardmarkup
         """
 
         self.text = text
-        self.url = url
-        self.callback_data = callback_data
-        self.switch_inline_query = switch_inline_query
-        self.switch_inline_query_current_chat = \
-            switch_inline_query_current_chat
-        self.pay = pay
 
-    async def serialize(self, request: Optional[Request] = None):
-        out = {
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return {
             'text': await render(self.text, request),
         }
-
-        if self.url:
-            out['url'] = self.url
-
-        if self.callback_data:
-            out['callback_data'] = ujson.dumps(self.callback_data)
-
-        if self.switch_inline_query:
-            out['switch_inline_query'] = self.switch_inline_query
-
-        if self.switch_inline_query_current_chat:
-            out['switch_inline_query_current_chat'] = \
-                self.switch_inline_query_current_chat
-
-        if self.pay is not None:
-            out['pay'] = self.pay
-
-        return out
 
     def __repr__(self):
         return self.text
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
+               and self.text == other.text
+
+
+class InlineKeyboardUrlButton(InlineKeyboardButton):
+    def __init__(self, text: TransText, url: Text):
+        super(InlineKeyboardUrlButton, self).__init__(text)
+        self.url = url
+
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return patch_dict(
+            await super(InlineKeyboardUrlButton, self).serialize(request),
+            url=self.url,
+        )
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
                and self.text == other.text \
-               and self.url == other.url \
-               and self.callback_data == other.callback_data \
-               and self.switch_inline_query == other.switch_inline_query \
-               and self.switch_inline_query_current_chat == \
-                   other.switch_inline_query_current_chat \
-               and self.pay == other.pay
+               and self.url == other.url
+
+
+class InlineKeyboardCallbackButton(InlineKeyboardButton):
+    def __init__(self, text: TransText, payload: Any):
+        super(InlineKeyboardCallbackButton, self).__init__(text)
+        self.payload = payload
+
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return patch_dict(
+            await super(InlineKeyboardCallbackButton, self).serialize(request),
+            callback_data=ujson.dumps(self.payload),
+        )
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+               and self.text == other.text \
+               and self.payload == other.payload
+
+
+class InlineKeyboardSwitchInlineQueryButton(InlineKeyboardButton):
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return patch_dict(
+            await super(InlineKeyboardSwitchInlineQueryButton, self)
+            .serialize(request),
+            switch_inline_query=True,
+        )
+
+
+class InlineKeyboardSwitchInlineQueryCurrentChatButton(InlineKeyboardButton):
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return patch_dict(
+            await super(InlineKeyboardSwitchInlineQueryCurrentChatButton, self)
+            .serialize(request),
+            switch_inline_query_current_chat=True,
+        )
+
+
+class InlineKeyboardPayButton(InlineKeyboardButton):
+    async def serialize(self, request: Optional[Request] = None) -> Dict:
+        return patch_dict(
+            await super(InlineKeyboardPayButton, self).serialize(request),
+            pay=True,
+        )
 
 
 class InlineKeyboard(BaseLayer):
