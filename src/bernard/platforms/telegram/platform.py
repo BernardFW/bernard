@@ -21,7 +21,8 @@ from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
-from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update
+from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update, \
+    ReplyKeyboard, ReplyKeyboardRemove
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
 
@@ -212,7 +213,7 @@ class TelegramResponder(Responder):
             cbq_id = self._update['callback_query']['id']
             await self.platform.call(
                 'answerCallbackQuery',
-                **self._acq.serialize(cbq_id)
+                **(await self._acq.serialize(cbq_id))
             )
 
         return await super(TelegramResponder, self).flush(request)
@@ -221,8 +222,9 @@ class TelegramResponder(Responder):
 class Telegram(SimplePlatform):
     NAME = 'telegram'
     PATTERNS = {
-        'plain_text': '^(Text|RawText)+ InlineKeyboard?$'
-                      '|^(Text|RawText)* InlineKeyboard$'
+        'plain_text': '^(Text|RawText)+ '
+                      '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)?$'
+        
                       '|^(Text|RawText) InlineKeyboard? Update$',
     }
 
@@ -400,9 +402,21 @@ class Telegram(SimplePlatform):
         except KeyError:
             pass
         else:
-            msg['reply_markup'] = {
-                'inline_keyboard': keyboard.serialize(),
-            }
+            msg['reply_markup'] = await keyboard.serialize(request)
+
+        try:
+            keyboard = stack.get_layer(ReplyKeyboard)
+        except KeyError:
+            pass
+        else:
+            msg['reply_markup'] = await keyboard.serialize(request)
+
+        try:
+            remove = stack.get_layer(ReplyKeyboardRemove)
+        except KeyError:
+            pass
+        else:
+            msg['reply_markup'] = remove.serialize()
 
         if stack.has_layer(Update):
             update = stack.get_layer(Update)

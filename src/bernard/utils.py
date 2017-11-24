@@ -202,3 +202,9 @@ def patch_qs(url: Text, data: Dict[Text, Text]) -> Text:
     p[qs_id] = urlencode(patched_qs)
 
     return urlunparse(p)
+
+
+def patch_dict(orig: Dict, **items):
+    out = dict(orig)
+    out.update(items)
+    return out
