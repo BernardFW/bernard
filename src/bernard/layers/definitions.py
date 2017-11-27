@@ -125,6 +125,26 @@ class RawText(BaseLayer):
         return [self.text]
 
 
+class Markdown(BaseLayer):
+    """
+    Like the Text but for Markdown.
+    """
+
+    def __init__(self, text: TextT):
+        self.text = text
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.text == other.text
+
+    def _repr_arguments(self):
+        if len(self.text) > 15:
+            text = self.text[:12] + '...'
+        else:
+            text = self.text
+
+        return [text]
+
+
 class Sleep(BaseLayer):
     """
     Permit to slow down the debit of the message

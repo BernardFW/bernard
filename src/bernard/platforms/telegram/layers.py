@@ -1,10 +1,11 @@
 import ujson
 from typing import Text, Any, Optional, List, Dict
 from hashlib import md5
+
 from bernard.engine.request import Request
 from bernard.i18n.intents import Intent
 from bernard.i18n.translator import TransText, render
-from bernard.layers import Stack, Text as TextLayer
+from bernard.layers import Stack, Text as TextLayer, Markdown
 from bernard.layers.definitions import BaseLayer
 from bernard.utils import patch_dict
 from ._utils import set_reply_markup
@@ -381,6 +382,13 @@ class InlineQueryResult(object):
             txt = self.input_stack.get_layer(TextLayer)
             out['input_message_content'] = {
                 'message_text': await render(txt.text, request),
+            }
+
+        if self.input_stack.has_layer(Markdown):
+            txt = self.input_stack.get_layer(Markdown)
+            out['input_message_content'] = {
+                'message_text': await render(txt.text, request),
+                'parse_mode': 'Markdown',
             }
 
         return out

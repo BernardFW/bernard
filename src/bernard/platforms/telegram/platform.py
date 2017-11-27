@@ -248,6 +248,10 @@ class Telegram(SimplePlatform):
         
                       '|^(Text|RawText) InlineKeyboard? Update$',
         'inline_answer': '^AnswerInlineQuery$',
+        'markdown': '^Markdown+ '
+                    '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)?$'
+        
+                    '|^(Text|RawText) InlineKeyboard? Update$',
     }
 
     @classmethod
@@ -394,16 +398,19 @@ class Telegram(SimplePlatform):
         await self.call('setWebhook', url=url)
         logger.info('Setting Telegram webhook to "%s"', url)
 
-    async def _send_plain_text(self, request: Request, stack: Stack):
+    async def _send_text(self,
+                         request: Request,
+                         stack: Stack,
+                         parse_mode: Optional[Text]=None):
         """
-        Sends a plain text message
+        Base function for sending text
         """
 
         parts = []
         chat_id = request.message.get_chat_id()
 
         for layer in stack.layers:
-            if isinstance(layer, (lyr.Text, lyr.RawText)):
+            if isinstance(layer, (lyr.Text, lyr.RawText, lyr.Markdown)):
                 text = await render(layer.text, request)
                 parts.append(text)
 
@@ -419,6 +426,9 @@ class Telegram(SimplePlatform):
             'chat_id': chat_id,
         }
 
+        if parse_mode is not None:
+            msg['parse_mode'] = parse_mode
+
         await set_reply_markup(msg, request, stack)
 
         if stack.has_layer(Update):
@@ -427,6 +437,20 @@ class Telegram(SimplePlatform):
             await self.call('editMessageText', **msg)
         else:
             await self.call('sendMessage', **msg)
+
+    async def _send_plain_text(self, request: Request, stack: Stack):
+        """
+        Sends plain text using `_send_text()`.
+        """
+
+        await self._send_text(request, stack, None)
+
+    async def _send_markdown(self, request: Request, stack: Stack):
+        """
+        Sends Markdown using `_send_text()`
+        """
+
+        await self._send_text(request, stack, 'Markdown')
 
     async def _send_inline_answer(self, request: Request, stack: Stack):
         aiq = stack.get_layer(AnswerInlineQuery)
