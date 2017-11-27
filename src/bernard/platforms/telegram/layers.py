@@ -194,6 +194,22 @@ class Update(BaseLayer):
         return []
 
 
+class Reply(BaseLayer):
+    """
+    Add this layer in the the stack in order for the message to be the direct
+    reply to the currently analyzed message.
+    """
+
+    def __init__(self):
+        self.message = None
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__
+
+    def _repr_arguments(self):
+        return []
+
+
 class KeyboardButton(object):
     def __init__(self,
                  text: TransText,

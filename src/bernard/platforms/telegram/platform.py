@@ -23,7 +23,7 @@ from bernard import layers as lyr
 from bernard.media.base import BaseMedia
 from bernard.platforms.telegram._utils import set_reply_markup
 from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update, \
-    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery
+    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery, Reply
 from bernard.utils import patch_dict
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
@@ -216,6 +216,10 @@ class TelegramResponder(Responder):
                 if not isinstance(l, AnswerCallbackQuery)
             ])
 
+        if 'message' in self._update and stack.has_layer(Reply):
+            layer = stack.get_layer(Reply)
+            layer.message = self._update['message']
+
         if 'inline_query' in self._update \
                 and stack.has_layer(AnswerInlineQuery):
             a = stack.get_layer(AnswerInlineQuery)
@@ -244,12 +248,14 @@ class Telegram(SimplePlatform):
     NAME = 'telegram'
     PATTERNS = {
         'plain_text': '^(Text|RawText)+ '
-                      '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)?$'
+                      '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
+                      'Reply?$'
         
                       '|^(Text|RawText) InlineKeyboard? Update$',
         'inline_answer': '^AnswerInlineQuery$',
         'markdown': '^Markdown+ '
-                    '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)?$'
+                    '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
+                    'Reply?$'
         
                     '|^(Text|RawText) InlineKeyboard? Update$',
     }
@@ -430,6 +436,11 @@ class Telegram(SimplePlatform):
             msg['parse_mode'] = parse_mode
 
         await set_reply_markup(msg, request, stack)
+
+        if stack.has_layer(Reply):
+            reply = stack.get_layer(Reply)
+            if reply.message:
+                msg['reply_to_message_id'] = reply.message['message_id']
 
         if stack.has_layer(Update):
             update = stack.get_layer(Update)
