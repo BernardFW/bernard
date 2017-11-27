@@ -158,8 +158,8 @@ class ClassExp(object):
         Transform a class exp into an actual regex
         """
 
-        x = self.RE_SPACES.sub('', expression)
-        x = self.RE_PYTHON_VAR.sub('(:?\\1,)', x)
+        x = self.RE_PYTHON_VAR.sub('(?:\\1,)', expression)
+        x = self.RE_SPACES.sub('', x)
         return re.compile(x)
 
     def _make_string(self, objects: List[Any]) -> Text:

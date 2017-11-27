@@ -5,7 +5,7 @@ from bernard.utils import ClassExp
 # noinspection PyProtectedMember
 def test_compile():
     ce = ClassExp(r'(RawText|Text)+ QuickRepliesList?')
-    expect = "re.compile('((:?RawText,)|(:?Text,))+(:?QuickRepliesList,)?')"
+    expect = "re.compile('((?:RawText,)|(?:Text,))+(?:QuickRepliesList,)?')"
     assert repr(ce._compiled_expression) == expect
 
 

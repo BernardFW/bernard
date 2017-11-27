@@ -9,6 +9,7 @@ from .helpers import FbBaseButton, FbCard
 if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
+    from bernard.engine.request import BaseMessage
 
 
 L = TypeVar('L')
@@ -498,3 +499,20 @@ class OptIn(BaseLayer):
 
     def _repr_arguments(self):
         return [self.ref]
+
+
+class Message(BaseLayer):
+    """
+    This layer represents a message embedded in another
+    """
+
+    def __init__(self, message: 'BaseMessage'):
+        from bernard.layers import Stack
+        self.message = message
+        self.stack: Stack = Stack(message.get_layers())
+
+    def _repr_arguments(self):
+        return [self.stack.layers]
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.stack == other.stack

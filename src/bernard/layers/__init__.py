@@ -20,6 +20,7 @@ from .definitions import (
     LinkClick,
     CloseWebview,
     OptIn,
+    Message,
 )
 from .helpers import (
     FbCard,

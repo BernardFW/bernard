@@ -2,7 +2,7 @@ import logging
 import ujson
 from datetime import tzinfo
 from hashlib import sha256
-from typing import Text, Any, Dict, List, Optional
+from typing import Text, Any, Dict, List, Optional, Set
 from urllib.parse import quote, urljoin
 
 from asyncio import Lock
@@ -28,7 +28,6 @@ from bernard.utils import patch_dict
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
 from ._utils import set_reply_markup
-
 
 TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
 
@@ -127,9 +126,22 @@ class TelegramMessage(BaseMessage):
             if 'text' in msg:
                 out.append(lyr.RawText(msg['text']))
 
+            if 'reply_to_message' in msg:
+                sub_msg = TelegramMessage(
+                    {'message': msg['reply_to_message']},
+                    self._telegram,
+                )
+                out.append(lyr.Message(sub_msg))
+
         if 'callback_query' in self._update:
             payload = self._update['callback_query']['data']
             out.append(lyr.Postback(ujson.loads(payload)))
+
+            sub_msg = TelegramMessage(
+                self._update['callback_query'],
+                self._telegram,
+            )
+            out.append(lyr.Message(sub_msg))
 
         if 'inline_query' in self._update:
             out.append(InlineQuery(self._update['inline_query']))
@@ -216,9 +228,13 @@ class TelegramResponder(Responder):
                 if not isinstance(l, AnswerCallbackQuery)
             ])
 
-        if 'message' in self._update and stack.has_layer(Reply):
+        if stack.has_layer(Reply):
             layer = stack.get_layer(Reply)
-            layer.message = self._update['message']
+
+            if 'message' in self._update:
+                layer.message = self._update['message']
+            elif 'callback_query' in self._update:
+                layer.message = self._update['callback_query']['message']
 
         if 'inline_query' in self._update \
                 and stack.has_layer(AnswerInlineQuery):
@@ -250,14 +266,14 @@ class Telegram(SimplePlatform):
         'plain_text': '^(Text|RawText)+ '
                       '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
                       'Reply?$'
-        
-                      '|^(Text|RawText) InlineKeyboard? Update$',
+
+                      '|^(Text|RawText) InlineKeyboard? Reply? Update$',
         'inline_answer': '^AnswerInlineQuery$',
         'markdown': '^Markdown+ '
                     '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
                     'Reply?$'
-        
-                    '|^(Text|RawText) InlineKeyboard? Update$',
+
+                    '|^Markdown InlineKeyboard? Reply? Update$',
     }
 
     @classmethod
@@ -332,10 +348,14 @@ class Telegram(SimplePlatform):
             method=quote(method),
         )
 
-    async def call(self, method: Text, **params: Dict[Text, Any]):
+    async def call(self,
+                   method: Text,
+                   _ignore: Set[Text] = None,
+                   **params: Dict[Text, Any]):
         """
         Call a telegram method
 
+        :param _ignore: List of reasons to ignore
         :param method: Name of the method to call
         :param params: Dictionary of the parameters to send
 
@@ -357,9 +377,9 @@ class Telegram(SimplePlatform):
         )
 
         async with post as r:
-            return await self._handle_telegram_response(r)
+            return await self._handle_telegram_response(r, _ignore)
 
-    async def _handle_telegram_response(self, response):
+    async def _handle_telegram_response(self, response, ignore=None):
         """
         Parse a response from Telegram. If there's an error, an exception will
         be raised with an explicative message.
@@ -368,15 +388,23 @@ class Telegram(SimplePlatform):
         :return: Data
         """
 
+        if ignore is None:
+            ignore = set()
+
         ok = response.status == 200
 
         try:
             data = await response.json()
 
             if not ok:
+                desc = data['description']
+
+                if desc in ignore:
+                    return
+
                 raise PlatformOperationError(
                     'Telegram replied with an error: {}'
-                    .format(data['description'])
+                    .format(desc)
                 )
         except (ValueError, TypeError, KeyError):
             raise PlatformOperationError('An unknown Telegram error occurred')
@@ -407,7 +435,7 @@ class Telegram(SimplePlatform):
     async def _send_text(self,
                          request: Request,
                          stack: Stack,
-                         parse_mode: Optional[Text]=None):
+                         parse_mode: Optional[Text] = None):
         """
         Base function for sending text
         """
@@ -445,7 +473,11 @@ class Telegram(SimplePlatform):
         if stack.has_layer(Update):
             update = stack.get_layer(Update)
             msg['message_id'] = update.message_id
-            await self.call('editMessageText', **msg)
+            await self.call(
+                'editMessageText',
+                {'Bad Request: message is not modified'},
+                **msg
+            )
         else:
             await self.call('sendMessage', **msg)
 
