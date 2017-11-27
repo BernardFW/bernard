@@ -23,7 +23,8 @@ from bernard import layers as lyr
 from bernard.media.base import BaseMedia
 from bernard.platforms.telegram._utils import set_reply_markup
 from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update, \
-    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery, Reply
+    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery, \
+    Reply, InlineMessage
 from bernard.utils import patch_dict
 from ...platforms import SimplePlatform
 from .layers import InlineKeyboard
@@ -116,8 +117,6 @@ class TelegramMessage(BaseMessage):
         self._telegram = telegram
 
     def get_layers(self) -> List[BaseLayer]:
-        # TODO create a MarkdownText layer
-
         out = []
 
         if 'message' in self._update:
@@ -136,6 +135,7 @@ class TelegramMessage(BaseMessage):
         if 'callback_query' in self._update:
             payload = self._update['callback_query']['data']
             out.append(lyr.Postback(ujson.loads(payload)))
+            out.append(InlineMessage())
 
             sub_msg = TelegramMessage(
                 self._update['callback_query'],
@@ -158,7 +158,11 @@ class TelegramMessage(BaseMessage):
         """
 
         if 'callback_query' in self._update:
-            return self._update['callback_query']['message']['chat']
+            query = self._update['callback_query']
+            if 'message' in query:
+                return query['message']['chat']
+            else:
+                return {'id': query['chat_instance']}
         elif 'inline_query' in self._update:
             return patch_dict(
                 self._update['inline_query']['from'],
@@ -217,9 +221,15 @@ class TelegramResponder(Responder):
 
         if 'callback_query' in self._update and stack.has_layer(Update):
             layer = stack.get_layer(Update)
-            msg = self._update['callback_query']['message']
-            layer.chat_id = msg['chat']['id']
-            layer.message_id = msg['message_id']
+
+            try:
+                msg = self._update['callback_query']['message']
+            except KeyError:
+                layer.inline_message_id = \
+                    self._update['callback_query']['inline_message_id']
+            else:
+                layer.chat_id = msg['chat']['id']
+                layer.message_id = msg['message_id']
 
         if stack.has_layer(AnswerCallbackQuery):
             self._acq = stack.get_layer(AnswerCallbackQuery)
@@ -377,7 +387,9 @@ class Telegram(SimplePlatform):
         )
 
         async with post as r:
-            return await self._handle_telegram_response(r, _ignore)
+            out = await self._handle_telegram_response(r, _ignore)
+            logger.debug('Telegram replied: %s', out)
+            return out
 
     async def _handle_telegram_response(self, response, ignore=None):
         """
@@ -472,7 +484,13 @@ class Telegram(SimplePlatform):
 
         if stack.has_layer(Update):
             update = stack.get_layer(Update)
-            msg['message_id'] = update.message_id
+
+            if update.inline_message_id:
+                msg['inline_message_id'] = update.inline_message_id
+                del msg['chat_id']
+            else:
+                msg['message_id'] = update.message_id
+
             await self.call(
                 'editMessageText',
                 {'Bad Request: message is not modified'},

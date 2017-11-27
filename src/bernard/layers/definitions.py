@@ -512,7 +512,7 @@ class Message(BaseLayer):
         self.stack: Stack = Stack(message.get_layers())
 
     def _repr_arguments(self):
-        return [self.stack.layers]
+        return [x for x in self.stack.layers]
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and self.stack == other.stack

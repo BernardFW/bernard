@@ -186,6 +186,7 @@ class Update(BaseLayer):
     def __init__(self):
         self.message_id = None
         self.chat_id = None
+        self.inline_message_id = None
 
     def __eq__(self, other):
         return self.__class__ == other.__class__
@@ -501,3 +502,15 @@ class AnswerInlineQuery(BaseLayer):
             out['is_personal'] = self.is_personal
 
         return out
+
+
+class InlineMessage(BaseLayer):
+    """
+    This layer indicates that the message is an inline message
+    """
+
+    def _repr_arguments(self):
+        return []
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__
