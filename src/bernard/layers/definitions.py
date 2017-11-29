@@ -9,6 +9,7 @@ from .helpers import FbBaseButton, FbCard
 if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
+    from bernard.engine.request import BaseMessage
 
 
 L = TypeVar('L')
@@ -123,6 +124,26 @@ class RawText(BaseLayer):
 
     def _repr_arguments(self):
         return [self.text]
+
+
+class Markdown(BaseLayer):
+    """
+    Like the Text but for Markdown.
+    """
+
+    def __init__(self, text: TextT):
+        self.text = text
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.text == other.text
+
+    def _repr_arguments(self):
+        if len(self.text) > 15:
+            text = self.text[:12] + '...'
+        else:
+            text = self.text
+
+        return [text]
 
 
 class Sleep(BaseLayer):
@@ -478,3 +499,20 @@ class OptIn(BaseLayer):
 
     def _repr_arguments(self):
         return [self.ref]
+
+
+class Message(BaseLayer):
+    """
+    This layer represents a message embedded in another
+    """
+
+    def __init__(self, message: 'BaseMessage'):
+        from bernard.layers import Stack
+        self.message = message
+        self.stack: Stack = Stack(message.get_layers())
+
+    def _repr_arguments(self):
+        return [x for x in self.stack.layers]
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.stack == other.stack

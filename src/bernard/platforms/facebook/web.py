@@ -34,7 +34,7 @@ def find_secret(page_id: Text):
     Find the matching secret of a page ID.
     """
 
-    for page in settings.FACEBOOK:
+    for page in Facebook.settings():
         if page['page_id'] == page_id:
             return page['app_secret']
 
@@ -52,7 +52,7 @@ async def check_hook(request: Request):
             'error': 'No verification token was provided',
         }, status=400)
 
-    for page in settings.FACEBOOK:
+    for page in Facebook.settings():
         if verify_token == page['security_token']:
             return Response(text=request.query.get('hub.challenge', ''))
 

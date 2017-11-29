@@ -156,7 +156,7 @@ def test_word_dict_missing():
 def test_word_dict_param():
     with patch_conf(LOADER_CONFIG_2):
         wd = WordDictionary()
-        assert wd.get('WITH_PARAM', name='Mike') == 'Hello Mike'
+        assert wd.get('WITH_PARAM', params={'name': 'Mike'}) == 'Hello Mike'
 
 
 def test_word_dict_missing_param():

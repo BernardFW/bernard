@@ -206,13 +206,13 @@ def test_fsm_find_trigger(reg):
         req = MockRequest(MockTextMessage('hello'), reg)
         run(req.transform())
 
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Text)
         assert state == Hello
 
         req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert trigger is None
         assert state is None
 
@@ -234,7 +234,7 @@ def test_fsm_find_trigger(reg):
 
         req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Choice)
         assert state == Great
 

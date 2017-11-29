@@ -5,11 +5,12 @@ import asyncio
 from asyncio import iscoroutine
 from collections import Sequence, Mapping
 from itertools import chain
-from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple
+from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple, \
+    Type
 from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode
 
 
-def import_class(name: Text) -> type:
+def import_class(name: Text) -> Type:
     """
     Import a class based on its full name.
 
@@ -157,8 +158,8 @@ class ClassExp(object):
         Transform a class exp into an actual regex
         """
 
-        x = self.RE_SPACES.sub('', expression)
-        x = self.RE_PYTHON_VAR.sub('(:?\\1,)', x)
+        x = self.RE_PYTHON_VAR.sub('(?:\\1,)', expression)
+        x = self.RE_SPACES.sub('', x)
         return re.compile(x)
 
     def _make_string(self, objects: List[Any]) -> Text:
@@ -201,3 +202,9 @@ def patch_qs(url: Text, data: Dict[Text, Text]) -> Text:
     p[qs_id] = urlencode(patched_qs)
 
     return urlunparse(p)
+
+
+def patch_dict(orig: Dict, **items):
+    out = dict(orig)
+    out.update(items)
+    return out

@@ -17,6 +17,13 @@ BERNARD stands for "Bot Engine Responding Naturally At Requests Detection".
 
 Please go to the [get started](doc/get_started.md) section!
 
+# Summary
+
+Here are the sections of documentation:
+
+- [Platforms](doc/platforms.md)
+- [Health Checks explanations](doc/health_checks.md)
+
 # Licensing
 
 There is a dual licencing scheme here:

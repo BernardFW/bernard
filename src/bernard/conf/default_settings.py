@@ -57,15 +57,12 @@ MINIMAL_TRIGGER_SCORE = 0.3
 # active (and something fails)
 DEFAULT_STATE = 'bernard.engine.state.DefaultState'
 
-# Configure here the Facebook pages you want to handle.
-# Each item is expected to be like:
+# A list of platforms to load, in the form of:
 # {
-#     'security_token': 'xxxx',
-#     'app_secret': 'xxxx',
-#     'page_id': 'xxxx',
-#     'page_token': 'xxxx',
+#     'class': 'bernard.platforms.facebook.platform.Facebook',
+#     'settings': [...],
 # }
-FACEBOOK = []
+PLATFORMS = []
 
 redis_params = {}
 redis_url = os.getenv('REDIS_URL')

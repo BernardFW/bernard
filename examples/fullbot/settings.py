@@ -38,7 +38,7 @@ REGISTER_STORE = {
     'params': {},
 }
 
-TRANSITIONS_MODULE = 'demobot.transitions'
+TRANSITIONS_MODULE = 'fullbot.transitions'
 
 I18N_INTENTS_LOADERS = [
     {
