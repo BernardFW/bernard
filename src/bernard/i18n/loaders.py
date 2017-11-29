@@ -5,13 +5,12 @@ import asyncio
 import logging
 import os.path
 from bernard.conf import settings
-from typing import Callable, Dict, Text, List, Optional
-
+from typing import Callable, Dict, Text, List, Optional, Tuple
 
 logger = logging.getLogger('bernard.i18n.loaders')
 
 
-TransDict = Dict[Optional[Text], Dict[Text, Text]]
+TransDict = Dict[Optional[Text], List[Tuple[Text, Text]]]
 IntentDict = Dict[Optional[Text], Dict[Text, List[Text]]]
 
 
@@ -141,7 +140,8 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
 
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            data = {x[0]: x[1] for x in reader if len(x) >= 2}
+            data = [(x[0], x[1]) for x in reader if len(x) >= 2]
+
         self._update({self._locale: data})
 
     async def load(self, file_path, locale=None):

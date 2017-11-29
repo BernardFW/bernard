@@ -50,19 +50,6 @@ class LocalesDict(object):
         self.dict = OrderedDict()
         self._choice_cache = {}
 
-    def update(self, new_data: Dict[Text, Dict[Text, Text]]):
-        """
-        Receive an update from a loader.
-
-        :param new_data: New translation data from the loader
-        """
-
-        for locale, data in new_data.items():
-            if locale not in self.dict:
-                self.dict[locale] = {}
-
-            self.dict[locale].update(data)
-
     def list_locales(self) -> List[Optional[Text]]:
         """
         Returns the list of available locales. The first locale is the default
@@ -101,3 +88,25 @@ class LocalesDict(object):
             self._choice_cache[locale] = best_choice
 
         return self._choice_cache[locale]
+
+
+class LocalesFlatDict(LocalesDict):
+    """
+    That used to be in LocalesDict but the children diverged and now this
+    method is alone. It could have gone directly into the intents loader but
+    it feels like it'll have to go outside again, so for now it stays in this
+    class.
+    """
+
+    def update(self, new_data: Dict[Text, Dict[Text, Text]]):
+        """
+        Receive an update from a loader.
+
+        :param new_data: New translation data from the loader
+        """
+
+        for locale, data in new_data.items():
+            if locale not in self.dict:
+                self.dict[locale] = {}
+
+            self.dict[locale].update(data)

@@ -34,6 +34,12 @@ I18N_INTENTS_LOADERS = []
 I18N_LIVE_RELOAD = (DEBUG and sys.platform in {'linux', 'linux2'}) or \
                    os.getenv('I18N_LIVE_RELOAD') == 'yes'
 
+# Translators have the freedom to split messages into several sentences.
+# However, due to the memory structures involved, they could really hurt the
+# program by using absurd values. This puts a limit on the list sizes they can
+# generate
+I18N_MAX_SENTENCES_PER_GROUP = 10
+
 # How long should a register lock last? Registers are locked when starting to
 # answer a message and freed when the response is sent. One minute sounds
 # reasonable.
