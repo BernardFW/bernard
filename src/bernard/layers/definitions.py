@@ -110,6 +110,13 @@ class Text(BaseLayer):
         return RawText(await render(self.text, request))
 
 
+class MultiText(Text):
+    """
+    That's exactly like a Text layer but which can output several messages at
+    once.
+    """
+
+
 class RawText(BaseLayer):
     """
     That is a text message that warranties it will never have to be translated.

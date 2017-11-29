@@ -455,13 +455,20 @@ def unserialize(wd: WordDictionary, text: Dict):
         raise ValueError('Not enough information to unserialize')
 
 
-async def render(text: TransText, request: 'Request'):
+async def render(text: TransText, request: 'Request', multi_line=False):
     """
     Render either a normal string either a string to translate into an actual
     string for the specified request.
     """
 
     if isinstance(text, str):
-        return text
+        out = [text]
     elif isinstance(text, StringToTranslate):
-        return await text.render(request)
+        out = await text.render_list(request)
+    else:
+        raise TypeError('Provided text cannot be rendered')
+
+    if multi_line:
+        return out
+    else:
+        return ' '.join(out)
