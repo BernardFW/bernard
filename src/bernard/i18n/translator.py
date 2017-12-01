@@ -364,7 +364,7 @@ class StringToTranslate(object):
 
         resolved_params = await self._resolve_params(self.params, request)
 
-        f = I18nFormatter(locale, tz)
+        f = I18nFormatter(self.wd.choose_locale(locale), tz)
         return self.wd.get(self.key, self.count, f, locale, resolved_params)
 
 
