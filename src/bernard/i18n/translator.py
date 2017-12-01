@@ -317,6 +317,24 @@ class StringToTranslate(object):
 
         return 't({})'.format(', '.join(parts))
 
+    async def _resolve_params(self,
+                              params: Dict[Text, Any],
+                              request: Optional['Request']):
+        """
+        If any StringToTranslate was passed as parameter then it is rendered
+        at this moment.
+        """
+
+        out = {}
+
+        for k, v in params.items():
+            if isinstance(v, StringToTranslate):
+                out[k] = await render(v, request)
+            else:
+                out[k] = v
+
+        return out
+
     async def render(self, request=None):
         """
         Render the translation for the specified request. If no request is
@@ -344,8 +362,10 @@ class StringToTranslate(object):
             tz = None
             locale = self.wd.list_locales()[0]
 
+        resolved_params = await self._resolve_params(self.params, request)
+
         f = I18nFormatter(locale, tz)
-        return self.wd.get(self.key, self.count, f, locale, self.params)
+        return self.wd.get(self.key, self.count, f, locale, resolved_params)
 
 
 class Translator(object):
