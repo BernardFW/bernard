@@ -20,6 +20,7 @@ from bernard import layers as lyr
 from bernard.engine.platform import PlatformOperationError, SimplePlatform
 from bernard.layers.definitions import BaseMediaLayer
 from bernard.media.base import BaseMedia, UrlMedia
+from bernard.conf import settings
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
