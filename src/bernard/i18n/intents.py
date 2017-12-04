@@ -3,13 +3,13 @@ from typing import List, Text, Optional, TYPE_CHECKING
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from .loaders import BaseIntentsLoader, IntentDict
-from .utils import LocalesDict
+from .utils import LocalesFlatDict
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
 
 
-class IntentsDb(LocalesDict):
+class IntentsDb(LocalesFlatDict):
     """
     Database of intents. In the future it will handle different langs but right
     now it only handles one.

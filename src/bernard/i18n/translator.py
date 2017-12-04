@@ -1,7 +1,10 @@
 # coding: utf-8
-from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Any
-from collections import Mapping
+from random import SystemRandom
+from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Any, \
+    NamedTuple, Tuple
+from collections import Mapping, defaultdict
 from bernard.conf import settings
+from bernard.i18n.loaders import TransDict
 from bernard.utils import import_class, run
 from string import Formatter
 from .loaders import BaseTranslationLoader
@@ -10,6 +13,9 @@ from ._formatter import I18nFormatter
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
+
+
+random = SystemRandom()
 
 
 class TranslationError(Exception):
@@ -28,6 +34,128 @@ class MissingParamError(TranslationError):
     """
     Raised if a translation needs parameters that can't be found
     """
+
+
+class TransItem(NamedTuple):
+    """
+    This is a single "item of translation". Typically it comes from the CSV.
+
+    It's a de-normalized representation of translations. There is 3 properties
+    today but it might become more in the future.
+
+    - `key` is the translation key
+    - `index` is the number of the message in case you're doing a multi-part
+      message (from 1 to the infinite)
+    - `value` is the raw text value
+    """
+
+    key: Text
+    index: int
+    value: Text
+
+
+class Sentence(object):
+    """
+    A single sentence. The main goal of this class is to provide an easy way to
+    get a random sentence from the list and to see if the list is valid.
+    """
+
+    def __init__(self):
+        self.items: List[TransItem] = []
+
+    def render(self) -> Text:
+        """
+        Chooses a random sentence from the list and returns it.
+        """
+        return random.choice(self.items).value
+
+    def append(self, item: TransItem):
+        """
+        Add an item to the list. No checks are made, it's assumed that the
+        object is consistent with the others in the list.
+        """
+        self.items.append(item)
+
+    def check(self):
+        """
+        Checks that the list is not empty.
+        """
+        return bool(self.items)
+
+
+class SentenceGroup(object):
+    """
+    That's a group of sentences, aka a "step" in a conversation that might get
+    split into several messages at the will of the translator.
+
+    It will automatically group items into sentences of the same index, however
+    you need at least one item for each sentence. In other words, if you try
+    to add FOO+1 and FOO+3 it won't work.
+
+    Order of insertion does not matter.
+    """
+
+    def __init__(self):
+        self.sentences: List[Sentence] = []
+
+    def render(self) -> List[Text]:
+        """
+        Returns a list of randomly chosen outcomes for each sentence of the
+        list.
+        """
+        return [x.render() for x in self.sentences]
+
+    def append(self, item: TransItem):
+        """
+        Append an item to the list. If there is not enough sentences in the
+        list, then the list is extended as needed.
+
+        There is no control made to make sure that the key is consistent.
+        """
+
+        if not (1 <= item.index <= settings.I18N_MAX_SENTENCES_PER_GROUP):
+            return
+
+        if len(self.sentences) < item.index:
+            for _ in range(len(self.sentences), item.index):
+                self.sentences.append(Sentence())
+
+        self.sentences[item.index - 1].append(item)
+
+    def check(self):
+        return len(self.sentences) and all(x.check() for x in self.sentences)
+
+
+class SortingDict(object):
+    """
+    A validating and sorting dictionary for translation items. The intended use
+    is to append all your values to it and then to extract it to get only the
+    valid keys out. Then you can discard this object.
+    """
+
+    def __init__(self):
+        self.data: Dict[Text, SentenceGroup] = \
+            defaultdict(lambda: SentenceGroup())
+
+    def extract(self):
+        """
+        Extract only the valid sentence groups into a dictionary.
+        """
+
+        out = {}
+
+        for key, group in self.data.items():
+            if group.check():
+                out[key] = group
+
+        return out
+
+    def append(self, item: TransItem):
+        """
+        Append an item to the internal dictionary.
+        """
+
+        self.data[item.key].append(item)
 
 
 class WordDictionary(LocalesDict):
@@ -52,12 +180,63 @@ class WordDictionary(LocalesDict):
             instance.on_update(self.update)
             run(instance.load(**loader['params']))
 
+    def parse_item(self, key, value) -> Optional[TransItem]:
+        """
+        Parse an item (and more specifically its key).
+        """
+
+        parts = key.split('+')
+        pure_key = parts[0]
+
+        try:
+            if len(parts) == 2:
+                index = int(parts[1])
+            elif len(parts) > 2:
+                return
+            else:
+                index = 1
+        except (ValueError, TypeError):
+            return
+
+        if index < 1:
+            return
+
+        return TransItem(
+            key=pure_key,
+            index=index,
+            value=value,
+        )
+
+    def update_lang(self, lang: Text, data: List[Tuple[Text, Text]]):
+        """
+        Update translations for one specific lang
+        """
+
+        sd = SortingDict()
+
+        for item in (self.parse_item(*x) for x in data):
+            if item:
+                sd.append(item)
+
+        if lang not in self.dict:
+            self.dict[lang] = {}
+
+        self.dict[lang].update(sd.extract())
+
+    def update(self, data: TransDict):
+        """
+        Update all langs at once
+        """
+
+        for lang, lang_data in data.items():
+            self.update_lang(lang, lang_data)
+
     def get(self,
             key: Text,
             count: Optional[int]=None,
             formatter: Formatter=None,
             locale: Text=None,
-            params: Dict[Text, Any]=None) -> Text:
+            params: Dict[Text, Any]=None) -> List[Text]:
         """
         Get the appropriate translation given the specified parameters.
 
@@ -77,23 +256,27 @@ class WordDictionary(LocalesDict):
         locale = self.choose_locale(locale)
 
         try:
-            out = self.dict[locale][key]
+            group: SentenceGroup = self.dict[locale][key]
         except KeyError:
             raise MissingTranslationError('Translation "{}" does not exist'
                                           .format(key))
 
         try:
-            if not formatter:
-                out = out.format(**params)
-            else:
-                out = formatter.format(out, **params)
+            trans = group.render()
+            out = []
+
+            for line in trans:
+                if not formatter:
+                    out.append(line.format(**params))
+                else:
+                    out.append(formatter.format(line, **params))
         except KeyError as e:
             raise MissingParamError(
                 'Parameter "{}" missing to translate "{}"'
                 .format(e.args[0], key)
             )
-
-        return out
+        else:
+            return out
 
 
 class StringToTranslate(object):
@@ -134,6 +317,24 @@ class StringToTranslate(object):
 
         return 't({})'.format(', '.join(parts))
 
+    async def _resolve_params(self,
+                              params: Dict[Text, Any],
+                              request: Optional['Request']):
+        """
+        If any StringToTranslate was passed as parameter then it is rendered
+        at this moment.
+        """
+
+        out = {}
+
+        for k, v in params.items():
+            if isinstance(v, StringToTranslate):
+                out[k] = await render(v, request)
+            else:
+                out[k] = v
+
+        return out
+
     async def render(self, request=None):
         """
         Render the translation for the specified request. If no request is
@@ -161,8 +362,10 @@ class StringToTranslate(object):
             tz = None
             locale = self.wd.list_locales()[0]
 
-        f = I18nFormatter(locale, tz)
-        return [self.wd.get(self.key, self.count, f, locale, self.params)]
+        resolved_params = await self._resolve_params(self.params, request)
+
+        f = I18nFormatter(self.wd.choose_locale(locale), tz)
+        return self.wd.get(self.key, self.count, f, locale, resolved_params)
 
 
 class Translator(object):
@@ -272,13 +475,20 @@ def unserialize(wd: WordDictionary, text: Dict):
         raise ValueError('Not enough information to unserialize')
 
 
-async def render(text: TransText, request: 'Request'):
+async def render(text: TransText, request: 'Request', multi_line=False):
     """
     Render either a normal string either a string to translate into an actual
     string for the specified request.
     """
 
     if isinstance(text, str):
-        return text
+        out = [text]
     elif isinstance(text, StringToTranslate):
-        return await text.render(request)
+        out = await text.render_list(request)
+    else:
+        raise TypeError('Provided text cannot be rendered')
+
+    if multi_line:
+        return out
+    else:
+        return ' '.join(out)

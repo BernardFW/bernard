@@ -268,7 +268,7 @@ class Facebook(SimplePlatform):
     NAME = 'facebook'
 
     PATTERNS = {
-        'text': '(Text|RawText)+ QuickRepliesList?',
+        'text': '(Text|RawText|MultiText)+ QuickRepliesList?',
         'generic_template': 'FbGenericTemplate',
         'button_template': 'FbButtonTemplate',
         'attachment': '(Image|Audio|Video|File)',
@@ -427,7 +427,12 @@ class Facebook(SimplePlatform):
         parts = []
 
         for layer in stack.layers:
-            if isinstance(layer, (lyr.Text, lyr.RawText)):
+            if isinstance(layer, lyr.MultiText):
+                lines = await render(layer.text, request, multi_line=True)
+                for line in lines:
+                    for part in wrap(line, 320):
+                        parts.append(part)
+            elif isinstance(layer, (lyr.Text, lyr.RawText)):
                 text = await render(layer.text, request)
                 for part in wrap(text, 320):
                     parts.append(part)

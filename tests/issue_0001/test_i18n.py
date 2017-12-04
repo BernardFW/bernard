@@ -66,7 +66,7 @@ LOADER_CONFIG_3 = {
 # noinspection PyProtectedMember
 def test_translations_events_spreading():
     mock_cb = Mock()
-    data = {None: {'updated': 'yes'}}
+    data = {None: []}
 
     loader = BaseTranslationLoader()
     loader.on_update(mock_cb)
@@ -98,7 +98,7 @@ def test_load_translations_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=TRANS_FILE_PATH))
 
-    mock_cb.assert_called_once_with({None: data})
+    mock_cb.assert_called_once_with({None: list(data.items())})
 
 
 def test_base_translations_loader_is_abstract():
@@ -133,12 +133,6 @@ def test_load_intents_csv():
     mock_cb.assert_called_once_with({None: data})
 
 
-def test_word_dict():
-    with patch_conf(LOADER_CONFIG):
-        wd = WordDictionary()
-        assert wd.get('FOO') == 'éléphant'
-
-
 def test_word_dict_count():
     wd = WordDictionary()
 
@@ -156,7 +150,7 @@ def test_word_dict_missing():
 def test_word_dict_param():
     with patch_conf(LOADER_CONFIG_2):
         wd = WordDictionary()
-        assert wd.get('WITH_PARAM', params={'name': 'Mike'}) == 'Hello Mike'
+        assert wd.get('WITH_PARAM', params={'name': 'Mike'}) == ['Hello Mike']
 
 
 def test_word_dict_missing_param():

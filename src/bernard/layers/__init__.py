@@ -5,6 +5,7 @@ from .definitions import (
     BaseLayer,
     Text,
     RawText,
+    MultiText,
     Markdown,
     Sleep,
     QuickReply,
