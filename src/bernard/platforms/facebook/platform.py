@@ -6,13 +6,13 @@ import ujson
 import logging
 import jwt
 from textwrap import wrap
-from typing import Text, Coroutine, List, Any, Dict, Optional
+from typing import Text, List, Any, Dict, Optional
 from urllib.parse import urljoin
 
 from bernard.utils import patch_qs
 from dateutil import tz
 from datetime import tzinfo
-from bernard.engine.responder import UnacceptableStack, Responder
+from bernard.engine.responder import Responder
 from bernard.engine.request import Request, BaseMessage, User, Conversation
 from bernard.i18n.translator import render
 from bernard.layers import Stack, BaseLayer
@@ -268,11 +268,11 @@ class Facebook(SimplePlatform):
     NAME = 'facebook'
 
     PATTERNS = {
-        'text': '(Text|RawText|MultiText)+ QuickRepliesList?',
-        'generic_template': 'FbGenericTemplate',
-        'button_template': 'FbButtonTemplate',
-        'attachment': '(Image|Audio|Video|File)',
-        'sleep': 'Sleep',
+        'text': '^(Text|RawText|MultiText)+ QuickRepliesList?$',
+        'generic_template': '^FbGenericTemplate QuickRepliesList?$',
+        'button_template': '^FbButtonTemplate QuickRepliesList?$',
+        'attachment': '^(Image|Audio|Video|File) QuickRepliesList?$',
+        'sleep': '^Sleep$',
     }
 
     async def _deferred_init(self):
@@ -415,6 +415,17 @@ class Facebook(SimplePlatform):
                 'content_type': 'location',
             }
 
+    async def _add_qr(self, stack, msg, request):
+        try:
+            qr = stack.get_layer(lyr.QuickRepliesList)
+        except KeyError:
+            pass
+        else:
+            # noinspection PyUnresolvedReferences
+            msg['quick_replies'] = [
+                await self._make_qr(o, request) for o in qr.options
+            ]
+
     async def _send_text(self, request: Request, stack: Stack):
         """
         Send text layers to the user. Each layer will go in its own bubble.
@@ -448,16 +459,7 @@ class Facebook(SimplePlatform):
             'text': part,
         }
 
-        try:
-            qr = stack.get_layer(lyr.QuickRepliesList)
-        except KeyError:
-            pass
-        else:
-            # noinspection PyUnresolvedReferences
-            msg['quick_replies'] = [
-                await self._make_qr(o, request) for o in qr.options
-            ]
-
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_generic_template(self, request: Request, stack: Stack):
@@ -475,6 +477,7 @@ class Facebook(SimplePlatform):
             }
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_button_template(self, request: Request, stack: Stack):
@@ -497,6 +500,7 @@ class Facebook(SimplePlatform):
             }
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_attachment(self, request: Request, stack: Stack):
@@ -520,6 +524,7 @@ class Facebook(SimplePlatform):
             },
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_sleep(self, request: Request, stack: Stack):
