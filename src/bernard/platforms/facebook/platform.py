@@ -9,6 +9,7 @@ from textwrap import wrap
 from typing import Text, List, Any, Dict, Optional
 from urllib.parse import urljoin
 
+from bernard.reporter import reporter
 from bernard.utils import patch_qs
 from dateutil import tz
 from datetime import tzinfo
@@ -286,6 +287,29 @@ class Facebook(SimplePlatform):
         await self._set_persistent_menu()
         await self._set_whitelist()
 
+    async def _get_messenger_profile(self, page, fields: List[Text]):
+        """
+        Fetch the value of specified fields in order to avoid setting the same
+        field twice at the same value (since Facebook engineers are not able
+        to make menus that keep on working if set again).
+        """
+
+        params = {
+            'access_token': page['page_token'],
+            'fields': ','.join(fields),
+        }
+
+        get = self.session.get(PROFILE_ENDPOINT, params=params)
+        async with get as r:
+            await self._handle_fb_response(r)
+
+            out = {}
+
+            for data in (await r.json())['data']:
+                out.update(data)
+
+            return out
+
     async def _send_to_messenger_profile(self, page, content):
         """
         The messenger profile API handles all meta-information about the bot,
@@ -294,6 +318,14 @@ class Facebook(SimplePlatform):
         :param page: page dict from the configuration
         :param content: content to be sent to Facebook (as dict)
         """
+
+        log_name = ', '.join(repr(x) for x in content.keys())
+        page_id = page['page_id']
+
+        current = await self._get_messenger_profile(page, content.keys())
+
+        if current == content:
+            logger.info('Page %s: %s is already up to date', page_id, log_name)
 
         params = {
             'access_token': page['page_token'],
@@ -310,8 +342,15 @@ class Facebook(SimplePlatform):
             data=ujson.dumps(content)
         )
 
-        async with post as r:
-            await self._handle_fb_response(r)
+        # noinspection PyBroadException
+        try:
+            async with post as r:
+                await self._handle_fb_response(r)
+        except Exception:
+            logger.exception('Page %s: %s could not be set', page_id, log_name)
+            reporter.report()
+        else:
+            logger.info('Page %s: %s was updated', page_id, log_name)
 
     async def _set_get_started(self):
         """
