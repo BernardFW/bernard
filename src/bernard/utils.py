@@ -208,3 +208,31 @@ def patch_dict(orig: Dict, **items):
     out = dict(orig)
     out.update(items)
     return out
+
+
+def dict_is_subset(subset: Any, full_set: Any) -> bool:
+    """
+    Checks that all keys present in `subset` are present and have the same
+    value in `full_set`. If a key is in `full_set` but not in `subset` then
+    True will be returned anyways.
+    """
+
+    if not isinstance(subset, full_set.__class__):
+        return False
+    elif isinstance(subset, dict):
+        for k, v in subset.items():
+            if k not in full_set or not dict_is_subset(v, full_set[k]):
+                return False
+
+        return True
+    elif isinstance(subset, list):
+        if len(subset) != len(full_set):
+            return False
+
+        for a, b in zip(subset, full_set):
+            if not dict_is_subset(a, b):
+                return False
+
+        return True
+    else:
+        return subset == full_set
