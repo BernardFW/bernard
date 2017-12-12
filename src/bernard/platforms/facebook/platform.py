@@ -326,6 +326,7 @@ class Facebook(SimplePlatform):
 
         if dict_is_subset(content, current):
             logger.info('Page %s: %s is already up to date', page_id, log_name)
+            return
 
         params = {
             'access_token': page['page_token'],
