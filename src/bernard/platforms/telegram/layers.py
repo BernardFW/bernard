@@ -514,3 +514,19 @@ class InlineMessage(BaseLayer):
 
     def __eq__(self, other):
         return self.__class__ == other.__class__
+
+
+class BotCommand(BaseLayer):
+    """
+    That is when the user sends a command to the bot
+    """
+
+    def __init__(self, command: Text):
+        self.command = command
+
+    def _repr_arguments(self):
+        return [self.command]
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+            and self.command == other.command

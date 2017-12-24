@@ -21,13 +21,17 @@ from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
-from bernard.platforms.telegram._utils import set_reply_markup
-from bernard.platforms.telegram.layers import AnswerCallbackQuery, Update, \
-    ReplyKeyboard, ReplyKeyboardRemove, InlineQuery, AnswerInlineQuery, \
-    Reply, InlineMessage
 from bernard.utils import patch_dict
 from ...platforms import SimplePlatform
-from .layers import InlineKeyboard
+from .layers import (
+    AnswerCallbackQuery,
+    Update,
+    InlineQuery,
+    AnswerInlineQuery,
+    Reply,
+    InlineMessage,
+    BotCommand,
+)
 from ._utils import set_reply_markup
 
 TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
@@ -123,7 +127,16 @@ class TelegramMessage(BaseMessage):
             msg = self._update.get('message', {})
 
             if 'text' in msg:
-                out.append(lyr.RawText(msg['text']))
+                text = msg['text']
+                out.append(lyr.RawText(text))
+
+                for entity in (msg.get('entities') or []):
+                    o = entity['offset']
+                    l = entity['length']
+                    entity_text = text[o:o + l]
+
+                    if entity['type'] == 'bot_command':
+                        out.append(BotCommand(entity_text))
 
             if 'reply_to_message' in msg:
                 sub_msg = TelegramMessage(
