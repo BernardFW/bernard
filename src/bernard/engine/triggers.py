@@ -340,7 +340,22 @@ class Worst(BaseTrigger):
 
         return m
 
-        return min(x or 0.0 for x in await asyncio.gather(*(
-            run_or_return(x(self.request).rank())
-            for x in self.triggers
-        )))
+
+class Equal(BaseTrigger):
+    """
+    Tests if, in the received layers, there is one layer that is equal to the
+    provided layer.
+    """
+
+    def __init__(self, request: Request, layer: l.BaseLayer):
+        super().__init__(request)
+        self.layer = layer
+
+    def rank(self):
+        try:
+            other = self.request.get_layer(self.layer.__class__)
+            assert self.layer == other
+        except (KeyError, AssertionError):
+            return 0.0
+        else:
+            return 1.0

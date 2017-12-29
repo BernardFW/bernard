@@ -10,7 +10,7 @@ from typing import Text, List, Any, Dict, Optional
 from urllib.parse import urljoin
 
 from bernard.reporter import reporter
-from bernard.utils import patch_qs
+from bernard.utils import patch_qs, dict_is_subset
 from dateutil import tz
 from datetime import tzinfo
 from bernard.engine.responder import Responder
@@ -328,8 +328,9 @@ class Facebook(SimplePlatform):
 
         current = await self._get_messenger_profile(page, content.keys())
 
-        if current == content:
+        if dict_is_subset(content, current):
             logger.info('Page %s: %s is already up to date', page_id, log_name)
+            return
 
         params = {
             'access_token': page['page_token'],
