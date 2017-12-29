@@ -6,13 +6,14 @@ import ujson
 import logging
 import jwt
 from textwrap import wrap
-from typing import Text, Coroutine, List, Any, Dict, Optional
+from typing import Text, List, Any, Dict, Optional
 from urllib.parse import urljoin
 
+from bernard.reporter import reporter
 from bernard.utils import patch_qs
 from dateutil import tz
 from datetime import tzinfo
-from bernard.engine.responder import UnacceptableStack, Responder
+from bernard.engine.responder import Responder
 from bernard.engine.request import Request, BaseMessage, User, Conversation
 from bernard.i18n.translator import render
 from bernard.layers import Stack, BaseLayer
@@ -272,11 +273,11 @@ class Facebook(SimplePlatform):
     NAME = 'facebook'
 
     PATTERNS = {
-        'text': '(Text|RawText|MultiText)+ QuickRepliesList?',
-        'generic_template': 'FbGenericTemplate',
-        'button_template': 'FbButtonTemplate',
-        'attachment': '(Image|Audio|Video|File)',
-        'sleep': 'Sleep',
+        'text': '^(Text|RawText|MultiText)+ QuickRepliesList?$',
+        'generic_template': '^FbGenericTemplate QuickRepliesList?$',
+        'button_template': '^FbButtonTemplate QuickRepliesList?$',
+        'attachment': '^(Image|Audio|Video|File) QuickRepliesList?$',
+        'sleep': '^Sleep$',
     }
 
     async def _deferred_init(self):
@@ -290,6 +291,29 @@ class Facebook(SimplePlatform):
         await self._set_persistent_menu()
         await self._set_whitelist()
 
+    async def _get_messenger_profile(self, page, fields: List[Text]):
+        """
+        Fetch the value of specified fields in order to avoid setting the same
+        field twice at the same value (since Facebook engineers are not able
+        to make menus that keep on working if set again).
+        """
+
+        params = {
+            'access_token': page['page_token'],
+            'fields': ','.join(fields),
+        }
+
+        get = self.session.get(PROFILE_ENDPOINT, params=params)
+        async with get as r:
+            await self._handle_fb_response(r)
+
+            out = {}
+
+            for data in (await r.json())['data']:
+                out.update(data)
+
+            return out
+
     async def _send_to_messenger_profile(self, page, content):
         """
         The messenger profile API handles all meta-information about the bot,
@@ -298,6 +322,14 @@ class Facebook(SimplePlatform):
         :param page: page dict from the configuration
         :param content: content to be sent to Facebook (as dict)
         """
+
+        log_name = ', '.join(repr(x) for x in content.keys())
+        page_id = page['page_id']
+
+        current = await self._get_messenger_profile(page, content.keys())
+
+        if current == content:
+            logger.info('Page %s: %s is already up to date', page_id, log_name)
 
         params = {
             'access_token': page['page_token'],
@@ -314,8 +346,15 @@ class Facebook(SimplePlatform):
             data=ujson.dumps(content)
         )
 
-        async with post as r:
-            await self._handle_fb_response(r)
+        # noinspection PyBroadException
+        try:
+            async with post as r:
+                await self._handle_fb_response(r)
+        except Exception:
+            logger.exception('Page %s: %s could not be set', page_id, log_name)
+            reporter.report()
+        else:
+            logger.info('Page %s: %s was updated', page_id, log_name)
 
     async def _set_get_started(self):
         """
@@ -419,6 +458,17 @@ class Facebook(SimplePlatform):
                 'content_type': 'location',
             }
 
+    async def _add_qr(self, stack, msg, request):
+        try:
+            qr = stack.get_layer(lyr.QuickRepliesList)
+        except KeyError:
+            pass
+        else:
+            # noinspection PyUnresolvedReferences
+            msg['quick_replies'] = [
+                await self._make_qr(o, request) for o in qr.options
+            ]
+
     async def _send_text(self, request: Request, stack: Stack):
         """
         Send text layers to the user. Each layer will go in its own bubble.
@@ -452,16 +502,7 @@ class Facebook(SimplePlatform):
             'text': part,
         }
 
-        try:
-            qr = stack.get_layer(lyr.QuickRepliesList)
-        except KeyError:
-            pass
-        else:
-            # noinspection PyUnresolvedReferences
-            msg['quick_replies'] = [
-                await self._make_qr(o, request) for o in qr.options
-            ]
-
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_generic_template(self, request: Request, stack: Stack):
@@ -479,6 +520,7 @@ class Facebook(SimplePlatform):
             }
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_button_template(self, request: Request, stack: Stack):
@@ -501,6 +543,7 @@ class Facebook(SimplePlatform):
             }
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_attachment(self, request: Request, stack: Stack):
@@ -524,6 +567,7 @@ class Facebook(SimplePlatform):
             },
         }
 
+        await self._add_qr(stack, msg, request)
         await self._send(request, msg)
 
     async def _send_sleep(self, request: Request, stack: Stack):
