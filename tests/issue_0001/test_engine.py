@@ -203,6 +203,7 @@ def test_fsm_init():
 def test_fsm_find_trigger(reg):
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
+        run(fsm.async_init())
         req = MockRequest(MockTextMessage('hello'), reg)
         run(req.transform())
 
@@ -243,6 +244,7 @@ def test_fsm_find_trigger(reg):
 def test_fsm_confused_state():
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
+        run(fsm.async_init())
 
         reg = Register({})
         req = Request(MockEmptyMessage(), reg)

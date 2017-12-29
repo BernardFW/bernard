@@ -60,7 +60,11 @@ class FacebookUser(User):
         """
 
         if self._cache is None:
-            self._cache = await self.facebook.get_user(self.fbid, self.page_id)
+            try:
+                self._cache = \
+                    await self.facebook.get_user(self.fbid, self.page_id)
+            except PlatformOperationError:
+                self._cache = {}
         return self._cache
 
     async def get_full_name(self) -> Text:

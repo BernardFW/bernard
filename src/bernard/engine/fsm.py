@@ -59,6 +59,34 @@ class FSM(object):
           list, then check the health of each of them.
         """
 
+        ds_class = getattr(settings, 'DEFAULT_STATE', '')
+        forbidden_defaults = [None, '', 'bernard.engine.state.DefaultState']
+
+        if ds_class in forbidden_defaults:
+            yield HealthCheckFail(
+                '00005',
+                f'Default state (`DEFAULT_STATE` in settings) is not set. '
+                f'You need to set it to your own implementation. Please refer '
+                f'yourself to the doc. See '
+                f'https://github.com/BernardFW/bernard/blob/develop/doc/'
+                f'get_started.md#statespy'
+            )
+
+        try:
+            import_class(ds_class)
+        except (ImportError, KeyError, AttributeError, TypeError):
+            yield HealthCheckFail(
+                '00005',
+                f'Cannot import "{ds_class}", which is the value'
+                f' of `DEFAULT_STATE` in the configuration. This means either'
+                f' that your `PYTHONPATH` is wrong or that the value you gave'
+                f' to `DEFAULT_STATE` is wrong. You need to provide a default'
+                f' state class for this framework to work. Please refer'
+                f' yourself to the documentation for more information. See'
+                f' https://github.com/BernardFW/bernard/blob/develop/doc/'
+                f'get_started.md#statespy'
+            )
+
         states = set(t.dest for t in self.transitions)
 
         for state in states:
