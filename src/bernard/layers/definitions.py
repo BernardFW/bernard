@@ -523,3 +523,19 @@ class Message(BaseLayer):
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and self.stack == other.stack
+
+
+class Typing(BaseLayer):
+    """
+    Indicates that the bot is currently "typing" its response
+    """
+
+    def __init__(self, active=True):
+        self.active = active
+
+    def _repr_arguments(self):
+        return [self.active]
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+            and self.active == other.active

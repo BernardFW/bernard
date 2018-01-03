@@ -6,6 +6,7 @@ from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
 from bernard.conf import settings
 from bernard.core.health_check import HealthCheckFail
 from bernard.i18n.translator import MissingTranslationError
+from bernard.middleware import MiddlewareManager
 from bernard.utils import import_class
 from bernard.storage.register import BaseRegisterStore, Register
 from bernard.reporter import reporter
@@ -193,7 +194,6 @@ class FSM(object):
         Build the state for this request.
         """
 
-        logger.debug('Incoming message: %s', request.stack)
         trigger, state_class, dnr = await self._find_trigger(request)
 
         if trigger is None:
@@ -268,6 +268,10 @@ class FSM(object):
         :return: The register that was saved
         """
 
+        async def noop(request: Request, responder: Responder):
+            pass
+
+        mm = MiddlewareManager.instance()
         reg_manager = self.register\
             .work_on_register(message.get_conversation().id)
 
@@ -277,6 +281,9 @@ class FSM(object):
 
             if not request.stack.layers:
                 return
+
+            logger.debug('Incoming message: %s', request.stack)
+            await mm.get('pre_handle', noop)(request, responder)
 
             try:
                 state, trigger, dnr = \
