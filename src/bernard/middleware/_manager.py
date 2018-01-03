@@ -77,7 +77,8 @@ class Caller(object):
         if is_root and not self._complete:
             # noinspection PyUnresolvedReferences
             faulty = self._stack[self._pos - 1].__qualname__
-            raise TypeError(f'"{faulty}" did not call `self.next()`')
+            raise TypeError(f'"{faulty}" did not call `self.next()`, or '
+                            f'forgot to await it')
 
         return out
 

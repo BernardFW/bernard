@@ -89,7 +89,7 @@ def test_init():
 
 # noinspection PyProtectedMember
 def test_instance():
-    assert MiddlewareManager._instance is None
+    MiddlewareManager._instance = None
 
     i1 = MiddlewareManager.instance()
     i2 = MiddlewareManager.instance()
@@ -104,7 +104,8 @@ def test_next_not_called():
 
     rn = m.get('return_n', return_n)
 
-    error_msg = '"BadPlayer.return_n" did not call `self.next()`'
+    error_msg = '"BadPlayer.return_n" did not call `self.next()`, or forgot ' \
+                'to await it'
 
     with pytest.raises(TypeError) as exec_info:
         run(rn(0))
