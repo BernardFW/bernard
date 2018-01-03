@@ -6,6 +6,7 @@ from bernard.core.health_check import HealthCheckFail
 from bernard.engine.fsm import FSM
 from bernard.engine.platform import PlatformDoesNotExist, Platform
 from bernard.conf import settings
+from bernard.middleware import MiddlewareManager
 from bernard.utils import import_class
 
 logger = logging.getLogger('bernard.platform.health')
@@ -89,6 +90,9 @@ class PlatformManager(object):
             yield check
 
         async for check in self.self_check():
+            yield check
+
+        for check in MiddlewareManager.health_check():
             yield check
 
     async def self_check(self):

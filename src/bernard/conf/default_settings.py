@@ -138,3 +138,6 @@ ANALYTICS_PROVIDERS = [
     if (os.getenv('GOOGLE_ANALYTICS_ID') and
         os.getenv('GOOGLE_ANALYTICS_DOMAIN')) \
     else []
+
+# All middlewares
+MIDDLEWARES = []
