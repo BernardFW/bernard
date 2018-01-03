@@ -132,3 +132,36 @@ class AutoSleep(BaseMiddleware):
         wc = re.findall(r'\w+', text)
         period = 60.0 / settings.USERS_READING_SPEED
         return float(len(wc)) * period + settings.USERS_READING_BUBBLE_START
+
+
+class AutoType(BaseMiddleware):
+    """
+    Send a "typing" indication between each message and then turn it off at
+    the last message.
+    """
+
+    async def flush(self, request: Request, stacks: List[Stack]):
+        """
+        Add a typing stack after each stack.
+        """
+
+        ns: List[Stack] = []
+
+        for stack in stacks:
+            ns.extend(self.typify(stack))
+
+        if ns[-1] == Stack([lyr.Typing()]):
+            ns[-1].get_layer(lyr.Typing).active = False
+
+        await self.next(request, ns)
+
+    def typify(self, stack: Stack) -> List[Stack]:
+        """
+        Appends a typing stack after the given stack, but only if required
+        (aka don't have two typing layers following each other).
+        """
+
+        if len(stack.layers) == 1 and isinstance(stack.layers[0], lyr.Typing):
+            return [stack]
+
+        return [stack, Stack([lyr.Typing()])]

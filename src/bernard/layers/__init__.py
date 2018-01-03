@@ -22,6 +22,7 @@ from .definitions import (
     CloseWebview,
     OptIn,
     Message,
+    Typing,
 )
 from .helpers import (
     FbCard,

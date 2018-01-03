@@ -1,2 +1,6 @@
 from ._manager import MiddlewareManager
-from ._builtins import BaseMiddleware, AutoSleep
+from ._builtins import (
+    BaseMiddleware,
+    AutoSleep,
+    AutoType,
+)

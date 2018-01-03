@@ -278,6 +278,7 @@ class Facebook(SimplePlatform):
         'button_template': '^FbButtonTemplate QuickRepliesList?$',
         'attachment': '^(Image|Audio|Video|File) QuickRepliesList?$',
         'sleep': '^Sleep$',
+        'typing': '^Typing$',
     }
 
     async def _deferred_init(self):
@@ -578,6 +579,40 @@ class Facebook(SimplePlatform):
 
         duration = stack.get_layer(lyr.Sleep).duration
         await asyncio.sleep(duration)
+
+    async def _send_typing(self, request: Request, stack: Stack):
+        """
+        Send to Facebook typing indications
+        """
+
+        active = stack.get_layer(lyr.Typing).active
+
+        msg = ujson.dumps({
+            'recipient': {
+                'id': request.conversation.fbid,
+            },
+            'sender_action': 'typing_on' if active else 'typing_off',
+        })
+
+        headers = {
+            'content-type': 'application/json',
+        }
+
+        params = {
+            'access_token': self._access_token(request),
+        }
+
+        post = self.session.post(
+            MESSAGES_ENDPOINT,
+            params=params,
+            data=msg,
+            headers=headers,
+        )
+
+        logger.debug('Sending: %s', msg)
+
+        async with post as r:
+            await self._handle_fb_response(r)
 
     async def _handle_fb_response(self, response: aiohttp.ClientResponse):
         """
