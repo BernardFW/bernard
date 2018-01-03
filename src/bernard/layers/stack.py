@@ -38,7 +38,7 @@ class Stack(object):
                 self._layers == other._layers)
 
     def __repr__(self):
-        return 'Layer({})'.format(', '.join(repr(x) for x in self._layers))
+        return 'Stack({})'.format(', '.join(repr(x) for x in self._layers))
 
     @property
     def layers(self) -> List['BaseLayer']:

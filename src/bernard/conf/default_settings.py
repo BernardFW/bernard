@@ -138,3 +138,12 @@ ANALYTICS_PROVIDERS = [
     if (os.getenv('GOOGLE_ANALYTICS_ID') and
         os.getenv('GOOGLE_ANALYTICS_DOMAIN')) \
     else []
+
+# All middlewares
+MIDDLEWARES = []
+
+# Users reading speed in words per minute
+USERS_READING_SPEED = 150
+
+# How long does it take to the user to see start reading a bubble
+USERS_READING_BUBBLE_START = 0.3
