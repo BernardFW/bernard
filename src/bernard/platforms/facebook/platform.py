@@ -23,6 +23,9 @@ from bernard.layers.definitions import BaseMediaLayer
 from bernard.media.base import BaseMedia, UrlMedia
 from bernard.conf import settings
 
+from .layers import MessagingType
+
+
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
 USER_ENDPOINT = 'https://graph.facebook.com/v2.6/{}'
@@ -273,10 +276,13 @@ class Facebook(SimplePlatform):
     NAME = 'facebook'
 
     PATTERNS = {
-        'text': '^(Text|RawText|MultiText)+ QuickRepliesList?$',
-        'generic_template': '^FbGenericTemplate QuickRepliesList?$',
-        'button_template': '^FbButtonTemplate QuickRepliesList?$',
-        'attachment': '^(Image|Audio|Video|File) QuickRepliesList?$',
+        'text': '^(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?$',
+        'generic_template': '^FbGenericTemplate QuickRepliesList? '
+                            'MessagingType?$',
+        'button_template': '^FbButtonTemplate QuickRepliesList? '
+                           'MessagingType?$',
+        'attachment': '^(Image|Audio|Video|File) QuickRepliesList? '
+                      'MessagingType?$',
         'sleep': '^Sleep$',
     }
 
@@ -495,7 +501,7 @@ class Facebook(SimplePlatform):
         for part in parts[:-1]:
             await self._send(request, {
                 'text': part,
-            })
+            }, stack)
 
         part = parts[-1]
 
@@ -504,7 +510,7 @@ class Facebook(SimplePlatform):
         }
 
         await self._add_qr(stack, msg, request)
-        await self._send(request, msg)
+        await self._send(request, msg, stack)
 
     async def _send_generic_template(self, request: Request, stack: Stack):
         """
@@ -522,7 +528,7 @@ class Facebook(SimplePlatform):
         }
 
         await self._add_qr(stack, msg, request)
-        await self._send(request, msg)
+        await self._send(request, msg, stack)
 
     async def _send_button_template(self, request: Request, stack: Stack):
         """
@@ -545,7 +551,7 @@ class Facebook(SimplePlatform):
         }
 
         await self._add_qr(stack, msg, request)
-        await self._send(request, msg)
+        await self._send(request, msg, stack)
 
     async def _send_attachment(self, request: Request, stack: Stack):
         types = {
@@ -569,7 +575,7 @@ class Facebook(SimplePlatform):
         }
 
         await self._add_qr(stack, msg, request)
-        await self._send(request, msg)
+        await self._send(request, msg, stack)
 
     async def _send_sleep(self, request: Request, stack: Stack):
         """
@@ -597,17 +603,28 @@ class Facebook(SimplePlatform):
             raise PlatformOperationError('Facebook says: "{}"'
                                          .format(error))
 
-    async def _send(self, request: Request, content: Dict[Text, Any]):
+    async def _send(self,
+                    request: Request,
+                    content: Dict[Text, Any],
+                    stack: Stack):
         """
         Actually proceed to sending the message to the Facebook API.
         """
 
-        msg = ujson.dumps({
+        msg = {
             'recipient': {
                 'id': request.conversation.fbid,
             },
             'message': content,
-        })
+        }
+
+        if stack and stack.has_layer(MessagingType):
+            mt = stack.get_layer(MessagingType)
+        else:
+            mt = MessagingType(response=True)
+
+        msg.update(mt.serialize())
+        msg_json = ujson.dumps(msg)
 
         headers = {
             'content-type': 'application/json',
@@ -620,11 +637,11 @@ class Facebook(SimplePlatform):
         post = self.session.post(
             MESSAGES_ENDPOINT,
             params=params,
-            data=msg,
+            data=msg_json,
             headers=headers,
         )
 
-        logger.debug('Sending: %s', msg)
+        logger.debug('Sending: %s', msg_json)
 
         async with post as r:
             await self._handle_fb_response(r)

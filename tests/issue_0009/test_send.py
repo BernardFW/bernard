@@ -34,7 +34,7 @@ def test_facebook_button():
                     ],
                 },
             },
-        })
+        }, s)
 
 
 # noinspection PyTypeChecker
@@ -91,4 +91,4 @@ def test_facebook_share():
                     ],
                 },
             },
-        })
+        }, s)
