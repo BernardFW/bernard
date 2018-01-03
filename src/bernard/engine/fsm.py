@@ -194,7 +194,6 @@ class FSM(object):
         Build the state for this request.
         """
 
-        logger.debug('Incoming message: %s', request.stack)
         trigger, state_class, dnr = await self._find_trigger(request)
 
         if trigger is None:
@@ -269,7 +268,7 @@ class FSM(object):
         :return: The register that was saved
         """
 
-        def noop(request: Request, responder: Responder):
+        async def noop(request: Request, responder: Responder):
             pass
 
         mm = MiddlewareManager.instance()
@@ -278,13 +277,13 @@ class FSM(object):
 
         async with reg_manager as reg:
             request = Request(message, reg)
-
-            mm.get('pre_handle', noop)
-
             await request.transform()
 
             if not request.stack.layers:
                 return
+
+            logger.debug('Incoming message: %s', request.stack)
+            await mm.get('pre_handle', noop)(request, responder)
 
             try:
                 state, trigger, dnr = \

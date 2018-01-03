@@ -154,7 +154,7 @@ class AutoType(BaseMiddleware):
         for stack in stacks:
             ns.extend(self.typify(stack))
 
-        if ns[-1] == Stack([lyr.Typing()]):
+        if len(ns) > 1 and ns[-1] == Stack([lyr.Typing()]):
             ns[-1].get_layer(lyr.Typing).active = False
 
         await self.next(request, ns)
@@ -165,8 +165,10 @@ class AutoType(BaseMiddleware):
         """
 
         responder.send([lyr.Typing()])
-        responder.flush(request)
+        await responder.flush(request)
         responder.clear()
+
+        await self.next(request, responder)
 
     def typify(self, stack: Stack) -> List[Stack]:
         """
