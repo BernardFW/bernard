@@ -6,6 +6,7 @@ from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
 from bernard.conf import settings
 from bernard.core.health_check import HealthCheckFail
 from bernard.i18n.translator import MissingTranslationError
+from bernard.middleware import MiddlewareManager
 from bernard.utils import import_class
 from bernard.storage.register import BaseRegisterStore, Register
 from bernard.reporter import reporter
@@ -268,11 +269,18 @@ class FSM(object):
         :return: The register that was saved
         """
 
+        def noop(request: Request, responder: Responder):
+            pass
+
+        mm = MiddlewareManager.instance()
         reg_manager = self.register\
             .work_on_register(message.get_conversation().id)
 
         async with reg_manager as reg:
             request = Request(message, reg)
+
+            mm.get('pre_handle', noop)
+
             await request.transform()
 
             if not request.stack.layers:

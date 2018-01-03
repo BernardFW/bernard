@@ -1,10 +1,14 @@
 import re
-from typing import List, Text as TextT
+from typing import List, Text as TextT, TYPE_CHECKING
 from bernard import layers as lyr
 from bernard.conf import settings
 from bernard.engine.request import Request
 from bernard.i18n import render
 from bernard.layers import Stack, BaseLayer
+
+
+if TYPE_CHECKING:
+    from bernard.engine.responder import Responder
 
 
 class BaseMiddleware(object):
@@ -154,6 +158,15 @@ class AutoType(BaseMiddleware):
             ns[-1].get_layer(lyr.Typing).active = False
 
         await self.next(request, ns)
+
+    async def pre_handle(self, request: Request, responder: 'Responder'):
+        """
+        Start typing right when the message is received.
+        """
+
+        responder.send([lyr.Typing()])
+        responder.flush(request)
+        responder.clear()
 
     def typify(self, stack: Stack) -> List[Stack]:
         """
