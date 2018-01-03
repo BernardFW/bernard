@@ -51,13 +51,54 @@ def test_flush():
     mm.middlewares = [AutoSleep]
 
     flush = mm.get('flush', do_flush)
-    run(flush(None, [lyr.Stack([lyr.Text('hello')])]))
+    run(flush(None, [lyr.Stack([lyr.Text('hello'), lyr.Text('wassup')])]))
 
     assert args == [None, [
         lyr.Stack([
             lyr.RawText('hello'),
+        ]),
+        lyr.Stack([
             lyr.Sleep(0.7),
-        ])
+        ]),
+        lyr.Stack([
+            lyr.RawText('wassup'),
+        ]),
+    ]]
+
+    assert kwargs == {}
+
+
+def test_flush_qr():
+    args = []
+    kwargs = {}
+
+    async def do_flush(*a, **k):
+        args.extend(a)
+        kwargs.update(k)
+
+    mm = MiddlewareManager.instance()
+    mm.middlewares = [AutoSleep]
+
+    flush = mm.get('flush', do_flush)
+    run(flush(None, [
+        lyr.Stack([
+            lyr.Text('hello'),
+            lyr.Text('wassup'),
+            lyr.QuickRepliesList([]),
+        ]),
+    ]))
+
+    assert args == [None, [
+        lyr.Stack([
+            lyr.RawText('hello'),
+        ]),
+        lyr.Stack([
+            lyr.Sleep(0.7),
+        ]),
+        lyr.Stack([
+            lyr.RawText('wassup'),
+            lyr.QuickRepliesList([]),
+        ]),
     ]]
 
     assert kwargs == {}

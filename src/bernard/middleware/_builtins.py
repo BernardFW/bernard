@@ -28,6 +28,13 @@ class AutoSleep(BaseMiddleware):
         For all stacks to be sent, append a pause after each text layer.
         """
 
+        ns = await self.expand_stacks(request, stacks)
+        ns = self.split_stacks(ns)
+        ns = self.clean_stacks(ns)
+
+        await self.next(request, [Stack(x) for x in ns])
+
+    async def expand_stacks(self, request: Request, stacks: List[Stack]):
         ns = []
 
         for stack in stacks:
@@ -37,9 +44,57 @@ class AutoSleep(BaseMiddleware):
                 async for sub_layer in self.expand(request, layer):
                     s.append(sub_layer)
 
-            ns.append(Stack(s))
+            ns.append(s)
 
-        await self.next(request, ns)
+        return ns
+
+    def split_stacks(self, stacks: List[List[BaseLayer]]) \
+            -> List[List[BaseLayer]]:
+        """
+        First step of the stacks cleanup process. We consider that if inside
+        a stack there's a text layer showing up then it's the beginning of a
+        new stack and split upon that.
+        """
+
+        ns: List[List[BaseLayer]] = []
+
+        for stack in stacks:
+            cur: List[BaseLayer] = []
+
+            for layer in stack:
+                if cur and isinstance(layer, lyr.RawText):
+                    ns.append(cur)
+                    cur = []
+
+                cur.append(layer)
+
+            if cur:
+                ns.append(cur)
+
+        return ns
+
+    def clean_stacks(self, stacks: List[List[BaseLayer]]) \
+            -> List[List[BaseLayer]]:
+        """
+        Two cases: if a stack finishes by a sleep then let's keep it (it means
+        that there was nothing after the text). However if the stack finishes
+        with something else (like a quick reply) then we don't risk an
+        is preserved.
+        """
+
+        ns: List[List[BaseLayer]] = []
+
+        for stack in stacks:
+            if isinstance(stack[-1], lyr.Sleep):
+                ns.extend([x] for x in stack)
+            else:
+                ns.append([x for x in stack if not isinstance(x, lyr.Sleep)])
+
+        last = ns[-1]
+        if len(last) == 1 and isinstance(last[0], lyr.Sleep):
+            return ns[:-1]
+        else:
+            return ns
 
     async def expand(self, request: Request, layer: BaseLayer):
         """
