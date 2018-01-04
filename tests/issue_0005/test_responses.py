@@ -53,6 +53,9 @@ class MockRequest(object):
     async def get_locale(self):
         return self.locale
 
+    async def get_trans_flags(self):
+        return {}
+
 
 def test_locales_order():
     with patch_conf(LOADER_CONFIG_1):

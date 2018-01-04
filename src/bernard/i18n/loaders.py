@@ -29,6 +29,7 @@ class LiveFileLoaderMixin(object):
         self._file_path = None
         self._running = False
         self._locale = None
+        self._kwargs = {}
 
     async def _load(self):
         """
@@ -61,7 +62,7 @@ class LiveFileLoaderMixin(object):
                     self._file_path
                 )
 
-    async def start(self, file_path, locale=None):
+    async def start(self, file_path, locale=None, kwargs=None):
         """
         Setup the watching utilities, start the loop and load data a first
         time.
@@ -69,6 +70,9 @@ class LiveFileLoaderMixin(object):
 
         self._file_path = os.path.realpath(file_path)
         self._locale = locale
+
+        if kwargs:
+            self._kwargs = kwargs
 
         if settings.I18N_LIVE_RELOAD:
             loop = asyncio.get_event_loop()
@@ -107,7 +111,7 @@ class BaseTranslationLoader(object):
         """
         self.listeners.append(cb)
 
-    def _update(self, data: TransDict):
+    def _update(self, data: TransDict, *args, **kwargs):
         """
         Propagate updates to listeners
 
@@ -115,7 +119,7 @@ class BaseTranslationLoader(object):
         """
 
         for l in self.listeners:
-            l(data)
+            l(data, *args, **kwargs)
 
     async def load(self, **kwargs) -> None:
         """
@@ -138,18 +142,35 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
         Load data from a Excel-formatted CSV file.
         """
 
+        flags = self._kwargs.get('flags')
+
+        if not flags:
+            flags = {1: {}}
+
+        cols = {k: [] for k in flags.keys()}
+
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            data = [(x[0], x[1]) for x in reader if len(x) >= 2]
 
-        self._update({self._locale: data})
+            for row in reader:
+                for i, col in cols.items():
+                    try:
+                        val = row[i].strip()
+                        assert val
+                    except (IndexError, AssertionError):
+                        pass
+                    else:
+                        col.append((row[0], val))
 
-    async def load(self, file_path, locale=None):
+        for i, col in cols.items():
+            self._update({self._locale: col}, flags[i])
+
+    async def load(self, file_path, locale=None, flags=None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path, locale)
+        await self.start(file_path, locale, {'flags': flags})
 
 
 class BaseIntentsLoader(object):

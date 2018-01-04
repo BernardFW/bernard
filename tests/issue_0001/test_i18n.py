@@ -98,7 +98,7 @@ def test_load_translations_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=TRANS_FILE_PATH))
 
-    mock_cb.assert_called_once_with({None: list(data.items())})
+    mock_cb.assert_called_once_with({None: list(data.items())}, {})
 
 
 def test_base_translations_loader_is_abstract():

@@ -305,13 +305,13 @@ class WordDictionary(LocalesDict):
 
             d[k].update(v, flags)
 
-    def update(self, data: TransDict):
+    def update(self, data: TransDict, flags: Flags):
         """
         Update all langs at once
         """
 
         for lang, lang_data in data.items():
-            self.update_lang(lang, lang_data, {})
+            self.update_lang(lang, lang_data, flags)
 
     def get(self,
             key: Text,
@@ -442,14 +442,23 @@ class StringToTranslate(object):
         if request:
             tz = await request.user.get_timezone()
             locale = await request.get_locale()
+            flags = await request.get_trans_flags()
         else:
             tz = None
             locale = self.wd.list_locales()[0]
+            flags = {}
 
         resolved_params = await self._resolve_params(self.params, request)
 
         f = I18nFormatter(self.wd.choose_locale(locale), tz)
-        return self.wd.get(self.key, self.count, f, locale, resolved_params)
+        return self.wd.get(
+            self.key,
+            self.count,
+            f,
+            locale,
+            resolved_params,
+            flags,
+        )
 
 
 class Translator(object):

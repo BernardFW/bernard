@@ -41,7 +41,7 @@ def test_update():
             ('FOO', 'foo'),
             ('BAR', 'bar'),
         ]
-    })
+    }, {})
 
     assert 'fr' in wd.dict
     assert 'FOO' in wd.dict['fr']
@@ -57,6 +57,6 @@ def test_get():
             ('FOO+1', 'foo 1'),
             ('FOO+2', 'foo 2'),
         ]
-    })
+    }, {})
 
     assert wd.get('FOO') == ['foo 1', 'foo 2']

@@ -1,10 +1,14 @@
 # coding: utf-8
-from typing import Text, Any, List, Type, Optional
+from typing import Text, Any, List, Type, Optional, TYPE_CHECKING
 from datetime import tzinfo
 from enum import Enum
 from bernard.storage.register import Register
 from bernard.layers import BaseLayer, Stack
 from bernard.layers.stack import L
+
+
+if TYPE_CHECKING:
+    from bernard.i18n.translator import Flags
 
 
 class Conversation(object):
@@ -200,3 +204,16 @@ class Request(object):
             return self._locale_override
         else:
             return await self.user.get_locale()
+
+    async def get_trans_flags(self) -> 'Flags':
+        """
+        Gives a chance to middlewares to make the translation flags
+        """
+
+        from bernard.middleware import MiddlewareManager
+
+        async def make_flags(request: Request) -> 'Flags':
+            return {}
+
+        mf = MiddlewareManager.instance().get('make_trans_flags', make_flags)
+        return await mf(self)
