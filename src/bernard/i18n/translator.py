@@ -438,6 +438,7 @@ class StringToTranslate(object):
 
         :param request: Bot request.
         """
+        from bernard.middleware import MiddlewareManager
 
         if request:
             tz = await request.user.get_timezone()
@@ -448,7 +449,10 @@ class StringToTranslate(object):
             locale = self.wd.list_locales()[0]
             flags = {}
 
-        resolved_params = await self._resolve_params(self.params, request)
+        rp = MiddlewareManager.instance()\
+            .get('resolve_trans_params', self._resolve_params)
+
+        resolved_params = await rp(self.params, request)
 
         f = I18nFormatter(self.wd.choose_locale(locale), tz)
         return self.wd.get(
