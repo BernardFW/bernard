@@ -4,17 +4,17 @@ from bernard.i18n.translator import WordDictionary, SentenceGroup
 def test_parse_item():
     wd = WordDictionary()
 
-    item = wd.parse_item('FOO', 'foo')
+    item = wd.parse_item('FOO', 'foo', {})
     assert item.index == 1
     assert item.key == 'FOO'
     assert item.value == 'foo'
 
-    item = wd.parse_item('FOO+1', 'foo')
+    item = wd.parse_item('FOO+1', 'foo', {})
     assert item.index == 1
     assert item.key == 'FOO'
     assert item.value == 'foo'
 
-    item = wd.parse_item('FOO+2', 'foo')
+    item = wd.parse_item('FOO+2', 'foo', {})
     assert item.index == 2
     assert item.key == 'FOO'
     assert item.value == 'foo'
@@ -25,13 +25,13 @@ def test_update_lang():
     wd.update_lang('fr', [
         ('FOO', 'foo'),
         ('BAR', 'bar'),
-    ])
+    ], {})
 
     assert 'fr' in wd.dict
     assert 'FOO' in wd.dict['fr']
     assert 'BAR' in wd.dict['fr']
     assert isinstance(wd.dict['fr']['FOO'], SentenceGroup)
-    assert wd.dict['fr']['FOO'].render() == ['foo']
+    assert wd.dict['fr']['FOO'].render({}) == ['foo']
 
 
 def test_update():
@@ -47,7 +47,7 @@ def test_update():
     assert 'FOO' in wd.dict['fr']
     assert 'BAR' in wd.dict['fr']
     assert isinstance(wd.dict['fr']['FOO'], SentenceGroup)
-    assert wd.dict['fr']['FOO'].render() == ['foo']
+    assert wd.dict['fr']['FOO'].render({}) == ['foo']
 
 
 def test_get():

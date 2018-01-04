@@ -7,7 +7,7 @@ def test_render_param():
     wd.update_lang('fr', [
         ('FOO', 'foo'),
         ('BAR', '{foo}'),
-    ])
+    ], {})
 
     t = Translator(wd)
 

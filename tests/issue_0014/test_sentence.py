@@ -3,8 +3,8 @@ from bernard.i18n.translator import TransItem, Sentence, SentenceGroup, \
 
 
 def test_sentence():
-    item1 = TransItem('FOO', 1, 'foo 1')
-    item2 = TransItem('FOO', 1, 'foo 2')
+    item1 = TransItem('FOO', 1, 'foo 1', {})
+    item2 = TransItem('FOO', 1, 'foo 2', {})
 
     s = Sentence()
     assert not s.check()
@@ -13,13 +13,13 @@ def test_sentence():
     s.append(item2)
     assert s.check()
 
-    assert isinstance(s.render(), str)
-    assert s.render() in ['foo 1', 'foo 2']
+    assert isinstance(s.render({}), str)
+    assert s.render({}) in ['foo 1', 'foo 2']
 
 
 def test_sentence_group():
-    item1 = TransItem('FOO', 1, 'foo 1')
-    item2 = TransItem('FOO', 2, 'foo 2')
+    item1 = TransItem('FOO', 1, 'foo 1', {})
+    item2 = TransItem('FOO', 2, 'foo 2', {})
 
     sg = SentenceGroup()
     assert not sg.check()
@@ -30,13 +30,13 @@ def test_sentence_group():
     sg.append(item1)
     assert sg.check()
 
-    assert sg.render() == ['foo 1', 'foo 2']
+    assert sg.render({}) == ['foo 1', 'foo 2']
 
 
 def test_sorting_group():
-    item1 = TransItem('FOO', 1, 'foo 1')
-    item2 = TransItem('FOO', 2, 'foo 2')
-    item3 = TransItem('BAR', 1, 'bar')
+    item1 = TransItem('FOO', 1, 'foo 1', {})
+    item2 = TransItem('FOO', 2, 'foo 2', {})
+    item3 = TransItem('BAR', 1, 'bar', {})
 
     sd = SortingDict()
     assert sd.extract() == {}
@@ -51,4 +51,4 @@ def test_sorting_group():
     assert set(sd.extract().keys()) == {'FOO', 'BAR'}
 
     data = sd.extract()
-    assert data['BAR'].render() == ['bar']
+    assert data['BAR'].render({}) == ['bar']
