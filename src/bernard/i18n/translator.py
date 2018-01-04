@@ -217,8 +217,7 @@ class SortingDict(object):
         out = {}
 
         for key, group in self.data.items():
-            if group.check():
-                out[key] = group
+            out[key] = group
 
         return out
 

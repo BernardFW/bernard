@@ -41,9 +41,6 @@ def test_sorting_group():
     sd = SortingDict()
     assert sd.extract() == {}
 
-    sd.append(item2)
-    assert sd.extract() == {}
-
     sd.append(item1)
     assert set(sd.extract().keys()) == {'FOO'}
 
