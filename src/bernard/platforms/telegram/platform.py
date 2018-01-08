@@ -1,5 +1,6 @@
 import logging
 import ujson
+import jwt
 from datetime import tzinfo
 from hashlib import sha256
 from typing import Text, Any, Dict, List, Optional, Set
@@ -21,7 +22,7 @@ from bernard.i18n import render
 from bernard.layers import BaseLayer, Stack
 from bernard import layers as lyr
 from bernard.media.base import BaseMedia
-from bernard.utils import patch_dict
+from bernard.utils import patch_dict, patch_qs
 from ...platforms import SimplePlatform
 from .layers import (
     AnswerCallbackQuery,
@@ -113,6 +114,30 @@ class TelegramUser(User):
 
     async def get_full_name(self) -> Text:
         return await self.get_formal_name()
+
+    async def get_postback_url(self):
+        """
+        Generate a postback URL for Telegram.
+        """
+
+        content = {
+            'user_id': self.id,
+            'telegram_user_id': self._user['id'],
+            'telegram_chat_id': self._chat['id'],
+        }
+
+        token = jwt.encode(
+            content,
+            settings.WEBVIEW_SECRET_KEY,
+            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+        )
+
+        url = patch_qs(
+            urljoin(settings.BERNARD_BASE_URL, '/postback/telegram'),
+            {'token': token},
+        )
+
+        return url
 
 
 class TelegramMessage(BaseMessage):
@@ -274,11 +299,15 @@ class TelegramResponder(Responder):
         """
 
         if self._acq and 'callback_query' in self._update:
-            cbq_id = self._update['callback_query']['id']
-            await self.platform.call(
-                'answerCallbackQuery',
-                **(await self._acq.serialize(cbq_id))
-            )
+            try:
+                cbq_id = self._update['callback_query']['id']
+            except KeyError:
+                pass
+            else:
+                await self.platform.call(
+                    'answerCallbackQuery',
+                    **(await self._acq.serialize(cbq_id))
+                )
 
         return await super(TelegramResponder, self).flush(request)
 
@@ -331,8 +360,17 @@ class Telegram(SimplePlatform):
                 'automatically register its hook.'
             )
 
+        if not hasattr(settings, 'WEBVIEW_SECRET_KEY'):
+            yield HealthCheckFail(
+                '00005',
+                '"WEBVIEW_SECRET_KEY" cannot be found in the configuration. '
+                'It is required in order to be able to create secure postback '
+                'URLs.'
+            )
+
     def hook_up(self, router: UrlDispatcher):
         router.add_post(self.make_hook_path(), self.receive_updates)
+        router.add_post('/postback/telegram', self.receive_postback)
 
     async def receive_updates(self, request: Request):
         """
@@ -353,6 +391,75 @@ class Telegram(SimplePlatform):
 
         message = TelegramMessage(content, self)
         responder = TelegramResponder(content, self)
+        await self._notify(message, responder)
+
+        return json_response({
+            'error': False,
+        })
+
+    async def receive_postback(self, request: Request):
+        """
+        Handle postbacks. A fake Telegram message will be generated and fed to
+        the normal process.
+
+        Since postback messages need to be acknowledged in Telegram, the ID
+        is voluntarily not set so the Responder knows it's a fake message and
+        thus needs no acknowledgement.
+        """
+
+        tk = request.query.get('token')
+
+        if not tk:
+            return json_response({
+                'error': True,
+                'message': 'Missing "{}"'.format('token'),
+            }, status=400)
+
+        try:
+            tk = jwt.decode(tk, settings.WEBVIEW_SECRET_KEY)
+        except jwt.InvalidTokenError:
+            return json_response({
+                'error': True,
+                'message': 'Provided token is invalid'
+            }, status=400)
+
+        try:
+            user_id = tk['telegram_user_id']
+            assert isinstance(user_id, int)
+            chat_id = tk['telegram_chat_id']
+            assert isinstance(chat_id, int)
+        except (KeyError, AssertionError):
+            return json_response({
+                'error': True,
+                'message': 'Provided payload is invalid'
+            }, status=400)
+
+        body = await request.read()
+
+        try:
+            ujson.loads(body)
+        except ValueError:
+            return json_response({
+                'error': True,
+                'message': 'Cannot decode body',
+            }, status=400)
+
+        fake_message = {
+            'callback_query': {
+                'from': {
+                    'id': user_id,
+                },
+                'message': {
+                    'chat': {
+                        'id': chat_id,
+                    },
+                },
+                'data': body,
+            }
+        }
+
+        message = TelegramMessage(fake_message, self)
+        responder = TelegramResponder(fake_message, self)
         await self._notify(message, responder)
 
         return json_response({

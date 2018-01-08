@@ -28,6 +28,8 @@ if getenv('TELEGRAM_TOKEN'):
 
 BERNARD_BASE_URL = getenv('BERNARD_BASE_URL')
 
+DEFAULT_STATE = 'fullbot.states.BaseTestState'
+
 SERVER_BIND = {
     'host': '127.0.0.1',
     'port': 8666,
@@ -67,3 +69,5 @@ I18N_TRANSLATION_LOADERS = [
         }
     }
 ]
+
+WEBVIEW_SECRET_KEY = 'wegpijwgpweojg'
