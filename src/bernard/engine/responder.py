@@ -1,7 +1,6 @@
 # coding: utf-8
 from typing import TYPE_CHECKING, Union, List
 from bernard.layers import Stack, BaseLayer
-from bernard.middleware import MiddlewareManager
 
 if TYPE_CHECKING:
     from .platform import Platform
@@ -64,6 +63,7 @@ class Responder(object):
         The first step is to convert all media in the stacked layers then the
         second step is to send all messages as grouped in time as possible.
         """
+        from bernard.middleware import MiddlewareManager
 
         for stack in self._stacks:
             await stack.convert_media(self.platform)

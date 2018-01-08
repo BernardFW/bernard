@@ -1,4 +1,5 @@
 # coding: utf-8
+from itertools import zip_longest
 from random import SystemRandom
 from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Any, \
     NamedTuple, Tuple
@@ -16,6 +17,9 @@ if TYPE_CHECKING:
 
 
 random = SystemRandom()
+
+
+Flags = Dict[Text, Text]
 
 
 class TranslationError(Exception):
@@ -47,11 +51,28 @@ class TransItem(NamedTuple):
     - `index` is the number of the message in case you're doing a multi-part
       message (from 1 to the infinite)
     - `value` is the raw text value
+    - `flags` are key/values that will be compared to the translation context
+      for the current request. Translations will be chosen between items of
+      equal flag "score".
     """
 
     key: Text
     index: int
     value: Text
+    flags: Flags
+
+    def score(self, flags: Flags) -> int:
+        """
+        Counts how many of the flags can be matched
+        """
+
+        score = 0
+
+        for k, v in flags.items():
+            if self.flags.get(k) == v:
+                score += 1
+
+        return score
 
 
 class Sentence(object):
@@ -63,11 +84,31 @@ class Sentence(object):
     def __init__(self):
         self.items: List[TransItem] = []
 
-    def render(self) -> Text:
+    def best_for_flags(self, flags: Flags) -> List[TransItem]:
+        """
+        Given `flags`, find all items of this sentence that have an equal
+        matching score and put them in a list.
+        """
+
+        best_score: int = 0
+        best_list: List[TransItem] = []
+
+        for item in self.items:
+            score = item.score(flags)
+
+            if score == best_score:
+                best_list.append(item)
+            elif score > best_score:
+                best_list = [item]
+                best_score = score
+
+        return best_list
+
+    def render(self, flags: Flags) -> Text:
         """
         Chooses a random sentence from the list and returns it.
         """
-        return random.choice(self.items).value
+        return random.choice(self.best_for_flags(flags)).value
 
     def append(self, item: TransItem):
         """
@@ -81,6 +122,16 @@ class Sentence(object):
         Checks that the list is not empty.
         """
         return bool(self.items)
+
+    def update(self, new: 'Sentence', flags: Flags):
+        """
+        Erase items with the specified flags and insert the new items from
+        the other sentence instead.
+        """
+
+        items = [i for i in self.items if i.flags != flags]
+        items.extend(new.items)
+        self.items = items
 
 
 class SentenceGroup(object):
@@ -98,12 +149,12 @@ class SentenceGroup(object):
     def __init__(self):
         self.sentences: List[Sentence] = []
 
-    def render(self) -> List[Text]:
+    def render(self, flags: Flags) -> List[Text]:
         """
         Returns a list of randomly chosen outcomes for each sentence of the
         list.
         """
-        return [x.render() for x in self.sentences]
+        return [x.render(flags) for x in self.sentences]
 
     def append(self, item: TransItem):
         """
@@ -125,6 +176,27 @@ class SentenceGroup(object):
     def check(self):
         return len(self.sentences) and all(x.check() for x in self.sentences)
 
+    def update(self, group: 'SentenceGroup', flags: Flags) -> None:
+        """
+        This object is considered to be a "global" sentence group while the
+        other one is flags-specific. All data related to the specified flags
+        will be overwritten by the content of the specified group.
+        """
+
+        to_append = []
+
+        for old, new in zip_longest(self.sentences, group.sentences):
+            if old is None:
+                old = Sentence()
+                to_append.append(old)
+
+            if new is None:
+                new = Sentence()
+
+            old.update(new, flags)
+
+        self.sentences.extend(to_append)
+
 
 class SortingDict(object):
     """
@@ -145,8 +217,7 @@ class SortingDict(object):
         out = {}
 
         for key, group in self.data.items():
-            if group.check():
-                out[key] = group
+            out[key] = group
 
         return out
 
@@ -180,7 +251,7 @@ class WordDictionary(LocalesDict):
             instance.on_update(self.update)
             run(instance.load(**loader['params']))
 
-    def parse_item(self, key, value) -> Optional[TransItem]:
+    def parse_item(self, key, value, flags: Flags) -> Optional[TransItem]:
         """
         Parse an item (and more specifically its key).
         """
@@ -205,38 +276,49 @@ class WordDictionary(LocalesDict):
             key=pure_key,
             index=index,
             value=value,
+            flags=flags,
         )
 
-    def update_lang(self, lang: Text, data: List[Tuple[Text, Text]]):
+    def update_lang(self,
+                    lang: Optional[Text],
+                    data: List[Tuple[Text, Text]],
+                    flags: Flags):
         """
         Update translations for one specific lang
         """
 
         sd = SortingDict()
 
-        for item in (self.parse_item(*x) for x in data):
+        for item in (self.parse_item(x[0], x[1], flags) for x in data):
             if item:
                 sd.append(item)
 
         if lang not in self.dict:
             self.dict[lang] = {}
 
-        self.dict[lang].update(sd.extract())
+        d = self.dict[lang]
 
-    def update(self, data: TransDict):
+        for k, v in sd.extract().items():
+            if k not in d:
+                d[k] = SentenceGroup()
+
+            d[k].update(v, flags)
+
+    def update(self, data: TransDict, flags: Flags):
         """
         Update all langs at once
         """
 
         for lang, lang_data in data.items():
-            self.update_lang(lang, lang_data)
+            self.update_lang(lang, lang_data, flags)
 
     def get(self,
             key: Text,
             count: Optional[int]=None,
             formatter: Formatter=None,
             locale: Text=None,
-            params: Dict[Text, Any]=None) -> List[Text]:
+            params: Optional[Dict[Text, Any]]=None,
+            flags: Optional[Flags]=None) -> List[Text]:
         """
         Get the appropriate translation given the specified parameters.
 
@@ -245,6 +327,7 @@ class WordDictionary(LocalesDict):
         :param formatter: Optional string formatter to use
         :param locale: Prefered locale to get the string from
         :param params: Params to be substituted
+        :param flags: Flags to help choosing one version or the other
         """
 
         if params is None:
@@ -262,7 +345,7 @@ class WordDictionary(LocalesDict):
                                           .format(key))
 
         try:
-            trans = group.render()
+            trans = group.render(flags or {})
             out = []
 
             for line in trans:
@@ -354,18 +437,31 @@ class StringToTranslate(object):
 
         :param request: Bot request.
         """
+        from bernard.middleware import MiddlewareManager
 
         if request:
             tz = await request.user.get_timezone()
             locale = await request.get_locale()
+            flags = await request.get_trans_flags()
         else:
             tz = None
             locale = self.wd.list_locales()[0]
+            flags = {}
 
-        resolved_params = await self._resolve_params(self.params, request)
+        rp = MiddlewareManager.instance()\
+            .get('resolve_trans_params', self._resolve_params)
+
+        resolved_params = await rp(self.params, request)
 
         f = I18nFormatter(self.wd.choose_locale(locale), tz)
-        return self.wd.get(self.key, self.count, f, locale, resolved_params)
+        return self.wd.get(
+            self.key,
+            self.count,
+            f,
+            locale,
+            resolved_params,
+            flags,
+        )
 
 
 class Translator(object):
