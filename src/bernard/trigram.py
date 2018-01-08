@@ -6,7 +6,7 @@ or identical results.
 """
 import re
 from collections import deque
-from typing import Text, Iterable, Tuple, TypeVar, Optional, List
+from typing import Text, Iterable, Tuple, TypeVar, Optional, List, Dict, Any
 from unidecode import unidecode
 
 
@@ -113,3 +113,26 @@ class Matcher(object):
         Shortcut notation using the modulo operator.
         """
         return self.similarity(other)
+
+
+L = TypeVar('L')
+
+
+class LabelMatcher(object):
+    """
+    Allows to match trigrams and associate an arbitrary label to them. When
+    matching, the label will be returned along with the score.
+    """
+
+    def __init__(self, trigrams: List[Tuple[Trigram, L]]):
+        self.trigrams = trigrams
+
+    def similarity(self, other: Trigram) -> Tuple[float, L]:
+        """
+        Returns the best matching score and the associated label.
+        """
+
+        return max(
+            ((t % other, l) for t, l in self.trigrams),
+            key=lambda x: x[0],
+        )
