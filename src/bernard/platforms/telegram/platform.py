@@ -6,7 +6,7 @@ from hashlib import sha256
 from typing import Text, Any, Dict, List, Optional, Set
 from urllib.parse import quote, urljoin
 
-from asyncio import Lock
+from asyncio import Lock, sleep
 
 from aiohttp.web_request import Request
 from aiohttp.web_response import json_response
@@ -326,6 +326,7 @@ class Telegram(SimplePlatform):
                     'Reply?$'
 
                     '|^Markdown InlineKeyboard? Reply? Update$',
+        'sleep': '^Sleep$',
     }
 
     @classmethod
@@ -632,6 +633,14 @@ class Telegram(SimplePlatform):
         """
 
         await self._send_text(request, stack, 'Markdown')
+
+    async def _send_sleep(self, request: Request, stack: Stack):
+        """
+        Sleep for the amount of time specified in the Sleep layer
+        """
+
+        duration = stack.get_layer(lyr.Sleep).duration
+        await sleep(duration)
 
     async def _send_inline_answer(self, request: Request, stack: Stack):
         aiq = stack.get_layer(AnswerInlineQuery)
