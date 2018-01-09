@@ -327,6 +327,7 @@ class Telegram(SimplePlatform):
 
                     '|^Markdown InlineKeyboard? Reply? Update$',
         'sleep': '^Sleep$',
+        'typing': '^Typing$',
     }
 
     @classmethod
@@ -482,7 +483,7 @@ class Telegram(SimplePlatform):
     async def call(self,
                    method: Text,
                    _ignore: Set[Text] = None,
-                   **params: Dict[Text, Any]):
+                   **params: Any):
         """
         Call a telegram method
 
@@ -646,6 +647,22 @@ class Telegram(SimplePlatform):
         aiq = stack.get_layer(AnswerInlineQuery)
         answer = await aiq.serialize(request)
         await self.call('answerInlineQuery', **answer)
+
+    async def _send_typing(self, request: Request, stack: Stack):
+        """
+        In telegram, the typing stops when the message is received. Thus, there
+        is no "typing stops" messages to send. The API is only called when
+        typing must start.
+        """
+
+        t = stack.get_layer(lyr.Typing)
+
+        if t.active:
+            await self.call(
+                'sendChatAction',
+                chat_id=request.message.get_chat_id(),
+                action='typing',
+            )
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError

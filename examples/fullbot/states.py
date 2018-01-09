@@ -23,6 +23,7 @@ class BaseTestState(BaseState):
 class Text(BaseTestState):
     async def handle(self):
         self.send(lyr.Text(t.TEXT))
+        self.send(lyr.Text('Some other text'))
 
 
 class Locale(BaseTestState):
