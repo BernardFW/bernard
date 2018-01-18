@@ -285,17 +285,21 @@ class FSM(object):
             logger.debug('Incoming message: %s', request.stack)
             await mm.get('pre_handle', noop)(request, responder)
 
+            # noinspection PyBroadException
             try:
                 state, trigger, dnr = \
                     await self._build_state(request, message, responder)
             except Exception:
-                reporter.report(request, None)
                 logger.exception('Error while finding a transition from %s',
                                  reg.get(Register.STATE))
+                reporter.report(request, None)
                 return
 
             if state is None:
-                return
+                logger.debug(
+                    'No next state found but "%s" is not confusing, stopping',
+                    reg.get(Register.STATE),
+                )
 
             state = await self._run_state(responder, state, trigger, request)
 
