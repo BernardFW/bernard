@@ -300,6 +300,7 @@ class FSM(object):
                     'No next state found but "%s" is not confusing, stopping',
                     reg.get(Register.STATE),
                 )
+                return
 
             state = await self._run_state(responder, state, trigger, request)
 
