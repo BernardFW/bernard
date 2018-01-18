@@ -298,7 +298,7 @@ class FSM(object):
             if state is None:
                 logger.debug(
                     'No next state found but "%s" is not confusing, stopping',
-                    reg.get(Register.STATE),
+                    request.message,
                 )
                 return
 
