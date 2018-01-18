@@ -293,10 +293,10 @@ class Facebook(SimplePlatform):
         bot to work and they take a lot of time to run.
         """
 
+        await self._set_whitelist()
         await self._set_get_started()
         await self._set_greeting_text()
         await self._set_persistent_menu()
-        await self._set_whitelist()
 
     async def _get_messenger_profile(self, page, fields: List[Text]):
         """

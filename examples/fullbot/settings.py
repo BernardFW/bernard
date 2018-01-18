@@ -71,3 +71,8 @@ I18N_TRANSLATION_LOADERS = [
 ]
 
 WEBVIEW_SECRET_KEY = 'wegpijwgpweojg'
+
+MIDDLEWARES = [
+    'bernard.middleware.AutoSleep',
+    'bernard.middleware.AutoType',
+]
