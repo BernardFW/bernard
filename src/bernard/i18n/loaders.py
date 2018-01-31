@@ -11,7 +11,7 @@ logger = logging.getLogger('bernard.i18n.loaders')
 
 
 TransDict = Dict[Optional[Text], List[Tuple[Text, Text]]]
-IntentDict = Dict[Optional[Text], Dict[Text, List[Text]]]
+IntentDict = Dict[Optional[Text], Dict[Text, List[Tuple[Text, ...]]]]
 
 
 class LiveFileLoaderMixin(object):
@@ -229,7 +229,7 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
             data = {}
 
             for k, v in reader:
-                data[k] = data.get(k, []) + [v]
+                data[k] = data.get(k, []) + [(v,)]
 
         self._update({self._locale: data})
 

@@ -1,5 +1,5 @@
 # config: utf-8
-from typing import List, Text, Optional, TYPE_CHECKING
+from typing import List, Text, Optional, TYPE_CHECKING, Tuple
 from bernard.conf import settings
 from bernard.utils import import_class, run
 from .loaders import BaseIntentsLoader, IntentDict
@@ -42,7 +42,7 @@ class IntentsDb(LocalesFlatDict):
 
             self.dict[locale].update(data)
 
-    def get(self, key: Text, locale: Optional[Text]):
+    def get(self, key: Text, locale: Optional[Text]) -> List[Tuple[Text, ...]]:
         """
         Get a single set of intents.
         """
@@ -69,7 +69,8 @@ class Intent(object):
         return 'Intent({})'.format(repr(self.key))
 
     # noinspection PyUnusedLocal
-    async def strings(self, request: Optional['Request']=None):
+    async def strings(self, request: Optional['Request']=None) \
+            -> List[Tuple[Text, ...]]:
         """
         For the given request, find the list of strings of that intent. If the
         intent does not exist, it will raise a KeyError.

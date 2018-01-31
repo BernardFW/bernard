@@ -116,9 +116,13 @@ def test_base_intents_loader_is_abstract():
 def test_load_intents_csv():
     mock_cb = Mock()
     data = {
-        'FOO': ['bar', 'baz'],
-        'BAR': ['ᕕ( ՞ ᗜ ՞ )ᕗ', '∩༼˵☯‿☯˵༽つ¤=[]:::::>', 'c( ⁰ 〰 ⁰ )੭'],
-        'BAZ': ['foo'],
+        'FOO': [('bar',), ('baz',)],
+        'BAR': [
+            ('ᕕ( ՞ ᗜ ՞ )ᕗ',),
+            ('∩༼˵☯‿☯˵༽つ¤=[]:::::>',),
+            ('c( ⁰ 〰 ⁰ )੭',)
+        ],
+        'BAZ': [('foo',)],
     }
     file_path = os.path.join(
         os.path.dirname(__file__),
@@ -263,21 +267,21 @@ def test_unserialize():
 def test_intents_db():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
-        assert db.get('FOO', None) == ['bar', 'baz']
+        assert db.get('FOO', None) == [('bar',), ('baz',)]
 
 
 def test_intent():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         intent = Intent(db, 'FOO')
-        assert run(intent.strings()) == ['bar', 'baz']
+        assert run(intent.strings()) == [('bar',), ('baz',)]
 
 
 def test_intents_maker():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         maker = IntentsMaker(db)
-        assert run(maker.FOO.strings()) == ['bar', 'baz']
+        assert run(maker.FOO.strings()) == [('bar',), ('baz',)]
 
 
 def test_intents_maker_singleton():
@@ -287,7 +291,7 @@ def test_intents_maker_singleton():
             del modules['bernard.i18n']
 
         from bernard.i18n import intents as i
-        assert run(i.FOO.strings()) == ['bar', 'baz']
+        assert run(i.FOO.strings()) == [('bar',), ('baz',)]
 
 
 def test_make_date():
