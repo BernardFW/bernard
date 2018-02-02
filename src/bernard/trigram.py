@@ -116,7 +116,7 @@ class Matcher(object):
         neg = max((x % other for x in local[1:]), default=0)
 
         if neg > pos:
-            return 1 - neg
+            return 0.0
 
         return pos
 
