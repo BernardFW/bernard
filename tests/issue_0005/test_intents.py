@@ -57,13 +57,13 @@ def test_get_strings():
         maker = IntentsMaker(db)
         req = MockRequest()
 
-        assert run(maker.HELLO.strings()) == ['Bonjour']
+        assert run(maker.HELLO.strings()) == [('Bonjour',)]
 
         req.locale = 'fr'
-        assert run(maker.HELLO.strings(req)) == ['Bonjour']
+        assert run(maker.HELLO.strings(req)) == [('Bonjour',)]
 
         req.locale = 'en'
-        assert run(maker.HELLO.strings(req)) == ['Hello']
+        assert run(maker.HELLO.strings(req)) == [('Hello',)]
 
         req.locale = 'de'
-        assert run(maker.HELLO.strings(req)) == ['Bonjour']
+        assert run(maker.HELLO.strings(req)) == [('Bonjour',)]

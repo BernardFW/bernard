@@ -6,7 +6,8 @@ or identical results.
 """
 import re
 from collections import deque
-from typing import Text, Iterable, Tuple, TypeVar, Optional, List, Dict, Any
+from typing import Text, Iterable, Tuple, TypeVar, Optional, List, Dict, Any, \
+    Union
 from unidecode import unidecode
 
 
@@ -99,14 +100,31 @@ class Matcher(object):
     Allows to match several trigrams at once. This is useful to detect intents.
     """
 
-    def __init__(self, trigrams: List[Trigram]):
-        self.trigrams = trigrams
+    def __init__(self, trigrams: List[Union[Trigram, Tuple[Trigram, ...]]]):
+        self.trigrams = [
+            (t,) if isinstance(t, Trigram) else t
+            for t in trigrams
+        ]
+
+    def _match(self, local: Tuple[Trigram, ...], other: Trigram) -> float:
+        """
+        Match a trigram with another one. If the negative matching wins,
+        returns an inverted matching.
+        """
+
+        pos = local[0] % other
+        neg = max((x % other for x in local[1:]), default=0)
+
+        if neg > pos:
+            return 0.0
+
+        return pos
 
     def similarity(self, other: Trigram) -> float:
         """
         Find the best similarity within known trigrams.
         """
-        return max(x % other for x in self.trigrams)
+        return max((self._match(x, other) for x in self.trigrams), default=0)
 
     def __mod__(self, other) -> float:
         """

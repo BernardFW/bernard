@@ -5,13 +5,13 @@ import asyncio
 import logging
 import os.path
 from bernard.conf import settings
-from typing import Callable, Dict, Text, List, Optional, Tuple
+from typing import Callable, Dict, Text, List, Optional, Tuple, Union
 
 logger = logging.getLogger('bernard.i18n.loaders')
 
 
 TransDict = Dict[Optional[Text], List[Tuple[Text, Text]]]
-IntentDict = Dict[Optional[Text], Dict[Text, List[Text]]]
+IntentDict = Dict[Optional[Text], Dict[Text, List[Tuple[Text, ...]]]]
 
 
 class LiveFileLoaderMixin(object):
@@ -212,6 +212,36 @@ class BaseIntentsLoader(object):
         raise NotImplementedError
 
 
+ColRanges = List[Union[
+    int,
+    Tuple[int, Optional[int]],
+]]
+
+
+def extract_ranges(row, ranges: ColRanges) -> List[Text]:
+    """
+    Extracts a list of ranges from a row:
+
+    - If the range is an int, just get the data at this index
+    - If the range is a tuple of two ints, use them as indices in a slice
+    - If the range is an int then a None, start the slice at the int and go
+      up to the end of the row.
+    """
+
+    out = []
+
+    for r in ranges:
+        if isinstance(r, int):
+            r = (r, r + 1)
+
+        if r[1] is None:
+            r = (r[0], len(row))
+
+        out.extend(row[r[0]:r[1]])
+
+    return [x for x in (y.strip() for y in out) if x]
+
+
 class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
     """
     Load intents from a CSV
@@ -224,18 +254,39 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
         Load data from a Excel-formatted CSV file.
         """
 
+        key = self._kwargs['key']
+        pos = self._kwargs['pos']
+        neg = self._kwargs['neg']
+
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
             data = {}
 
-            for k, v in reader:
-                data[k] = data.get(k, []) + [v]
+            for row in reader:
+                try:
+                    data[row[key]] = data.get(row[key], []) + [
+                        tuple(extract_ranges(row, [pos] + neg))
+                    ]
+                except IndexError:
+                    pass
 
         self._update({self._locale: data})
 
-    async def load(self, file_path, locale=None):
+    async def load(self,
+                   file_path,
+                   locale=None,
+                   key: int = 0,
+                   pos: int = 1,
+                   neg: Optional[ColRanges] = None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path, locale)
+        if neg is None:
+            neg: ColRanges = [(2, None)]
+
+        await self.start(file_path, locale, kwargs={
+            'key': key,
+            'pos': pos,
+            'neg': neg,
+        })

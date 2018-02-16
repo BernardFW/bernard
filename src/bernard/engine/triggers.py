@@ -149,7 +149,8 @@ class Text(BaseTrigger):
 
         tl = self.request.get_layer(l.RawText)
         matcher = Matcher([
-            Trigram(x) for x in await self.intent.strings(self.request)
+            tuple(Trigram(y) for y in x)
+            for x in await self.intent.strings(self.request)
         ])
 
         return matcher % Trigram(tl.text)
@@ -205,9 +206,9 @@ class Choice(BaseTrigger):
                 strings += await intent.strings(self.request)
 
             if params['text']:
-                strings.append(params['text'])
+                strings.append((params['text'],))
 
-            matcher = Matcher([Trigram(x) for x in strings])
+            matcher = Matcher([tuple(Trigram(y) for y in x) for x in strings])
             score = matcher % Trigram(await render(tl.text, self.request))
 
             if score > best:
