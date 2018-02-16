@@ -204,7 +204,7 @@ class FSM(object):
         else:
             logger.debug('Next state: %s', state_class.name())
 
-        state = state_class(request, responder, trigger)
+        state = state_class(request, responder, trigger, trigger)
         return state, trigger, dnr
 
     async def _run_state(self, responder, state, trigger, request) \
@@ -212,6 +212,8 @@ class FSM(object):
         """
         Execute the state, or if execution fails handle it.
         """
+
+        user_trigger = trigger
 
         # noinspection PyBroadException
         try:
@@ -231,7 +233,7 @@ class FSM(object):
                     break
 
                 logger.debug('Jumping to state: %s', state_class.name())
-                state = state_class(request, responder)
+                state = state_class(request, responder, trigger, user_trigger)
                 await state.handle()
         except Exception:
             logger.exception('Error while handling state "%s"', state.name())

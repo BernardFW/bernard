@@ -21,10 +21,12 @@ class BaseState(object):
     def __init__(self,
                  request: Request,
                  responder: Responder,
-                 trigger: Optional[BaseTrigger]=None):
+                 trigger: BaseTrigger,
+                 user_trigger: BaseTrigger):
         self.request = request
         self.responder = responder
         self.trigger = trigger
+        self.user_trigger = user_trigger
 
     @classmethod
     def name(cls):
