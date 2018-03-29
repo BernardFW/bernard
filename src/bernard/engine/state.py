@@ -1,7 +1,6 @@
 # coding: utf-8
 from typing import (
     Iterator,
-    Optional,
 )
 
 from bernard.core.health_check import (

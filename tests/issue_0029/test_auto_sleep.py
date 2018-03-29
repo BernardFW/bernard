@@ -5,6 +5,7 @@ from bernard.middleware import (
     AutoSleep,
     MiddlewareManager,
 )
+from bernard.platforms.facebook import layers as fbl
 from bernard.utils import (
     run,
 )
@@ -90,7 +91,7 @@ def test_flush_qr():
         lyr.Stack([
             lyr.Text('hello'),
             lyr.Text('wassup'),
-            lyr.QuickRepliesList([]),
+            fbl.QuickRepliesList([]),
         ]),
     ]))
 
@@ -103,7 +104,7 @@ def test_flush_qr():
         ]),
         lyr.Stack([
             lyr.RawText('wassup'),
-            lyr.QuickRepliesList([]),
+            fbl.QuickRepliesList([]),
         ]),
     ]]
 

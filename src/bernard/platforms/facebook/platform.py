@@ -66,7 +66,12 @@ from bernard.utils import (
 )
 
 from .layers import (
+    ButtonTemplate,
+    GenericTemplate,
     MessagingType,
+    OptIn,
+    QuickRepliesList,
+    QuickReply,
 )
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
@@ -263,7 +268,7 @@ class FacebookMessage(BaseMessage):
                 )))
 
         if 'quick_reply' in msg:
-            out.append(lyr.QuickReply(msg['quick_reply']['payload']))
+            out.append(QuickReply(msg['quick_reply']['payload']))
 
         if 'postback' in self._event:
             payload = ujson.loads(self._event['postback']['payload'])
@@ -281,7 +286,7 @@ class FacebookMessage(BaseMessage):
             ))
 
         if 'optin' in self._event:
-            out.append(lyr.OptIn(self._event['optin']['ref']))
+            out.append(OptIn(self._event['optin']['ref']))
 
         return out
 
@@ -320,9 +325,9 @@ class Facebook(SimplePlatform):
 
     PATTERNS = {
         'text': '^(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?$',
-        'generic_template': '^FbGenericTemplate QuickRepliesList? '
+        'generic_template': '^GenericTemplate QuickRepliesList? '
                             'MessagingType?$',
-        'button_template': '^FbButtonTemplate QuickRepliesList? '
+        'button_template': '^ButtonTemplate QuickRepliesList? '
                            'MessagingType?$',
         'attachment': '^(Image|Audio|Video|File) QuickRepliesList? '
                       'MessagingType?$',
@@ -492,26 +497,26 @@ class Facebook(SimplePlatform):
                                      .format(page_id))
 
     async def _make_qr(self,
-                       qr: lyr.QuickRepliesList.BaseOption,
+                       qr: QuickRepliesList.BaseOption,
                        request: Request):
         """
         Generate a single quick reply's content.
         """
 
-        if isinstance(qr, lyr.QuickRepliesList.TextOption):
+        if isinstance(qr, QuickRepliesList.TextOption):
             return {
                 'content_type': 'text',
                 'title': await render(qr.text, request),
                 'payload': qr.slug,
             }
-        elif isinstance(qr, lyr.QuickRepliesList.LocationOption):
+        elif isinstance(qr, QuickRepliesList.LocationOption):
             return {
                 'content_type': 'location',
             }
 
     async def _add_qr(self, stack, msg, request):
         try:
-            qr = stack.get_layer(lyr.QuickRepliesList)
+            qr = stack.get_layer(QuickRepliesList)
         except KeyError:
             pass
         else:
@@ -561,7 +566,7 @@ class Facebook(SimplePlatform):
         Generates and send a generic template.
         """
 
-        gt = stack.get_layer(lyr.FbGenericTemplate)
+        gt = stack.get_layer(GenericTemplate)
         payload = await gt.serialize(request)
 
         msg = {
@@ -579,7 +584,7 @@ class Facebook(SimplePlatform):
         Generates and send a button template.
         """
 
-        gt = stack.get_layer(lyr.FbButtonTemplate)
+        gt = stack.get_layer(ButtonTemplate)
 
         payload = {
             'template_type': 'button',

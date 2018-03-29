@@ -3,12 +3,16 @@ from unittest.mock import (
 )
 
 from bernard.layers import (
-    FbButtonTemplate,
-    FbCard,
-    FbGenericTemplate,
-    FbShareButton,
-    FbUrlButton,
     stack,
+)
+from bernard.platforms.facebook.helpers import (
+    Card,
+    ShareButton,
+    UrlButton,
+)
+from bernard.platforms.facebook.layers import (
+    ButtonTemplate,
+    GenericTemplate,
 )
 from bernard.platforms.facebook.platform import (
     Facebook,
@@ -25,9 +29,9 @@ async def instant_run():
 # noinspection PyTypeChecker
 def test_facebook_button():
     fb = Facebook()
-    s = stack(FbButtonTemplate(
+    s = stack(ButtonTemplate(
         'foo',
-        [FbUrlButton('foo', 'https://example.com')]
+        [UrlButton('foo', 'https://example.com')]
     ))
 
     with patch.object(fb, '_send', return_value=instant_run()) as mock_send:
@@ -53,14 +57,14 @@ def test_facebook_button():
 # noinspection PyTypeChecker
 def test_facebook_share():
     fb = Facebook()
-    s = stack(FbButtonTemplate(
+    s = stack(ButtonTemplate(
         'foo',
-        [FbShareButton(FbGenericTemplate([
-            FbCard(
+        [ShareButton(GenericTemplate([
+            Card(
                 title='foo',
                 subtitle='bar',
                 buttons=[
-                    FbUrlButton('baz', 'https://example.com'),
+                    UrlButton('baz', 'https://example.com'),
                 ],
             ),
         ]))]

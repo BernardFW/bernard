@@ -36,9 +36,10 @@ if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
     from bernard.platforms.facebook.platform import FacebookUser
-    from bernard.layers.definitions import FbGenericTemplate
+    from .layers import GenericTemplate
 
-class FbWebviewRatio(Enum):
+
+class WebviewRatio(Enum):
     """
     Different sizes you can open webviews at.
     """
@@ -47,7 +48,7 @@ class FbWebviewRatio(Enum):
     compact = 'compact'
 
 
-class FbBaseButton(object):
+class BaseButton(object):
     """
     Base utility class and interface for Facebook buttons.
     """
@@ -75,7 +76,7 @@ class FbBaseButton(object):
         return True
 
 
-class FbUrlButton(FbBaseButton):
+class UrlButton(BaseButton):
     """
     That's an URL button. It has quite a lot of options, see the init doc.
     """
@@ -84,7 +85,7 @@ class FbUrlButton(FbBaseButton):
                  url: Text,
                  slug: Optional[Text]=None,
                  sign_webview: bool=False,
-                 webview_height_ratio: Optional[FbWebviewRatio]=None,
+                 webview_height_ratio: Optional[WebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
                  fallback_url: Optional[Text]=None,
                  hide_share: Optional[bool]=None):
@@ -109,7 +110,7 @@ class FbUrlButton(FbBaseButton):
                              are not supported by the platform.
         :param hide_share: Hide the share button on the webview.
         """
-        super(FbUrlButton, self).__init__(title)
+        super().__init__(title)
         self.url = url
         self.slug = slug
         self.sign_webview = sign_webview
@@ -204,14 +205,14 @@ class FbUrlButton(FbBaseButton):
         return not self.sign_webview and not self.slug
 
 
-class FbPostbackButton(FbBaseButton):
+class PostbackButton(BaseButton):
     """
     That's a Facebook Postback button. When the user clicks on it, the FSM
     receives a Postback layer with the specified payload.
     """
 
     def __init__(self, title: TransText, payload: Any):
-        super(FbPostbackButton, self).__init__(title)
+        super().__init__(title)
         self.payload = payload
 
     async def serialize(self, request: 'Request'):
@@ -229,14 +230,14 @@ class FbPostbackButton(FbBaseButton):
         return 'Postback({}, {})'.format(repr(self.title), repr(self.payload))
 
 
-class FbCallButton(FbBaseButton):
+class CallButton(BaseButton):
     """
     A button to trigger a phone call. The phone number must be in the format
     "+123456789"
     """
 
     def __init__(self, title: TransText, phone_number: Text):
-        super(FbCallButton, self).__init__(title)
+        super().__init__(title)
         self.phone_number = phone_number
 
     async def serialize(self, request: 'Request'):
@@ -255,7 +256,7 @@ class FbCallButton(FbBaseButton):
             .format(repr(self.title), repr(self.phone_number))
 
 
-class FbCardAction(FbUrlButton):
+class CardAction(UrlButton):
     """
     That is a simili-button that behaves like a URL button when the user clicks
     on a card.
@@ -265,11 +266,11 @@ class FbCardAction(FbUrlButton):
                  url: Text,
                  slug: Optional[Text]=None,
                  sign_webview: bool=False,
-                 webview_height_ratio: Optional[FbWebviewRatio]=None,
+                 webview_height_ratio: Optional[WebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
                  fallback_url: Optional[Text]=None,
                  hide_share: Optional[bool]=None):
-        super(FbCardAction, self).__init__(
+        super(CardAction, self).__init__(
             '', url, slug, sign_webview, webview_height_ratio,
             messenger_extensions, fallback_url, hide_share
         )
@@ -277,22 +278,33 @@ class FbCardAction(FbUrlButton):
     def __repr__(self):
         return 'CardAction({})'.format(repr(self.url))
 
+    def __eq__(self, other):
+        return (
+            self.__class__ == other.__class__
+            and self.url == other.url
+            and self.sign_webview == other.sign_webview
+            and self.webview_height_ratio == other.webview_height_ratio
+            and self.messenger_extensions == other.messenger_extensions
+            and self.fallback_url == other.fallback_url
+            and self.hide_share == other.hide_share
+        )
+
     async def serialize(self, request: 'Request'):
-        out = super(FbCardAction, self).serialize(request)
+        out = await super().serialize(request)
         del out['title']
         return out
 
 
-class FbCard(object):
+class Card(object):
     """
     A Facebook Card for the Generic Template.
     """
     def __init__(self,
                  title: TransText,
                  subtitle: Optional[TransText]=None,
-                 buttons: Optional[List[FbBaseButton]]=None,
+                 buttons: Optional[List[BaseButton]]=None,
                  image: Optional[BaseMedia]=None,
-                 default_action: Optional[FbCardAction]=None):
+                 default_action: Optional[CardAction]=None):
         self.title = title
         self.subtitle = subtitle
         self.buttons = buttons
@@ -345,7 +357,7 @@ class FbCard(object):
                     self.default_action.is_sharable())
 
 
-class FbShareButton(FbBaseButton):
+class ShareButton(BaseButton):
     """
     That's a Facebook Share button. When the user clicks on it, the FbCard
     is share to an other user who can go to the bot.
@@ -354,8 +366,8 @@ class FbShareButton(FbBaseButton):
     template.
     """
 
-    def __init__(self, share_content: Optional['FbGenericTemplate'] = None):
-        super(FbShareButton, self).__init__('')
+    def __init__(self, share_content: Optional['GenericTemplate'] = None):
+        super().__init__('')
         self.share_content = share_content
 
     async def serialize(self, request: 'Request'):
