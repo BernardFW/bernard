@@ -1,9 +1,18 @@
 # coding: utf-8
 import os
+
 import pytest
-from bernard.conf.loader import Settings, LazySettings
-from bernard.conf.utils import reload_config
-from bernard.conf import ENVIRONMENT_VARIABLE
+
+from bernard.conf import (
+    ENVIRONMENT_VARIABLE,
+)
+from bernard.conf.loader import (
+    LazySettings,
+    Settings,
+)
+from bernard.conf.utils import (
+    reload_config,
+)
 
 asset_config_path = os.path.join(
     os.path.dirname(__file__),
@@ -81,4 +90,3 @@ def test_loads_default_conf():
 
     from bernard.conf import settings
     assert isinstance(settings.DEBUG, bool)
-

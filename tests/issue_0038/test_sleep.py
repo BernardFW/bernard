@@ -1,7 +1,17 @@
-from bernard.layers import Sleep, stack
-from bernard.platforms.telegram.platform import Telegram
-from bernard.utils import run
-from time import time
+from time import (
+    time,
+)
+
+from bernard.layers import (
+    Sleep,
+    stack,
+)
+from bernard.platforms.telegram.platform import (
+    Telegram,
+)
+from bernard.utils import (
+    run,
+)
 
 
 def test_telegram_sleep():

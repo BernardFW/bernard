@@ -1,7 +1,17 @@
-from bernard.layers import Sleep, stack
-from bernard.platforms.facebook.platform import Facebook
-from bernard.utils import run
-from time import time
+from time import (
+    time,
+)
+
+from bernard.layers import (
+    Sleep,
+    stack,
+)
+from bernard.platforms.facebook.platform import (
+    Facebook,
+)
+from bernard.utils import (
+    run,
+)
 
 
 def test_facebook_sleep():

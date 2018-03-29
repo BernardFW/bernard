@@ -1,14 +1,40 @@
-import ujson
-from typing import Text, Any, Optional, List, Dict
-from hashlib import md5
+from hashlib import (
+    md5,
+)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Text,
+)
 
-from bernard.engine.request import Request
-from bernard.i18n.intents import Intent
-from bernard.i18n.translator import TransText, render
-from bernard.layers import Stack, Text as TextLayer, Markdown
-from bernard.layers.definitions import BaseLayer
-from bernard.utils import patch_dict
-from ._utils import set_reply_markup
+import ujson
+from bernard.engine.request import (
+    Request,
+)
+from bernard.i18n.intents import (
+    Intent,
+)
+from bernard.i18n.translator import (
+    TransText,
+    render,
+)
+from bernard.layers import (
+    Markdown,
+    Stack,
+)
+from bernard.layers import Text as TextLayer
+from bernard.layers.definitions import (
+    BaseLayer,
+)
+from bernard.utils import (
+    patch_dict,
+)
+
+from ._utils import (
+    set_reply_markup,
+)
 
 
 class InlineKeyboardButton(object):

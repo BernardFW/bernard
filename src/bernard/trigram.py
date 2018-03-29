@@ -5,11 +5,24 @@ code here is inspired from PostgreSQL's pg_trgm module and should give similar
 or identical results.
 """
 import re
-from collections import deque
-from typing import Text, Iterable, Tuple, TypeVar, Optional, List, Dict, Any, \
-    Union
-from unidecode import unidecode
+from collections import (
+    deque,
+)
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
+from unidecode import (
+    unidecode,
+)
 
 RE_WHITESPACES = re.compile(r'[\W.,;?!\'"«»\-_\s]+')
 

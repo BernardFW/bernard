@@ -1,10 +1,24 @@
-from typing import List, Type, Text, Callable, TypeVar
+from typing import (
+    Callable,
+    List,
+    Text,
+    Type,
+    TypeVar,
+)
 
-from bernard.conf import settings
-from bernard.core.health_check import HealthCheckFail
-from bernard.utils import import_class
-from ._builtins import BaseMiddleware
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.utils import (
+    import_class,
+)
 
+from ._builtins import (
+    BaseMiddleware,
+)
 
 C = TypeVar('C')
 

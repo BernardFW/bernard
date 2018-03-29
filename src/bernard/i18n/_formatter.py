@@ -1,9 +1,19 @@
 # coding: utf-8
 import string
-from typing import Union, Text
-from datetime import date, datetime, tzinfo
+from datetime import (
+    date,
+    datetime,
+    tzinfo,
+)
+from typing import (
+    Text,
+    Union,
+)
+
+from babel import (
+    dates,
+)
 from dateutil.parser import parse as parse_date
-from babel import dates
 
 
 def make_date(obj: Union[date, datetime, Text], timezone: tzinfo=None):

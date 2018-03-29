@@ -1,8 +1,21 @@
 # coding: utf-8
-from typing import List, TypeVar, Text, Dict, TYPE_CHECKING, Type
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Text,
+    Type,
+    TypeVar,
+)
 
-from bernard.utils import RoList, ClassExp
-from .definitions import BaseLayer
+from bernard.utils import (
+    ClassExp,
+    RoList,
+)
+
+from .definitions import (
+    BaseLayer,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

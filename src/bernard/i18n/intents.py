@@ -1,9 +1,27 @@
 # config: utf-8
-from typing import List, Text, Optional, TYPE_CHECKING, Tuple
-from bernard.conf import settings
-from bernard.utils import import_class, run
-from .loaders import BaseIntentsLoader, IntentDict
-from .utils import LocalesFlatDict
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Optional,
+    Text,
+    Tuple,
+)
+
+from bernard.conf import (
+    settings,
+)
+from bernard.utils import (
+    import_class,
+    run,
+)
+
+from .loaders import (
+    BaseIntentsLoader,
+    IntentDict,
+)
+from .utils import (
+    LocalesFlatDict,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

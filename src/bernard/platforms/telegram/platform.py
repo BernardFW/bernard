@@ -1,40 +1,94 @@
 import logging
-import ujson
+from asyncio import (
+    Lock,
+    sleep,
+)
+from datetime import (
+    tzinfo,
+)
+from hashlib import (
+    sha256,
+)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Text,
+)
+from urllib.parse import (
+    quote,
+    urljoin,
+)
+
 import jwt
-from datetime import tzinfo
-from hashlib import sha256
-from typing import Text, Any, Dict, List, Optional, Set
-from urllib.parse import quote, urljoin
+from aiohttp.web_request import (
+    Request,
+)
+from aiohttp.web_response import (
+    json_response,
+)
+from aiohttp.web_urldispatcher import (
+    UrlDispatcher,
+)
 
-from asyncio import Lock, sleep
-
-from aiohttp.web_request import Request
-from aiohttp.web_response import json_response
-from aiohttp.web_urldispatcher import UrlDispatcher
-
-from bernard.core.health_check import HealthCheckFail
-from bernard.engine.platform import PlatformOperationError
-from bernard.conf import settings
-from bernard.engine.request import BaseMessage, Conversation, User, \
-    Request as BernardRequest
-from bernard.engine.responder import Responder, Layers
-from bernard.i18n import render
-from bernard.layers import BaseLayer, Stack
+import ujson
 from bernard import layers as lyr
-from bernard.media.base import BaseMedia
-from bernard.utils import patch_dict, patch_qs
-from ...platforms import SimplePlatform
-from .media import Photo
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.engine.platform import (
+    PlatformOperationError,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+)
+from bernard.engine.request import Request as BernardRequest
+from bernard.engine.request import (
+    User,
+)
+from bernard.engine.responder import (
+    Layers,
+    Responder,
+)
+from bernard.i18n import (
+    render,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.media.base import (
+    BaseMedia,
+)
+from bernard.utils import (
+    patch_dict,
+    patch_qs,
+)
+
+from ...platforms import (
+    SimplePlatform,
+)
+from ._utils import (
+    set_reply_markup,
+)
 from .layers import (
     AnswerCallbackQuery,
-    Update,
-    InlineQuery,
     AnswerInlineQuery,
-    Reply,
-    InlineMessage,
     BotCommand,
+    InlineMessage,
+    InlineQuery,
+    Reply,
+    Update,
 )
-from ._utils import set_reply_markup
+from .media import (
+    Photo,
+)
 
 TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
 

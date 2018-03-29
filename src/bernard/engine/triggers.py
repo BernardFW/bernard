@@ -1,12 +1,34 @@
 # coding: utf-8
 import asyncio
-from typing import Optional, Text as TextT, Callable, Type, List, Any
-from bernard.i18n.intents import Intent
-from bernard.i18n import intents, render
-from bernard.trigram import Matcher, Trigram
-from bernard.engine.request import Request
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+)
+from typing import Text as TextT
+from typing import (
+    Type,
+)
+
 from bernard import layers as l
-from bernard.utils import run_or_return
+from bernard.engine.request import (
+    Request,
+)
+from bernard.i18n import (
+    intents,
+    render,
+)
+from bernard.i18n.intents import (
+    Intent,
+)
+from bernard.trigram import (
+    Matcher,
+    Trigram,
+)
+from bernard.utils import (
+    run_or_return,
+)
 
 
 class BaseTrigger(object):

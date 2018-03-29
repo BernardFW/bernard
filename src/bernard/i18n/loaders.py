@@ -1,11 +1,23 @@
 # coding: utf-8
-import csv
-import aionotify
 import asyncio
+import csv
 import logging
 import os.path
-from bernard.conf import settings
-from typing import Callable, Dict, Text, List, Optional, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
+
+import aionotify
+
+from bernard.conf import (
+    settings,
+)
 
 logger = logging.getLogger('bernard.i18n.loaders')
 

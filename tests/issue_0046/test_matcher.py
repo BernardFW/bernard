@@ -1,12 +1,28 @@
 import pytest
 
-from bernard.engine.request import BaseMessage, User, Conversation, Request
-from bernard.storage.register import Register
-from bernard.trigram import Matcher, Trigram
 from bernard import layers as lyr
-from bernard.utils import run
-from bernard.engine.triggers import Text
-from bernard.i18n import intents
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.triggers import (
+    Text,
+)
+from bernard.i18n import (
+    intents,
+)
+from bernard.storage.register import (
+    Register,
+)
+from bernard.trigram import (
+    Matcher,
+    Trigram,
+)
+from bernard.utils import (
+    run,
+)
 
 
 class BaseMockMessage(BaseMessage):

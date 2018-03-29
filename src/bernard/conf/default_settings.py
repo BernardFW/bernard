@@ -1,7 +1,9 @@
 # coding: utf-8
 import os
 import sys
-from urllib.parse import urlparse
+from urllib.parse import (
+    urlparse,
+)
 
 # Are we in debug mode?
 # So far it changes nothing, but hey who knows.

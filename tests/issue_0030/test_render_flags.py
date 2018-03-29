@@ -1,5 +1,9 @@
-from bernard.conf.utils import patch_conf
-from bernard.i18n.translator import WordDictionary
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.i18n.translator import (
+    WordDictionary,
+)
 
 
 def test_render_gender():

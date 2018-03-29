@@ -1,14 +1,30 @@
 # coding: utf-8
-import pytest
 import os
-from bernard import layers
-from bernard.layers.stack import stack as make_stack
-from bernard.storage.register import Register
-from bernard.engine.request import Request, Conversation, User, BaseMessage
-from bernard.conf.utils import patch_conf
-from bernard.i18n import intents
-from bernard.utils import run
 
+import pytest
+
+from bernard import (
+    layers,
+)
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.i18n import (
+    intents,
+)
+from bernard.layers.stack import stack as make_stack
+from bernard.storage.register import (
+    Register,
+)
+from bernard.utils import (
+    run,
+)
 
 LOADER_CONFIG = {
     'I18N_TRANSLATION_LOADERS': [

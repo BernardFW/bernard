@@ -1,13 +1,36 @@
 # coding: utf-8
+from enum import (
+    Enum,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Text,
+)
+from urllib.parse import (
+    urljoin,
+)
+
 import jwt
+
 import ujson
-from urllib.parse import urljoin
-from typing import Text, Optional, Dict, TYPE_CHECKING, Any, List
-from enum import Enum
-from bernard.conf import settings
-from bernard.i18n import TransText, render
-from bernard.media.base import BaseMedia, UrlMedia
-from bernard.utils import patch_qs
+from bernard.conf import (
+    settings,
+)
+from bernard.i18n import (
+    TransText,
+    render,
+)
+from bernard.media.base import (
+    BaseMedia,
+    UrlMedia,
+)
+from bernard.utils import (
+    patch_qs,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

@@ -1,8 +1,15 @@
 import pytest
 
-from bernard.conf.utils import patch_conf
-from bernard.middleware import BaseMiddleware, MiddlewareManager
-from bernard.utils import run
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.middleware import (
+    BaseMiddleware,
+    MiddlewareManager,
+)
+from bernard.utils import (
+    run,
+)
 
 
 class IsNotMiddleware(object):

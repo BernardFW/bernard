@@ -1,5 +1,11 @@
-from bernard.i18n.translator import WordDictionary, Translator, render
-from bernard.utils import run
+from bernard.i18n.translator import (
+    Translator,
+    WordDictionary,
+    render,
+)
+from bernard.utils import (
+    run,
+)
 
 
 def test_render_param():

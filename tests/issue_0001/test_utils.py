@@ -1,5 +1,7 @@
 # coding: utf-8
-from bernard.utils import patch_qs
+from bernard.utils import (
+    patch_qs,
+)
 
 
 def test_patch_qs():

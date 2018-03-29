@@ -1,13 +1,34 @@
 # coding: utf-8
-import re
-import importlib
 import asyncio
-from asyncio import iscoroutine
-from collections import Sequence, Mapping
-from itertools import chain
-from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple, \
-    Type
-from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode
+import importlib
+import re
+from asyncio import (
+    iscoroutine,
+)
+from collections import (
+    Mapping,
+    Sequence,
+)
+from itertools import (
+    chain,
+)
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Text,
+    Tuple,
+    Type,
+    Union,
+)
+from urllib.parse import (
+    parse_qsl,
+    urlencode,
+    urlparse,
+    urlunparse,
+)
 
 
 def import_class(name: Text) -> Type:

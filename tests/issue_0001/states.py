@@ -1,7 +1,12 @@
 # coding: utf-8
-from bernard.engine import BaseState
 from bernard import layers as lyr
-from bernard.i18n import translate as t, intents
+from bernard.engine import (
+    BaseState,
+)
+from bernard.i18n import (
+    intents,
+)
+from bernard.i18n import translate as t
 
 
 class BaseTestState(BaseState):

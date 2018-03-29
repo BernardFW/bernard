@@ -1,6 +1,11 @@
 from bernard import layers as lyr
-from bernard.middleware import MiddlewareManager, AutoType
-from bernard.utils import run
+from bernard.middleware import (
+    AutoType,
+    MiddlewareManager,
+)
+from bernard.utils import (
+    run,
+)
 
 
 def test_flush():

@@ -1,16 +1,49 @@
 # coding: utf-8
-from itertools import zip_longest
-from random import SystemRandom
-from typing import List, Text, Optional, Dict, TYPE_CHECKING, Union, Any, \
-    NamedTuple, Tuple
-from collections import Mapping, defaultdict
-from bernard.conf import settings
-from bernard.i18n.loaders import TransDict
-from bernard.utils import import_class, run
-from string import Formatter
-from .loaders import BaseTranslationLoader
-from .utils import LocalesDict
-from ._formatter import I18nFormatter
+from collections import (
+    Mapping,
+    defaultdict,
+)
+from itertools import (
+    zip_longest,
+)
+from random import (
+    SystemRandom,
+)
+from string import (
+    Formatter,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
+
+from bernard.conf import (
+    settings,
+)
+from bernard.i18n.loaders import (
+    TransDict,
+)
+from bernard.utils import (
+    import_class,
+    run,
+)
+
+from ._formatter import (
+    I18nFormatter,
+)
+from .loaders import (
+    BaseTranslationLoader,
+)
+from .utils import (
+    LocalesDict,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

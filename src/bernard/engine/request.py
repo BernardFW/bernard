@@ -1,11 +1,29 @@
 # coding: utf-8
-from typing import Text, Any, List, Type, Optional, TYPE_CHECKING
-from datetime import tzinfo
-from enum import Enum
-from bernard.storage.register import Register
-from bernard.layers import BaseLayer, Stack
-from bernard.layers.stack import L
+from datetime import (
+    tzinfo,
+)
+from enum import (
+    Enum,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    Optional,
+    Text,
+    Type,
+)
 
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.layers.stack import (
+    L,
+)
+from bernard.storage.register import (
+    Register,
+)
 
 if TYPE_CHECKING:
     from bernard.i18n.translator import Flags

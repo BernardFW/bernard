@@ -14,6 +14,7 @@ contextlib2==0.5.5        # via raven
 google-api-python-client==1.6.2
 hiredis==0.2.0            # via aioredis
 httplib2==0.10.3          # via google-api-python-client, oauth2client
+isort==4.3.4
 multidict==2.1.6          # via aiohttp, yarl
 oauth2client==4.1.1       # via google-api-python-client
 py==1.4.34                # via pytest

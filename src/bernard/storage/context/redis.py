@@ -1,8 +1,17 @@
 # coding: utf-8
-from typing import Text
+from typing import (
+    Text,
+)
+
 import ujson
-from .base import BaseContextStore, Context
-from ..redis import BaseRedisStore
+
+from ..redis import (
+    BaseRedisStore,
+)
+from .base import (
+    BaseContextStore,
+    Context,
+)
 
 
 class RedisContextStore(BaseRedisStore, BaseContextStore):

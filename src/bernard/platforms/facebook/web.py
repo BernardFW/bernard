@@ -1,22 +1,51 @@
 # coding: utf-8
-import hmac
-import jwt
-import re
 import asyncio
+import hmac
+import re
+from hashlib import (
+    sha1,
+)
+from textwrap import (
+    dedent,
+)
+from typing import (
+    ByteString,
+    Text,
+)
+from urllib.parse import (
+    urljoin,
+)
+
+import jwt
+from aiohttp.http_websocket import (
+    WSMsgType,
+)
+from aiohttp.web_request import (
+    Request,
+)
+from aiohttp.web_response import (
+    Response,
+    json_response,
+)
+from aiohttp.web_ws import (
+    WebSocketResponse,
+)
+
 import ujson
-from textwrap import dedent
-from urllib.parse import urljoin
-from hashlib import sha1
-from typing import Text, ByteString
-from aiohttp.http_websocket import WSMsgType
-from aiohttp.web_request import Request
-from aiohttp.web_response import json_response, Response
-from aiohttp.web_ws import WebSocketResponse
-from bernard.engine.platform import PlatformOperationError
-from bernard.platforms.facebook.platform import FacebookMessage, Facebook
-from bernard.platforms import manager
-from bernard.conf import settings
 from bernard.analytics.base import providers as analytics_providers
+from bernard.conf import (
+    settings,
+)
+from bernard.engine.platform import (
+    PlatformOperationError,
+)
+from bernard.platforms import (
+    manager,
+)
+from bernard.platforms.facebook.platform import (
+    Facebook,
+    FacebookMessage,
+)
 
 
 def sign_message(body: ByteString, secret: Text) -> Text:

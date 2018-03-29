@@ -1,7 +1,15 @@
 import os
-from bernard.conf.utils import patch_conf
-from bernard.i18n.translator import WordDictionary, Translator
-from bernard.utils import run
+
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.i18n.translator import (
+    Translator,
+    WordDictionary,
+)
+from bernard.utils import (
+    run,
+)
 
 TRANS_FILE_FR_PATH = os.path.join(
     os.path.dirname(__file__),

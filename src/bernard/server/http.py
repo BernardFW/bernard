@@ -1,6 +1,10 @@
 # coding: utf-8
-from aiohttp.web import Application
-from aiohttp.web_urldispatcher import UrlDispatcher
+from aiohttp.web import (
+    Application,
+)
+from aiohttp.web_urldispatcher import (
+    UrlDispatcher,
+)
 
 from bernard.platforms.facebook import web as fb
 

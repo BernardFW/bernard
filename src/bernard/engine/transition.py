@@ -1,9 +1,24 @@
 # coding: utf-8
-from typing import Text, Optional, Tuple, Type
-from bernard.conf import settings
-from bernard.utils import run_or_return
-from .triggers import BaseTrigger
-from .state import BaseState
+from typing import (
+    Optional,
+    Text,
+    Tuple,
+    Type,
+)
+
+from bernard.conf import (
+    settings,
+)
+from bernard.utils import (
+    run_or_return,
+)
+
+from .state import (
+    BaseState,
+)
+from .triggers import (
+    BaseTrigger,
+)
 
 
 class Transition(object):

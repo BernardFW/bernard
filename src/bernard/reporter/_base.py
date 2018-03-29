@@ -1,5 +1,8 @@
 # coding: utf-8
-from typing import TYPE_CHECKING, Text
+from typing import (
+    TYPE_CHECKING,
+    Text,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

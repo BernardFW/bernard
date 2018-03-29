@@ -1,7 +1,12 @@
-from bernard.conf.utils import patch_conf
-from bernard.engine.fsm import FSM
-from bernard.utils import run
-
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.utils import (
+    run,
+)
 
 BASE_CONF = {'TRANSITIONS_MODULE': 'tests.issue_0021.transitions'}
 

@@ -1,6 +1,14 @@
 import re
-from typing import Dict, Text, List, Optional, Tuple
-from collections import OrderedDict
+from collections import (
+    OrderedDict,
+)
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+)
 
 
 def split_locale(locale: Text) -> Tuple[Text, Optional[Text]]:

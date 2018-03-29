@@ -1,30 +1,73 @@
 # coding: utf-8
 
-import aiohttp
 import asyncio
-import ujson
 import logging
+from datetime import (
+    tzinfo,
+)
+from textwrap import (
+    wrap,
+)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Text,
+)
+from urllib.parse import (
+    urljoin,
+)
+
+import aiohttp
 import jwt
-from textwrap import wrap
-from typing import Text, List, Any, Dict, Optional
-from urllib.parse import urljoin
+from dateutil import (
+    tz,
+)
 
-from bernard.reporter import reporter
-from bernard.utils import patch_qs, dict_is_subset
-from dateutil import tz
-from datetime import tzinfo
-from bernard.engine.responder import Responder
-from bernard.engine.request import Request, BaseMessage, User, Conversation
-from bernard.i18n.translator import render
-from bernard.layers import Stack, BaseLayer
+import ujson
 from bernard import layers as lyr
-from bernard.engine.platform import PlatformOperationError, SimplePlatform
-from bernard.layers.definitions import BaseMediaLayer
-from bernard.media.base import BaseMedia, UrlMedia
-from bernard.conf import settings
+from bernard.conf import (
+    settings,
+)
+from bernard.engine.platform import (
+    PlatformOperationError,
+    SimplePlatform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.i18n.translator import (
+    render,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.layers.definitions import (
+    BaseMediaLayer,
+)
+from bernard.media.base import (
+    BaseMedia,
+    UrlMedia,
+)
+from bernard.reporter import (
+    reporter,
+)
+from bernard.utils import (
+    dict_is_subset,
+    patch_qs,
+)
 
-from .layers import MessagingType
-
+from .layers import (
+    MessagingType,
+)
 
 MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
 PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'

@@ -1,4 +1,6 @@
-from bernard.utils import dict_is_subset
+from bernard.utils import (
+    dict_is_subset,
+)
 
 
 def test_basic_positive():

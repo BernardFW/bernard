@@ -1,11 +1,24 @@
 import re
-from typing import List, Text as TextT, TYPE_CHECKING
-from bernard import layers as lyr
-from bernard.conf import settings
-from bernard.engine.request import Request
-from bernard.i18n import render
-from bernard.layers import Stack, BaseLayer
+from typing import (
+    TYPE_CHECKING,
+    List,
+)
+from typing import Text as TextT
 
+from bernard import layers as lyr
+from bernard.conf import (
+    settings,
+)
+from bernard.engine.request import (
+    Request,
+)
+from bernard.i18n import (
+    render,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.responder import Responder

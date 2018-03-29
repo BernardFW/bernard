@@ -2,21 +2,58 @@
 import asyncio
 import importlib
 import logging
-from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
-from bernard.conf import settings
-from bernard.core.health_check import HealthCheckFail
-from bernard.i18n.translator import MissingTranslationError
-from bernard.middleware import MiddlewareManager
-from bernard.utils import import_class
-from bernard.storage.register import BaseRegisterStore, Register
-from bernard.reporter import reporter
-from bernard.layers import RawText
-from .transition import Transition
-from .triggers import BaseTrigger
-from .state import BaseState
-from .request import Request, BaseMessage
-from .responder import Responder
+from typing import (
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Type,
+)
 
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.i18n.translator import (
+    MissingTranslationError,
+)
+from bernard.layers import (
+    RawText,
+)
+from bernard.middleware import (
+    MiddlewareManager,
+)
+from bernard.reporter import (
+    reporter,
+)
+from bernard.storage.register import (
+    BaseRegisterStore,
+    Register,
+)
+from bernard.utils import (
+    import_class,
+)
+
+from .request import (
+    BaseMessage,
+    Request,
+)
+from .responder import (
+    Responder,
+)
+from .state import (
+    BaseState,
+)
+from .transition import (
+    Transition,
+)
+from .triggers import (
+    BaseTrigger,
+)
 
 logger = logging.getLogger('bernard.fsm')
 

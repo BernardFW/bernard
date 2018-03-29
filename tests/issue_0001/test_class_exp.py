@@ -1,5 +1,7 @@
 # coding: utf-8
-from bernard.utils import ClassExp
+from bernard.utils import (
+    ClassExp,
+)
 
 
 # noinspection PyProtectedMember

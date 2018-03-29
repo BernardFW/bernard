@@ -1,23 +1,58 @@
 # coding: utf-8
-import pytest
 import os
-from unittest.mock import Mock
-from bernard.engine.request import Request, Conversation, User, BaseMessage
-from bernard.engine.responder import Responder
-from bernard.layers.stack import stack
-from bernard.platforms.test.platform import make_test_fsm
-from bernard.storage.register import Register
-from bernard.storage.register import RedisRegisterStore
-from bernard import layers as l
-from bernard.engine import triggers as trig
-from bernard.engine.fsm import FSM
-from bernard.engine.transition import Transition
-from bernard.conf.utils import patch_conf
-from bernard.i18n import intents, translate as t
-from bernard.utils import run
-from bernard.engine.platform import Platform
-from .states import Hello, Great, BaseTestState, HowAreYou
+from unittest.mock import (
+    Mock,
+)
 
+import pytest
+
+from bernard import layers as l
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.engine import triggers as trig
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.engine.platform import (
+    Platform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.engine.transition import (
+    Transition,
+)
+from bernard.i18n import (
+    intents,
+)
+from bernard.i18n import translate as t
+from bernard.layers.stack import (
+    stack,
+)
+from bernard.platforms.test.platform import (
+    make_test_fsm,
+)
+from bernard.storage.register import (
+    RedisRegisterStore,
+    Register,
+)
+from bernard.utils import (
+    run,
+)
+
+from .states import (
+    BaseTestState,
+    Great,
+    Hello,
+    HowAreYou,
+)
 
 LOADER_CONFIG = {
     'I18N_TRANSLATION_LOADERS': [

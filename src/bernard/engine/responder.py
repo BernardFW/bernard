@@ -1,6 +1,14 @@
 # coding: utf-8
-from typing import TYPE_CHECKING, Union, List
-from bernard.layers import Stack, BaseLayer
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Union,
+)
+
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
 
 if TYPE_CHECKING:
     from .platform import Platform

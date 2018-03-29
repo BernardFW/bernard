@@ -1,5 +1,9 @@
-from bernard.i18n.translator import TransItem, Sentence, SentenceGroup, \
-    SortingDict
+from bernard.i18n.translator import (
+    Sentence,
+    SentenceGroup,
+    SortingDict,
+    TransItem,
+)
 
 
 def test_sentence():

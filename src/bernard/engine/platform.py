@@ -1,18 +1,36 @@
 # coding: utf-8
-from typing import Callable, List, Coroutine
+import asyncio
+from typing import (
+    Callable,
+    Coroutine,
+    List,
+)
 
 import aiohttp
-import asyncio
+from aiohttp.web_urldispatcher import (
+    UrlDispatcher,
+)
 
-from aiohttp.web_urldispatcher import UrlDispatcher
+from bernard.engine.request import (
+    Request,
+)
+from bernard.engine.responder import (
+    Responder,
+    UnacceptableStack,
+)
+from bernard.layers import (
+    Stack,
+)
+from bernard.media.base import (
+    BaseMedia,
+)
+from bernard.utils import (
+    import_class,
+)
 
-from bernard.engine.request import Request
-from bernard.engine.responder import Responder, UnacceptableStack
-from bernard.layers import Stack
-from bernard.media.base import BaseMedia
-from bernard.utils import import_class
-from .request import BaseMessage
-
+from .request import (
+    BaseMessage,
+)
 
 MessageCallback = Callable[[BaseMessage, Responder, bool], None]
 

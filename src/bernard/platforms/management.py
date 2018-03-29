@@ -1,13 +1,29 @@
 # coding: utf-8
 import logging
-from typing import Text, Type
+from typing import (
+    Text,
+    Type,
+)
 
-from bernard.core.health_check import HealthCheckFail
-from bernard.engine.fsm import FSM
-from bernard.engine.platform import PlatformDoesNotExist, Platform
-from bernard.conf import settings
-from bernard.middleware import MiddlewareManager
-from bernard.utils import import_class
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.engine.platform import (
+    Platform,
+    PlatformDoesNotExist,
+)
+from bernard.middleware import (
+    MiddlewareManager,
+)
+from bernard.utils import (
+    import_class,
+)
 
 logger = logging.getLogger('bernard.platform.health')
 

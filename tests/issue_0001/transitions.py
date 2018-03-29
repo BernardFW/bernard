@@ -1,8 +1,19 @@
 # coding: utf-8
 
-from bernard.engine import Tr, triggers
-from bernard.i18n import intents
-from .states import Hello, Great, TooBad, HowAreYou
+from bernard.engine import (
+    Tr,
+    triggers,
+)
+from bernard.i18n import (
+    intents,
+)
+
+from .states import (
+    Great,
+    Hello,
+    HowAreYou,
+    TooBad,
+)
 
 # noinspection PyTypeChecker
 transitions = [

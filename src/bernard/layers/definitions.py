@@ -1,10 +1,32 @@
 # coding: utf-8
-from enum import Enum
-from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
-    TypeVar, Type, NamedTuple
-from bernard.i18n import TransText, render
-from bernard.i18n.intents import Intent
-from .helpers import FbBaseButton, FbCard
+from enum import (
+    Enum,
+)
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+)
+from typing import Text as TextT
+from typing import (
+    Type,
+    TypeVar,
+)
+
+from bernard.i18n import (
+    TransText,
+    render,
+)
+from bernard.i18n.intents import (
+    Intent,
+)
+
+from .helpers import (
+    FbBaseButton,
+    FbCard,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

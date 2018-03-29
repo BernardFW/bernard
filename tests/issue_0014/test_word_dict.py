@@ -1,4 +1,7 @@
-from bernard.i18n.translator import WordDictionary, SentenceGroup
+from bernard.i18n.translator import (
+    SentenceGroup,
+    WordDictionary,
+)
 
 
 def test_parse_item():

@@ -1,7 +1,10 @@
 # coding: utf-8
-from typing import Text
-import aioredis
 import asyncio
+from typing import (
+    Text,
+)
+
+import aioredis
 
 
 class BaseRedisStore(object):

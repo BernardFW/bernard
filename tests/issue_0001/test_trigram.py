@@ -1,7 +1,13 @@
 # coding: utf-8
 import pytest
-from bernard.trigram import normalize, make_trigrams, Trigram, Matcher, \
-    make_words
+
+from bernard.trigram import (
+    Matcher,
+    Trigram,
+    make_trigrams,
+    make_words,
+    normalize,
+)
 
 
 def test_normalize():

@@ -1,4 +1,7 @@
-from bernard.trigram import Trigram, LabelMatcher
+from bernard.trigram import (
+    LabelMatcher,
+    Trigram,
+)
 
 
 def test_label_matcher():

@@ -1,6 +1,8 @@
-from bernard.utils import ClassExp
 from bernard import layers as lyr
 from bernard.platforms.telegram import layers as tgr
+from bernard.utils import (
+    ClassExp,
+)
 
 
 def test_markdown():

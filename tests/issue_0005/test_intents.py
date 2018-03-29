@@ -1,8 +1,15 @@
 import os
 
-from bernard.conf.utils import patch_conf
-from bernard.i18n.intents import IntentsDb, IntentsMaker
-from bernard.utils import run
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.i18n.intents import (
+    IntentsDb,
+    IntentsMaker,
+)
+from bernard.utils import (
+    run,
+)
 
 INTENTS_FILE_FR_PATH = os.path.join(
     os.path.dirname(__file__),

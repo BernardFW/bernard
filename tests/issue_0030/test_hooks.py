@@ -1,10 +1,27 @@
-from bernard.conf.utils import patch_conf
-from bernard.engine.request import Request, BaseMessage, User, Conversation
-from bernard.i18n import Translator
-from bernard.i18n.translator import WordDictionary
-from bernard.middleware import BaseMiddleware
-from bernard.storage.register import Register
-from bernard.utils import run
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.i18n import (
+    Translator,
+)
+from bernard.i18n.translator import (
+    WordDictionary,
+)
+from bernard.middleware import (
+    BaseMiddleware,
+)
+from bernard.storage.register import (
+    Register,
+)
+from bernard.utils import (
+    run,
+)
 
 
 class AddName(BaseMiddleware):

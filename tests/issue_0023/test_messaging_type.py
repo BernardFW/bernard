@@ -1,6 +1,9 @@
 import pytest
 
-from bernard.platforms.facebook.layers import MessagingType, MessageTag
+from bernard.platforms.facebook.layers import (
+    MessageTag,
+    MessagingType,
+)
 
 
 def test_construct_check():

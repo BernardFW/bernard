@@ -1,11 +1,25 @@
 # coding: utf-8
-import pytest
 import asyncio
-from collections import defaultdict
-from bernard.storage.register import Register, \
-    BaseRegisterStore, RedisRegisterStore
-from bernard.utils import run, RoList, RoDict, make_ro
-from bernard.conf.utils import patch_conf
+from collections import (
+    defaultdict,
+)
+
+import pytest
+
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.storage.register import (
+    BaseRegisterStore,
+    RedisRegisterStore,
+    Register,
+)
+from bernard.utils import (
+    RoDict,
+    RoList,
+    make_ro,
+    run,
+)
 
 SAMPLE_DATA = {
     'foo': 'bar',

@@ -1,7 +1,13 @@
 import pytest
+
 from bernard import layers as lyr
-from bernard.middleware import AutoSleep, MiddlewareManager
-from bernard.utils import run
+from bernard.middleware import (
+    AutoSleep,
+    MiddlewareManager,
+)
+from bernard.utils import (
+    run,
+)
 
 
 async def alist(it):

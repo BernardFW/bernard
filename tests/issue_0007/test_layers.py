@@ -1,12 +1,24 @@
 import os
 
-from bernard.conf.utils import patch_conf
-from bernard.i18n import Translator
-from bernard.platforms.telegram.layers import KeyboardButton, \
-    ContactKeyboardButton, LocationKeyboardButton, ReplyKeyboard, \
-    ReplyKeyboardRemove, AnswerCallbackQuery, InlineKeyboard, \
-    InlineKeyboardButton
-from bernard.utils import run
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.i18n import (
+    Translator,
+)
+from bernard.platforms.telegram.layers import (
+    AnswerCallbackQuery,
+    ContactKeyboardButton,
+    InlineKeyboard,
+    InlineKeyboardButton,
+    KeyboardButton,
+    LocationKeyboardButton,
+    ReplyKeyboard,
+    ReplyKeyboardRemove,
+)
+from bernard.utils import (
+    run,
+)
 
 TRANS_FILE_PATH = os.path.join(
     os.path.dirname(__file__),

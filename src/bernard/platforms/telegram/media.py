@@ -1,6 +1,13 @@
-from typing import List, Dict, Optional, Text
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Text,
+)
 
-from bernard.media.base import BaseMedia
+from bernard.media.base import (
+    BaseMedia,
+)
 
 
 class Photo(BaseMedia):
@@ -24,4 +31,3 @@ class Photo(BaseMedia):
         # noinspection PyTypeChecker
         largest = max(self.files, key=lambda f: f['file_size'], default=None)
         return largest['file_id']
-

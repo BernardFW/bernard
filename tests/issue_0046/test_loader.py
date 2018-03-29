@@ -1,4 +1,6 @@
-from bernard.i18n.loaders import extract_ranges
+from bernard.i18n.loaders import (
+    extract_ranges,
+)
 
 
 def test_extract_ranges():

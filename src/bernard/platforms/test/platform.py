@@ -1,14 +1,42 @@
 # coding: utf-8
-from typing import List, Tuple, Type, Text
-from bernard.engine.platform import Platform
-from bernard.engine.request import BaseMessage, User, Conversation, Request
-from bernard.engine.responder import Responder
-from bernard.engine.state import BaseState
-from bernard.layers import Stack, BaseLayer
-from bernard.engine.fsm import FSM
-from bernard.media.base import BaseMedia
-from bernard.storage.register import Register
-from bernard.utils import run
+from typing import (
+    List,
+    Text,
+    Tuple,
+    Type,
+)
+
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.engine.platform import (
+    Platform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.engine.state import (
+    BaseState,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.media.base import (
+    BaseMedia,
+)
+from bernard.storage.register import (
+    Register,
+)
+from bernard.utils import (
+    run,
+)
 
 
 class TestUser(User):

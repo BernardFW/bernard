@@ -1,11 +1,26 @@
 # coding: utf-8
-from functools import wraps
-from typing import Text, Dict, Any, Iterator
-from bernard.conf import settings
-from bernard.core.health_check import HealthCheckFail
-from bernard.engine.state import BaseState
-from bernard.utils import import_class
+from functools import (
+    wraps,
+)
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    Text,
+)
 
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.engine.state import (
+    BaseState,
+)
+from bernard.utils import (
+    import_class,
+)
 
 Context = Dict[Text, Any]
 

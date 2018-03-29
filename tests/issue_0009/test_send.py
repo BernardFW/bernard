@@ -1,8 +1,21 @@
-from bernard.layers import FbButtonTemplate, FbUrlButton, FbShareButton, \
-    FbGenericTemplate, FbCard, stack
-from bernard.platforms.facebook.platform import Facebook
-from bernard.utils import run
-from unittest.mock import patch
+from unittest.mock import (
+    patch,
+)
+
+from bernard.layers import (
+    FbButtonTemplate,
+    FbCard,
+    FbGenericTemplate,
+    FbShareButton,
+    FbUrlButton,
+    stack,
+)
+from bernard.platforms.facebook.platform import (
+    Facebook,
+)
+from bernard.utils import (
+    run,
+)
 
 
 async def instant_run():

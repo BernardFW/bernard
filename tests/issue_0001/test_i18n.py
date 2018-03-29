@@ -1,19 +1,38 @@
 # coding: utf-8
+import datetime
 import os
+from unittest.mock import (
+    Mock,
+)
+
 import pytest
 import pytz
-import datetime
-# noinspection PyProtectedMember
-from bernard.i18n._formatter import make_date
-from bernard.i18n.translator import *
-from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
-    BaseIntentsLoader, CsvIntentsLoader
-from bernard.i18n.intents import Intent, IntentsMaker, IntentsDb
-from bernard.conf.utils import patch_conf
-from bernard.utils import run
-from dateutil import tz
-from unittest.mock import Mock
+from dateutil import (
+    tz,
+)
 
+from bernard.conf.utils import (
+    patch_conf,
+)
+# noinspection PyProtectedMember
+from bernard.i18n._formatter import (
+    make_date,
+)
+from bernard.i18n.intents import (
+    Intent,
+    IntentsDb,
+    IntentsMaker,
+)
+from bernard.i18n.loaders import (
+    BaseIntentsLoader,
+    BaseTranslationLoader,
+    CsvIntentsLoader,
+    CsvTranslationLoader,
+)
+from bernard.i18n.translator import *
+from bernard.utils import (
+    run,
+)
 
 TRANS_FILE_PATH = os.path.join(
     os.path.dirname(__file__),

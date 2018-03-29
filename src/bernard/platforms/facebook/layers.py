@@ -1,7 +1,13 @@
-from enum import Enum
-from typing import Optional
+from enum import (
+    Enum,
+)
+from typing import (
+    Optional,
+)
 
-from bernard.layers import BaseLayer
+from bernard.layers import (
+    BaseLayer,
+)
 
 
 class MessageTag(Enum):
