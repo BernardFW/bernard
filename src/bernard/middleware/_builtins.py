@@ -94,6 +94,9 @@ class AutoSleep(BaseMiddleware):
             else:
                 ns.append([x for x in stack if not isinstance(x, lyr.Sleep)])
 
+        if not ns:
+            return ns
+
         last = ns[-1]
         if len(last) == 1 and isinstance(last[0], lyr.Sleep):
             return ns[:-1]

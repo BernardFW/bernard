@@ -24,6 +24,7 @@ from bernard import layers as lyr
 from bernard.media.base import BaseMedia
 from bernard.utils import patch_dict, patch_qs
 from ...platforms import SimplePlatform
+from .media import Photo
 from .layers import (
     AnswerCallbackQuery,
     Update,
@@ -169,6 +170,10 @@ class TelegramMessage(BaseMessage):
                     self._telegram,
                 )
                 out.append(lyr.Message(sub_msg))
+
+            if 'photo' in msg:
+                media = Photo(msg['photo'])
+                out.append(lyr.Image(media))
 
         if 'callback_query' in self._update:
             payload = self._update['callback_query']['data']

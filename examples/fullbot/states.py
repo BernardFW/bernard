@@ -5,6 +5,7 @@ from bernard.engine import BaseState
 from bernard import layers as lyr
 from bernard.platforms.telegram import layers as tgr
 from bernard.i18n import translate as t, intents
+from bernard.platforms.telegram.media import Photo
 
 
 class BaseTestState(BaseState):
@@ -31,6 +32,15 @@ class Locale(BaseTestState):
         locale = await self.request.user.get_locale()
 
         self.send(lyr.Text(t('LOCALE', locale=locale)))
+
+
+class TelegramPhoto(BaseTestState):
+    async def handle(self):
+        img = self.request.get_layer(lyr.Image)
+        assert isinstance(img.media, Photo)
+        lid = img.media.largest_id()
+
+        self.send(lyr.Text(f'Got photo ID = {lid}'))
 
 
 class Keyboard(BaseTestState):
