@@ -60,7 +60,7 @@ go with it.
 
 ## Wrap-up
 
-FSMs are a simple way to describe a conversation. The have states which
+FSMs are a simple way to describe a conversation. They have states which
 are connected by triggers. Triggers will be activated by user actions
 based on a probabilistic model. This is what drives transitions between
 states. And finally, the initial state is a meta-state which is always
