@@ -40,7 +40,7 @@ That's a sample environment file. You can source it:
 source ./env
 ```
 
-This will automatically load the defautl config. You need to update it
+This will automatically load the default config. You need to update it
 with configuration values that suit your needs.
 
 The "Env File" PyCharm plugin can be used to automatically read this

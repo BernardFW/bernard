@@ -28,3 +28,4 @@ if __name__ == '__main__':
             'configured?',
             file=stderr,
         )
+        exit(1)
