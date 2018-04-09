@@ -101,7 +101,7 @@ would be an `Image` layer plus a `Text` layer. A text with quick replies
 
 Example:
 
-![layers](https://cdn.rawgit.com/BernardFW/bernard/develop/doc/img/layers.png)
+![layers](../img/layers.png)
 
 In this real-world example we can see that a text message is associated
 to quick replies. Internally, this is represented by BERNARD layers and
@@ -119,4 +119,4 @@ display back the result. They use 3 atoms which are users, conversations
 and messages. Finally, messages are built using layers of content, which
 allow to use a simple API which covers all platforms.
 
-Next step: [Finite State Machines](./fsm.md)
+**Next step**: [Finite State Machines](./fsm.md)
