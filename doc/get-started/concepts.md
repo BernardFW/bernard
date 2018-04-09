@@ -119,4 +119,4 @@ display back the result. They use 3 atoms which are users, conversations
 and messages. Finally, messages are built using layers of content, which
 allow to use a simple API which covers all platforms.
 
-**Next step**: [Finite State Machines](./fsm.md)
+**Next step**: [Finite-state Machines](./fsm.md)

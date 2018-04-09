@@ -37,7 +37,7 @@ your hands on, you can start by the "Simple Bot" first and read things
 backward if you don't understand it instinctively.
 
 1. [Concepts](./concepts.md)
-2. [Finite State Machine](./fsm.md)
+2. [Finite-state Machine](./fsm.md)
 3. [Installation](./installation.md)
 4. [Start a project](./start.md)
 5. [Simple bot](./simple-bot.md)
