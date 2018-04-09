@@ -1,6 +1,8 @@
 import pytest
 
-from bernard import layers as lyr
+from bernard import (
+    layers as lyr,
+)
 from bernard.engine.request import (
     BaseMessage,
     Conversation,

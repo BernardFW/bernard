@@ -34,7 +34,9 @@ from aiohttp.web_urldispatcher import (
 )
 
 import ujson
-from bernard import layers as lyr
+from bernard import (
+    layers as lyr,
+)
 from bernard.conf import (
     settings,
 )
@@ -47,9 +49,7 @@ from bernard.engine.platform import (
 from bernard.engine.request import (
     BaseMessage,
     Conversation,
-)
-from bernard.engine.request import Request as BernardRequest
-from bernard.engine.request import (
+    Request as BernardRequest,
     User,
 )
 from bernard.engine.responder import (

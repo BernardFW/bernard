@@ -8,9 +8,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-)
-from typing import Text as TextT
-from typing import (
+    Text as TextT,
     Type,
     TypeVar,
 )

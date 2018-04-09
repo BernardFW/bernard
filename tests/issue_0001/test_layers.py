@@ -18,7 +18,9 @@ from bernard.engine.request import (
 from bernard.i18n import (
     intents,
 )
-from bernard.layers.stack import stack as make_stack
+from bernard.layers.stack import (
+    stack as make_stack,
+)
 from bernard.storage.register import (
     Register,
 )

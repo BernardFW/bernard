@@ -2,10 +2,12 @@ import re
 from typing import (
     TYPE_CHECKING,
     List,
+    Text as TextT,
 )
-from typing import Text as TextT
 
-from bernard import layers as lyr
+from bernard import (
+    layers as lyr,
+)
 from bernard.conf import (
     settings,
 )

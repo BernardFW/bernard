@@ -5,13 +5,13 @@ from typing import (
     Callable,
     List,
     Optional,
-)
-from typing import Text as TextT
-from typing import (
+    Text as TextT,
     Type,
 )
 
-from bernard import layers as l
+from bernard import (
+    layers as l,
+)
 from bernard.engine.request import (
     Request,
 )

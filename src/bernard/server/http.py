@@ -6,7 +6,9 @@ from aiohttp.web_urldispatcher import (
     UrlDispatcher,
 )
 
-from bernard.platforms.facebook import web as fb
+from bernard.platforms.facebook import (
+    web as fb,
+)
 
 app = Application()
 

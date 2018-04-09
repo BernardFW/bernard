@@ -1,4 +1,6 @@
-from bernard import layers as lyr
+from bernard import (
+    layers as lyr,
+)
 from bernard.middleware import (
     AutoType,
     MiddlewareManager,

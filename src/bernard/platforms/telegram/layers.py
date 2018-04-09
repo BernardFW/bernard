@@ -23,8 +23,8 @@ from bernard.i18n.translator import (
 from bernard.layers import (
     Markdown,
     Stack,
+    Text as TextLayer,
 )
-from bernard.layers import Text as TextLayer
 from bernard.layers.definitions import (
     BaseLayer,
 )

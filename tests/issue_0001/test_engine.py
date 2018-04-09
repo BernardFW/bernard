@@ -6,11 +6,15 @@ from unittest.mock import (
 
 import pytest
 
-from bernard import layers as l
+from bernard import (
+    layers as l,
+)
 from bernard.conf.utils import (
     patch_conf,
 )
-from bernard.engine import triggers as trig
+from bernard.engine import (
+    triggers as trig,
+)
 from bernard.engine.fsm import (
     FSM,
 )
@@ -31,8 +35,8 @@ from bernard.engine.transition import (
 )
 from bernard.i18n import (
     intents,
+    translate as t,
 )
-from bernard.i18n import translate as t
 from bernard.layers.stack import (
     stack,
 )

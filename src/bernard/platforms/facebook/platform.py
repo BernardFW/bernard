@@ -26,7 +26,9 @@ from dateutil import (
 )
 
 import ujson
-from bernard import layers as lyr
+from bernard import (
+    layers as lyr,
+)
 from bernard.conf import (
     settings,
 )

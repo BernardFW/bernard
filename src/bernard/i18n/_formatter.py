@@ -13,7 +13,9 @@ from typing import (
 from babel import (
     dates,
 )
-from dateutil.parser import parse as parse_date
+from dateutil.parser import (
+    parse as parse_date,
+)
 
 
 def make_date(obj: Union[date, datetime, Text], timezone: tzinfo=None):

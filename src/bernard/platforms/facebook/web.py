@@ -32,7 +32,9 @@ from aiohttp.web_ws import (
 )
 
 import ujson
-from bernard.analytics.base import providers as analytics_providers
+from bernard.analytics.base import (
+    providers as analytics_providers,
+)
 from bernard.conf import (
     settings,
 )
