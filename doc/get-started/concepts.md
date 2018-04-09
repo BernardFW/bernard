@@ -11,7 +11,7 @@ Bots are a way to easily access a specific service. In that sense, they
 do translate a human interaction into an API call, gets the result and
 they translates it back into human language. It looks like this:
 
-![architecture](https://cdn.rawgit.com/BernardFW/bernard/develop/doc/img/architecture.svg)
+![architecture](../img/architecture.svg)
 
 As you can see, BERNARD is at the center of the information flow, but
 the buisness-related intelligence is located in external APIs.
