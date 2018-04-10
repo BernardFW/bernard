@@ -1,28 +1,26 @@
 BERNARD
 =======
 
+**Version 0.2beta**
+
 [![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
 
-Create powerful and flexible bots using BERNARD. It comes batteries-included
-and with strong opinions. You'll be able to:
+Building chatbots is a brand new craft. BERNARD is here to bring it up
+to speed for the professionnal world.
 
-- Represent conversations as finite-state machines
-- Multi-platform (Facebook Messenger, WeChat, VK, Line, Twilio, ...)
-- Flexible translation system. Handles language, plurals, gender and anything you'd like
-- Run-time analysis through logging
+- Take advantage of each platform's specificities (Facebook, Telegram,
+  ...)
+- Connect your existing business API
+- Translate and decline your texts
 
-BERNARD stands for "Bot Engine Responding Naturally At Requests Detection".
+# Get started!
 
-# Get started
+This documentation will bring you methodology, concepts and patterns to
+build bots as well as hands-on experience with the code of a bot.
 
-Please go to the [get started](doc/get_started.md) section!
-
-# Summary
-
-Here are the sections of documentation:
-
-- [Platforms](doc/platforms.md)
-- [Health Checks explanations](doc/health_checks.md)
+- **[Get Started](./doc/get-started/readme.md)** course and tutorial
+- **[Table of contents](./doc/readme.md)** of all topics in
+  documentation
 
 # Licensing
 
@@ -48,16 +46,10 @@ if you end up going against those it will be hard to merge your code.
 Coding rules are very, very important. There is not too many yet:
 
 - PEP 8
+- Imports are normalized by the `make imports` command
 - No undocumented code gets merged
 - Code bringing test coverage down or breaking tests doesn't get merged
 
 ## Testing
 
 Use `py.test`. Node for later: document this part a bit better.
-
-# Vision
-
-The vision of the framework API was established in the
-[the vision doc](doc/vision.md). This document is the basis of any development
-going on as it tries to bring consistency to all the different concepts and
-problems encountered in bot making.

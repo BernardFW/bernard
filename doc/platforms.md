@@ -90,5 +90,27 @@ page/app. For each object, the keys are:
   [the FB doc](https://developers.facebook.com/docs/messenger-platform/reference/messenger-profile-api/persistent-menu)
   for syntax.
 
-Please note that only `security_token`, `app_secret`, `page_id` and 
+Please note that only `security_token`, `app_secret`, `page_id` and
 `page_token` are mandatory for the bot to work.
+
+
+## Telegram
+
+**Class**: `bernard.platforms.telegram.platform.Telegram`
+
+**Example config**
+
+```python
+PLATFORMS = [
+    {
+        'class': 'bernard.platforms.telegram.platform.Telegram',
+        'settings': {
+            'token': getenv('TELEGRAM_TOKEN'),
+        }
+    }
+]
+```
+
+In order to create a Telegram bot and configure it, you need to talk
+to `@BotFather`. He will also provide you with the token to be put in
+`TELEGRAM_TOKEN`.
