@@ -281,9 +281,9 @@ class FSM(object):
         return state
 
     async def _build_state_register(self,
-                              state: BaseState,
-                              request: Request,
-                              responder: Responder) -> Dict:
+                                    state: BaseState,
+                                    request: Request,
+                                    responder: Responder) -> Dict:
         """
         Build the next register to store.
 

@@ -15,6 +15,9 @@ from bernard.engine.triggers import (
 from bernard.i18n import (
     intents,
 )
+from bernard.platforms.facebook import (
+    layers as fbl,
+)
 from bernard.storage.register import (
     Register,
 )
@@ -53,7 +56,7 @@ class MockTextMessage(BaseMockMessage):
 
         if self.add_qr:
             out += [
-                lyr.QuickReply('foo'),
+                fbl.QuickReply('foo'),
             ]
 
         return out

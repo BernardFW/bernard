@@ -40,6 +40,9 @@ from bernard.i18n import (
 from bernard.layers.stack import (
     stack,
 )
+from bernard.platforms.facebook import (
+    layers as fbl,
+)
 from bernard.platforms.test.platform import (
     make_test_fsm,
 )
@@ -137,7 +140,7 @@ class MockTextMessage(BaseMockMessage):
 
         if self.add_qr:
             out += [
-                l.QuickReply('foo'),
+                fbl.QuickReply('foo'),
             ]
 
         return out
@@ -146,7 +149,7 @@ class MockTextMessage(BaseMockMessage):
 class MockChoiceMessage(BaseMockMessage):
     def get_layers(self):
         return [
-            l.QuickReply('yes'),
+            fbl.QuickReply('yes'),
             l.Text('yes'),
         ]
 
@@ -321,16 +324,16 @@ def test_story_hello():
             stack(l.Text(t.HELLO)),
             stack(
                 l.Text(t.HOW_ARE_YOU),
-                l.QuickRepliesList([
-                    l.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
-                    l.QuickRepliesList.TextOption('no', t.NO, intents.NO),
+                fbl.QuickRepliesList([
+                    fbl.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
+                    fbl.QuickRepliesList.TextOption('no', t.NO, intents.NO),
                 ])
             ),
         )
 
         platform.handle(
             l.Text('Yes'),
-            l.QuickReply('yes'),
+            fbl.QuickReply('yes'),
         )
         platform.assert_sent(
             stack(l.Text(t.GREAT))

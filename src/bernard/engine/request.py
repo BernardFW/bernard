@@ -212,8 +212,8 @@ class Request(object):
 
     async def get_locale(self) -> Text:
         """
-        Get the locale to use for this request. It's either the overriden locale
-        or the locale provided by the platform.
+        Get the locale to use for this request. It's either the overridden
+        locale or the locale provided by the platform.
 
         :return: Locale to use for this request
         """

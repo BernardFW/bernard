@@ -201,9 +201,10 @@ class Choice(BaseTrigger):
         """
         Look for the QuickReply layer's slug into available choices.
         """
+        from bernard.platforms.facebook import layers as fbl
 
         try:
-            qr = self.request.get_layer(l.QuickReply)
+            qr = self.request.get_layer(fbl.QuickReply)
             self.chosen = choices[qr.slug]
             self.slug = qr.slug
 
@@ -249,13 +250,14 @@ class Choice(BaseTrigger):
         - If there is a quick reply, then use its payload as choice slug
         - Otherwise, try to match each choice with its intent
         """
+        from bernard.platforms.facebook import layers as fbl
 
         choices = self.request.get_trans_reg('choices')
 
         if not choices:
             return
 
-        if self.request.has_layer(l.QuickReply):
+        if self.request.has_layer(fbl.QuickReply):
             return self._rank_qr(choices)
         elif self.request.has_layer(l.RawText):
             return await self._rank_text(choices)
