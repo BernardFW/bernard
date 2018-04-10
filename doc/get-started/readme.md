@@ -42,4 +42,3 @@ backward if you don't understand it instinctively.
 4. [Start a project](./start.md)
 5. [Number bot](./number-bot.md)
 6. [Patterns](./patterns.md)
-7. [NLU](./nlu.md)
