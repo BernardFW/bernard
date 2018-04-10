@@ -6,6 +6,8 @@
 
 set -a
 
+DEBUG=yes
+
 BERNARD_SETTINGS_FILE=__settings_file__
 BERNARD_BASE_URL=http://localhost:8666
 WEBVIEW_SECRET_KEY=__random_key__

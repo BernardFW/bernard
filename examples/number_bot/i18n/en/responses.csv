@@ -1,0 +1,16 @@
+ERROR,Woops. Something went wrong.
+CONFUSED,It seems that I can't understand what you're saying. Please try another way to say it.
+WELCOME,Welcome {name}! Do you want to play?
+WELCOME,Howdy {name}! Do you fancy to play?
+LETS_PLAY,Let's play
+GUESS_A_NUMBER,Guess a number between 1 and 100 (inclusive)
+WRONG,Wrong!
+WRONG,Try again!
+WRONG,Well... No!
+LOWER,Try something lower
+HIGHER,Try something higher
+CONGRATULATIONS,Congrats!
+CONGRATULATIONS,Well done!
+CONGRATULATIONS,Awesome!
+DO_YOU_WANT_AGAIN,Do you want to play again?
+PLAY_AGAIN,Play again

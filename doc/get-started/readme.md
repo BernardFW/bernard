@@ -40,6 +40,6 @@ backward if you don't understand it instinctively.
 2. [Finite-state Machine](./fsm.md)
 3. [Installation](./installation.md)
 4. [Start a project](./start.md)
-5. [Simple bot](./simple-bot.md)
+5. [Number bot](./number-bot.md)
 6. [Patterns](./patterns.md)
 7. [NLU](./nlu.md)

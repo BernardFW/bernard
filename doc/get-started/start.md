@@ -81,4 +81,4 @@ There is a `bernard start_project` command that allows to quickly create
 a project from a simple template. It has all the basic files required
 to make a BERNARD project.
 
-**Next step**: [simple bot](./simple-bot.md)
+**Next step**: [number bot](./number-bot.md)
