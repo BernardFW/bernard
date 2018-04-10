@@ -6,12 +6,13 @@ BERNARD
 [![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
 
 Building chatbots is a brand new craft. BERNARD is here to bring it up
-to speed for the professionnal world.
+to speed for the professional world.
 
 - Take advantage of each platform's specificities (Facebook, Telegram,
   ...)
 - Connect your existing business API
 - Translate and decline your texts
+- Extensible to any platform, without merging to upstream
 
 # Get started!
 

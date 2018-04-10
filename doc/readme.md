@@ -23,3 +23,5 @@ topics covered:
   development.
 - [Platforms](./platforms.md) &ndash; Reference on how to configure
   supported platforms.
+- [Layers](./layers/readme.md) &ndash; Reference on how to configure
+  supported platforms.

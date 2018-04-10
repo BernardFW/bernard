@@ -93,6 +93,30 @@ page/app. For each object, the keys are:
 Please note that only `security_token`, `app_secret`, `page_id` and
 `page_token` are mandatory for the bot to work.
 
+### Sending
+
+Authorized message stacks are:
+
+- **Text**: `(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?`
+- **[Generic Template](https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic)**: `GenericTemplate QuickRepliesList? MessagingType?`
+- **[Button Template](https://developers.facebook.com/docs/messenger-platform/send-messages/template/button)**: `ButtonTemplate QuickRepliesList? MessagingType?`
+- **Attachment**: `(Image|Audio|Video|File) QuickRepliesList? MessagingType?`
+- **Sleep**: `Sleep`
+- **Typing**: `Typing`
+
+### Receiving
+
+Expected layers are:
+
+- `RawText` (+ `QuickReply` if a quick reply was clicked)
+- `Image`
+- `Audio`
+- `File`
+- `Video`
+- `Location`
+- `Postback`
+- `Optin`
+
 
 ## Telegram
 
@@ -114,3 +138,25 @@ PLATFORMS = [
 In order to create a Telegram bot and configure it, you need to talk
 to `@BotFather`. He will also provide you with the token to be put in
 `TELEGRAM_TOKEN`.
+
+### Sending
+
+Authorized message stacks are:
+
+- **[Plain Text](https://core.telegram.org/bots/api#sendmessage)**: `(Text|RawText)+ (InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? Reply?|(Text|RawText) InlineKeyboard? Reply? Update`
+- **[Markdown](https://core.telegram.org/bots/api#sendmessage)**: `Markdown+ (InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? Reply?|Markdown InlineKeyboard? Reply? Update`
+- **[Inline Answer](https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating)**: `AnswerInlineQuery`
+- **Sleep**: `Sleep`
+- **Typing**: `Typing`
+
+### Receiving
+
+Expected layers are:
+
+- `RawText`
+- `BotCommand`
+- `Message`
+- `Image`
+- `Postback`
+- `InlineMessage`
+- `InlineQuery`
