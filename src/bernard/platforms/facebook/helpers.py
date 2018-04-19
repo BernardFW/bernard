@@ -141,7 +141,7 @@ class UrlButton(BaseButton):
         real_url = patch_qs(url, extra)
 
         if self.slug:
-            url = urljoin(request.message.get_url_base(), '/links/facebook')
+            url = urljoin(settings.BERNARD_BASE_URL, '/links/facebook')
             url = patch_qs(url, {
                 'l': jwt.encode(
                     {

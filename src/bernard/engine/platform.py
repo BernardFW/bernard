@@ -1,9 +1,12 @@
 # coding: utf-8
 import asyncio
 from typing import (
+    Any,
     Callable,
     Coroutine,
     List,
+    Optional,
+    Text,
 )
 
 import aiohttp
@@ -133,6 +136,22 @@ class Platform(object):
         """
 
         pass
+
+    async def message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        Given a token and a payload, create a message for this platform with
+        a Postback layer holding the payload.
+        """
+
+        raise NotImplementedError
+
+    async def inject_message(self, message: BaseMessage) -> None:
+        """
+        Injects a message into the platform and handles it in the FSM
+        """
+
+        raise NotImplementedError
 
 
 class SimplePlatform(Platform):

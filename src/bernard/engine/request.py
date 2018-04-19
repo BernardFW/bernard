@@ -92,14 +92,6 @@ class User(object):
         """
         raise NotImplementedError
 
-    async def get_postback_url(self) -> Text:
-        """
-        Returns a URL which can be POSTed to. The POST body must be a JSON
-        message that will be used as payload for a synthetic postback layer
-        from this user.
-        """
-        raise NotImplementedError
-
 
 class BaseMessage(object):
     """
@@ -145,6 +137,12 @@ class BaseMessage(object):
         """
 
         return True
+
+    async def get_token(self) -> Text:
+        """
+        Returns an authentication token that can be understood by the platform.
+        """
+        raise NotImplementedError
 
 
 class Request(object):
@@ -235,3 +233,10 @@ class Request(object):
 
         mf = MiddlewareManager.instance().get('make_trans_flags', make_flags)
         return await mf(self)
+
+    async def get_token(self) -> Text:
+        """
+        Returns the auth token from the message
+        """
+
+        return await self.message.get_token()

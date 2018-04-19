@@ -1,7 +1,12 @@
 # coding: utf-8
 import logging
 from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Optional,
     Text,
+    Tuple,
     Type,
 )
 
@@ -17,6 +22,9 @@ from bernard.engine.fsm import (
 from bernard.engine.platform import (
     Platform,
     PlatformDoesNotExist,
+)
+from bernard.engine.request import (
+    BaseMessage,
 )
 from bernard.middleware import (
     MiddlewareManager,
@@ -65,6 +73,7 @@ class PlatformManager(object):
     def __init__(self):
         self.fsm = None
         self.platforms = {}
+        self._classes = self._index_classes()
 
     @property
     def _is_init(self):
@@ -144,6 +153,23 @@ class PlatformManager(object):
                 async for check in cls.self_check():
                     yield check
 
+    def _index_classes(self) -> Dict[Text, Type[Platform]]:
+        """
+        Build a name index for all platform classes
+        """
+
+        out = {}
+
+        for p in get_platform_settings():
+            cls: Type[Platform] = import_class(p['class'])
+
+            if 'name' in p:
+                out[p['name']] = cls
+            else:
+                out[cls.NAME] = cls
+
+        return out
+
     async def build_platform(self, cls):
         """
         Build the Facebook platform. Nothing fancy.
@@ -157,11 +183,13 @@ class PlatformManager(object):
         p.hook_up(router)
         return p
 
-    def get_class(self, platform):
-        for p in get_platform_settings():
-            cls: Type[Platform] = import_class(p['class'])
-            if cls.NAME == platform:
-                return cls
+    def get_class(self, platform) -> Type[Platform]:
+        """
+        For a given platform name, gets the matching class
+        """
+
+        if platform in self._classes:
+            return self._classes[platform]
 
         raise PlatformDoesNotExist('Platform "{}" is not in configuration'
                                    .format(platform))
@@ -180,3 +208,28 @@ class PlatformManager(object):
                 await self.build_platform(self.get_class(name))
 
         return self.platforms[name]
+
+    async def get_all_platforms(self) -> AsyncIterator[Platform]:
+        """
+        Returns all platform instances
+        """
+
+        for name in self._classes.keys():
+            yield await self.get_platform(name)
+
+    async def message_from_token(self, token: Text, payload: Any) \
+            -> Tuple[Optional[BaseMessage], Optional[Platform]]:
+        """
+        Given an authentication token, find the right platform that can
+        recognize this token and create a message for this platform.
+
+        The payload will be inserted into a Postback layer.
+        """
+
+        async for platform in self.get_all_platforms():
+            m = await platform.message_from_token(token, payload)
+
+            if m:
+                return m, platform
+
+        return None, None

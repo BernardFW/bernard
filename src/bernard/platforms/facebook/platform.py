@@ -24,6 +24,10 @@ import jwt
 from dateutil import (
     tz,
 )
+from facepy import (
+    SignedRequest,
+    SignedRequestError,
+)
 
 import ujson
 from bernard import (
@@ -171,26 +175,6 @@ class FacebookUser(User):
         u = await self._get_user()
         return u.get('locale', '')
 
-    async def get_postback_url(self) -> Text:
-        content = {
-            'user_id': self.id,
-            'fb_psid': self.fbid,
-            'fb_pid': self.page_id,
-        }
-
-        token = jwt.encode(
-            content,
-            settings.WEBVIEW_SECRET_KEY,
-            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
-        )
-
-        url = patch_qs(
-            urljoin(self.message.get_url_base(), '/postback/facebook'),
-            {'token': token}
-        )
-
-        return url
-
 
 class FacebookConversation(Conversation):
     """
@@ -298,22 +282,23 @@ class FacebookMessage(BaseMessage):
         """
         return self._event['recipient']['id']
 
-    def get_url_base(self) -> Optional[Text]:
-        """
-        If available, return the URL base
-        """
-        url : Text = self._event.get('url_base')
-
-        if url and url.startswith('http://'):
-            url = 'https://' + url[7:]
-
-        return url
-
     def should_confuse(self) -> bool:
         """
         The message is marked confusing or not at init
         """
         return self._confusing
+
+    async def get_token(self) -> Text:
+        user = self.get_user()
+
+        return jwt.encode(
+            {
+                'fb_psid': user.fbid,
+                'fb_pid': user.page_id,
+            },
+            settings.WEBVIEW_SECRET_KEY,
+            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+        )
 
 
 class FacebookResponder(Responder):
@@ -761,3 +746,87 @@ class Facebook(SimplePlatform):
             raise ValueError('Facebook platform only accepts URL media')
 
         return media
+
+    def _make_fake_message(self, user_id, page_id, payload):
+        """
+        Creates a fake message for the given user_id. It contains a postback
+        with the given payload.
+        """
+
+        event = {
+            'sender': {
+                'id': user_id,
+            },
+            'recipient': {
+                'id': page_id,
+            },
+            'postback': {
+                'payload': payload,
+            },
+        }
+
+        return FacebookMessage(event, self, False)
+
+    def _message_from_sr(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        Tries to verify the signed request
+        """
+
+        for page in self.settings():
+            secret = page['app_secret']
+
+            try:
+                sr_data = SignedRequest.parse(token, secret)
+            except (TypeError, ValueError, SignedRequestError) as e:
+                continue
+
+            return self._make_fake_message(
+                sr_data['psid'],
+                page['page_id'],
+                payload,
+            )
+
+    def _message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        Analyzes a signed token and generates the matching message
+        """
+
+        try:
+            tk = jwt.decode(token, settings.WEBVIEW_SECRET_KEY)
+        except jwt.InvalidTokenError:
+            return
+
+        try:
+            user_id = tk['fb_psid']
+            assert isinstance(user_id, Text)
+            page_id = tk['fb_pid']
+            assert isinstance(page_id, Text)
+        except (KeyError, AssertionError):
+            return
+
+        for page in self.settings():
+            if page['page_id'] == page_id:
+                return self._make_fake_message(user_id, page_id, payload)
+
+    async def message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        There is two ways of getting a FB user: either with a signed request or
+        either with a platform token. Both are tried out.
+        """
+
+        methods = [
+            self._message_from_sr,
+            self._message_from_token,
+        ]
+
+        for method in methods:
+            msg = method(token, payload)
+
+            if msg:
+                return msg
+
+    async def inject_message(self, message: FacebookMessage) -> None:
+        await self.handle_event(message)

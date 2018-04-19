@@ -112,7 +112,7 @@ WEBVIEW_SECRET_KEY = None
 WEBVIEW_JWT_ALGORITHM = 'HS256'
 
 # Where to store the webview token
-WEBVIEW_TOKEN_KEY = '_bnd_user'
+WEBVIEW_TOKEN_KEY = '_b'
 
 # Webviews are supposed to send a message when they close. However, it can
 # happen on some shitty devices (follow my eyes) that connections are not

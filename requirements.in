@@ -11,6 +11,7 @@ babel
 python-dateutil
 pytz
 aionotify
+facepy
 
 # For Google import
 google-api-python-client

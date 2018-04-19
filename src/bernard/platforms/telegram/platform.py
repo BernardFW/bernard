@@ -170,30 +170,6 @@ class TelegramUser(User):
     async def get_full_name(self) -> Text:
         return await self.get_formal_name()
 
-    async def get_postback_url(self):
-        """
-        Generate a postback URL for Telegram.
-        """
-
-        content = {
-            'user_id': self.id,
-            'telegram_user_id': self._user['id'],
-            'telegram_chat_id': self._chat['id'],
-        }
-
-        token = jwt.encode(
-            content,
-            settings.WEBVIEW_SECRET_KEY,
-            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
-        )
-
-        url = patch_qs(
-            urljoin(settings.BERNARD_BASE_URL, '/postback/telegram'),
-            {'token': token},
-        )
-
-        return url
-
 
 class TelegramMessage(BaseMessage):
     def __init__(self, update: Dict, telegram: 'Telegram'):
@@ -289,6 +265,22 @@ class TelegramMessage(BaseMessage):
 
     def get_chat_id(self) -> Text:
         return self._get_chat()['id']
+
+    async def get_token(self) -> Text:
+        user = self.get_user()
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        user_id = user._user['id']
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        chat_id = user._chat['id']
+
+        return jwt.encode(
+            {
+                'telegram_user_id': user_id,
+                'telegram_chat_id': chat_id,
+            },
+            settings.WEBVIEW_SECRET_KEY,
+            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+        )
 
 
 class TelegramResponder(Responder):
@@ -431,7 +423,6 @@ class Telegram(SimplePlatform):
 
     def hook_up(self, router: UrlDispatcher):
         router.add_post(self.make_hook_path(), self.receive_updates)
-        router.add_post('/postback/telegram', self.receive_postback)
 
     async def receive_updates(self, request: Request):
         """
@@ -458,31 +449,12 @@ class Telegram(SimplePlatform):
             'error': False,
         })
 
-    async def receive_postback(self, request: Request):
-        """
-        Handle postbacks. A fake Telegram message will be generated and fed to
-        the normal process.
-
-        Since postback messages need to be acknowledged in Telegram, the ID
-        is voluntarily not set so the Responder knows it's a fake message and
-        thus needs no acknowledgement.
-        """
-
-        tk = request.query.get('token')
-
-        if not tk:
-            return json_response({
-                'error': True,
-                'message': 'Missing "{}"'.format('token'),
-            }, status=400)
-
+    async def message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
         try:
-            tk = jwt.decode(tk, settings.WEBVIEW_SECRET_KEY)
+            tk = jwt.decode(token, settings.WEBVIEW_SECRET_KEY)
         except jwt.InvalidTokenError:
-            return json_response({
-                'error': True,
-                'message': 'Provided token is invalid'
-            }, status=400)
+            return
 
         try:
             user_id = tk['telegram_user_id']
@@ -490,20 +462,7 @@ class Telegram(SimplePlatform):
             chat_id = tk['telegram_chat_id']
             assert isinstance(chat_id, int)
         except (KeyError, AssertionError):
-            return json_response({
-                'error': True,
-                'message': 'Provided payload is invalid'
-            }, status=400)
-
-        body = await request.read()
-
-        try:
-            ujson.loads(body)
-        except ValueError:
-            return json_response({
-                'error': True,
-                'message': 'Cannot decode body',
-            }, status=400)
+            return
 
         fake_message = {
             'callback_query': {
@@ -515,12 +474,15 @@ class Telegram(SimplePlatform):
                         'id': chat_id,
                     },
                 },
-                'data': body,
+                'data': payload,
             }
         }
 
-        message = TelegramMessage(fake_message, self)
-        responder = TelegramResponder(fake_message, self)
+        return TelegramMessage(fake_message, self)
+
+    async def inject_message(self, message: TelegramMessage) -> None:
+        # noinspection PyProtectedMember
+        responder = TelegramResponder(message._update, self)
         await self._notify(message, responder)
 
         return json_response({
