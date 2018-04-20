@@ -474,7 +474,7 @@ class Telegram(SimplePlatform):
                         'id': chat_id,
                     },
                 },
-                'data': payload,
+                'data': ujson.dumps(payload),
             }
         }
 

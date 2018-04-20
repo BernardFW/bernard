@@ -41,21 +41,21 @@ def bernard_auth(func):
 
     @wraps(func)
     async def wrapper(request: Request):
-        hdr_key = settings.WEBVIEW_AUTH_HEADER
-        hdr_token = request.headers.get(hdr_key)
+        token_key = settings.WEBVIEW_TOKEN_KEY
+        token = request.query.get(token_key, '')
 
         try:
             body = await request.json()
         except ValueError:
             body = None
 
-        msg, platform = await manager.message_from_token(hdr_token, body)
+        msg, platform = await manager.message_from_token(token, body)
 
         if not msg:
             return json_response({
                 'status': 'unauthorized',
                 'message': 'No valid token found in GET parameter '
-                           f'"{hdr_key}"',
+                           f'"{token_key}"',
             }, status=401)
 
         return await func(msg, platform)
@@ -122,7 +122,7 @@ async def postback_analytics(msg: BaseMessage, platform: Platform) -> Response:
             })
 
         async for p in providers():
-            getattr(p, func)(*args)
+            await getattr(p, func)(*args)
 
     except (KeyError, IndexError, AssertionError, TypeError):
         return json_response({

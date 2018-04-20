@@ -761,7 +761,7 @@ class Facebook(SimplePlatform):
                 'id': page_id,
             },
             'postback': {
-                'payload': payload,
+                'payload': ujson.dumps(payload),
             },
         }
 

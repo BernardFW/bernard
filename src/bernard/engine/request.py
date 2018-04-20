@@ -14,6 +14,9 @@ from typing import (
     Type,
 )
 
+from bernard.conf import (
+    settings,
+)
 from bernard.layers import (
     BaseLayer,
     Stack,
@@ -23,6 +26,9 @@ from bernard.layers.stack import (
 )
 from bernard.storage.register import (
     Register,
+)
+from bernard.utils import (
+    patch_qs,
 )
 
 if TYPE_CHECKING:
@@ -102,6 +108,10 @@ class BaseMessage(object):
     The methods here should, in principle, only get called once. Though it's
     not guaranteed.
     """
+
+    def __repr__(self):
+        stack = Stack(self.get_layers())
+        return f'{self.__class__.__name__}({stack})'
 
     def get_platform(self) -> Text:
         """
@@ -240,3 +250,14 @@ class Request(object):
         """
 
         return await self.message.get_token()
+
+    async def sign_url(self, url):
+        """
+        Sign an URL with this request's auth token
+        """
+
+        token = await self.get_token()
+
+        return patch_qs(url, {
+            settings.WEBVIEW_TOKEN_KEY: token,
+        })

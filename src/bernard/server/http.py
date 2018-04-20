@@ -11,10 +11,10 @@ from bernard.platforms.facebook import (
 )
 
 from .views import (
+    health_check,
     postback_analytics,
     postback_me,
     postback_send,
-    health_check,
 )
 
 app = Application()
