@@ -114,6 +114,9 @@ WEBVIEW_JWT_ALGORITHM = 'HS256'
 # Where to store the webview token
 WEBVIEW_TOKEN_KEY = '_b'
 
+# What is the header name
+WEBVIEW_HEADER_NAME = 'X-BERNARD-AUTH'
+
 # Webviews are supposed to send a message when they close. However, it can
 # happen on some shitty devices (follow my eyes) that connections are not
 # closed properly. In this case, if we receive no heartbeat for X seconds then

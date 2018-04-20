@@ -41,8 +41,21 @@ def bernard_auth(func):
 
     @wraps(func)
     async def wrapper(request: Request):
-        token_key = settings.WEBVIEW_TOKEN_KEY
-        token = request.query.get(token_key, '')
+        def get_query_token():
+            token_key = settings.WEBVIEW_TOKEN_KEY
+            return request.query.get(token_key, '')
+
+        def get_header_token():
+            header_key = settings.WEBVIEW_HEADER_NAME
+            return request.headers.get(header_key, '')
+
+        try:
+            token = next(filter(None, [
+                get_header_token(),
+                get_query_token(),
+            ]))
+        except StopIteration:
+            token = ''
 
         try:
             body = await request.json()
@@ -54,8 +67,7 @@ def bernard_auth(func):
         if not msg:
             return json_response({
                 'status': 'unauthorized',
-                'message': 'No valid token found in GET parameter '
-                           f'"{token_key}"',
+                'message': 'No valid token found',
             }, status=401)
 
         return await func(msg, platform)

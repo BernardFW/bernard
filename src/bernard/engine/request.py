@@ -13,6 +13,11 @@ from typing import (
     Text,
     Type,
 )
+from urllib.parse import (
+    quote,
+    urlparse,
+    urlunparse,
+)
 
 from bernard.conf import (
     settings,
@@ -162,6 +167,9 @@ class Request(object):
     by the transitions and the handlers.
     """
 
+    QUERY = 'query'
+    HASH = 'hash'
+
     def __init__(self,
                  message: BaseMessage,
                  register: Register):
@@ -251,13 +259,21 @@ class Request(object):
 
         return await self.message.get_token()
 
-    async def sign_url(self, url):
+    async def sign_url(self, url, method=HASH):
         """
         Sign an URL with this request's auth token
         """
 
         token = await self.get_token()
 
-        return patch_qs(url, {
-            settings.WEBVIEW_TOKEN_KEY: token,
-        })
+        if method == self.QUERY:
+            return patch_qs(url, {
+                settings.WEBVIEW_TOKEN_KEY: token,
+            })
+        elif method == self.HASH:
+            hash_id = 5
+            p = list(urlparse(url))
+            p[hash_id] = quote(token)
+            return urlunparse(p)
+        else:
+            raise ValueError(f'Invalid signing method "{method}"')
