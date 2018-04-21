@@ -321,22 +321,6 @@ class BaseSlugTrigger(BaseTrigger):
                 return 1.0
 
 
-class LinkClick(BaseSlugTrigger):
-    """
-    This layer is triggered by the user clicking on an URL button.
-    """
-
-    LAYER_TYPE = l.LinkClick
-
-
-class CloseWebview(BaseSlugTrigger):
-    """
-    This layer is triggered by the user closing a webview.
-    """
-
-    LAYER_TYPE = l.CloseWebview
-
-
 class Worst(BaseTrigger):
     """
     Run several triggers and only keep the worst one. Queries are not made

@@ -260,17 +260,6 @@ class FacebookMessage(BaseMessage):
             payload = ujson.loads(self._event['postback']['payload'])
             out.append(lyr.Postback(payload))
 
-        if 'link_click' in self._event:
-            out.append(lyr.LinkClick(
-                self._event['link_click']['url'],
-                self._event['link_click']['slug'],
-            ))
-
-        if 'close_webview' in self._event:
-            out.append(lyr.CloseWebview(
-                self._event['close_webview']['slug'],
-            ))
-
         if 'optin' in self._event:
             out.append(OptIn(self._event['optin']['ref']))
 

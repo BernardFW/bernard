@@ -35,7 +35,6 @@ from bernard.utils import (
 if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
-    from bernard.platforms.facebook.platform import FacebookUser
     from .layers import GenericTemplate
 
 
@@ -83,7 +82,6 @@ class UrlButton(BaseButton):
     def __init__(self,
                  title: TransText,
                  url: Text,
-                 slug: Optional[Text]=None,
                  sign_webview: bool=False,
                  webview_height_ratio: Optional[WebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
@@ -92,17 +90,11 @@ class UrlButton(BaseButton):
         """
         Please refer to the FB doc for more info.
 
-        TODO write some more detailed doc about `sign_webview`.
-
         :param title: Title that will be displayed
         :param url: URL to send the user to
-        :param slug: A slug for the link click events. If specified, the clicks
-                     on this link will be tracked. Please not that this will
-                     make the button un-sharable.
-        :param sign_webview: Add a JSON Web Token to the URL with the user ID
-                             inside. You can do this if you want to auto-log
-                             your user (provided that you extract the data
-                             server-side, of course).
+        :param sign_webview: Hash-sign the URL. This automatically disables the
+                             sharing features. See the `bernard.js`
+                             documentation for more information.
         :param webview_height_ratio: Displayed webview aspect ratio
         :param messenger_extensions: Enable messenger extensions
         :param fallback_url: If and ONLY if you enabled messenger extensions,
@@ -112,7 +104,6 @@ class UrlButton(BaseButton):
         """
         super().__init__(title)
         self.url = url
-        self.slug = slug
         self.sign_webview = sign_webview
         self.webview_height_ratio = webview_height_ratio
         self.messenger_extensions = messenger_extensions
@@ -122,7 +113,6 @@ class UrlButton(BaseButton):
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.url == other.url and
-                self.slug == other.slug and
                 self.sign_webview == other.sign_webview and
                 self.webview_height_ratio == other.webview_height_ratio and
                 self.messenger_extensions == other.messenger_exteions and
@@ -132,54 +122,21 @@ class UrlButton(BaseButton):
     def __repr__(self):
         return 'Url({}, {})'.format(repr(self.title), repr(self.url))
 
-    def _make_url(self, url: Text, extra: Dict, request: 'Request') -> Text:
+    async def _make_url(self, url: Text, request: 'Request') -> Text:
         """
-        Compute an URL that will go through the redirection system that allows
-        the trigger of the `LinkClick` layer.
+        Signs the URL if needed
         """
 
-        real_url = patch_qs(url, extra)
+        if self.sign_webview:
+            return await request.sign_url(url)
 
-        if self.slug:
-            url = urljoin(settings.BERNARD_BASE_URL, '/links/facebook')
-            url = patch_qs(url, {
-                'l': jwt.encode(
-                    {
-                        'u': request.user.fbid,
-                        'p': request.user.page_id,
-                        'h': real_url,
-                        's': self.slug,
-                    },
-                    settings.WEBVIEW_SECRET_KEY,
-                    algorithm=settings.WEBVIEW_JWT_ALGORITHM,
-                )
-            })
-            return url
-
-        return real_url
+        return url
 
     async def serialize(self, request: 'Request') -> Dict:
-        if self.sign_webview:
-            user = request.user  # type: FacebookUser
-            extra_qs = {
-                settings.WEBVIEW_TOKEN_KEY: jwt.encode(
-                    {
-                        'user_id': user.id,
-                        'fb_psid': user.fbid,
-                        'fb_pid': user.page_id,
-                        'slug': self.slug,
-                    },
-                    settings.WEBVIEW_SECRET_KEY,
-                    algorithm=settings.WEBVIEW_JWT_ALGORITHM,
-                )
-            }
-        else:
-            extra_qs = {}
-
         out = {
             'type': 'web_url',
             'title': await render(self.title, request),
-            'url': self._make_url(self.url, extra_qs, request),
+            'url': await self._make_url(self.url, request),
         }
 
         if self.webview_height_ratio is not None:
@@ -190,7 +147,7 @@ class UrlButton(BaseButton):
 
         if self.fallback_url is not None:
             out['fallback_url'] = \
-                self._make_url(self.fallback_url, extra_qs, request)
+                self._make_url(self.fallback_url, request)
 
         if self.hide_share or self.sign_webview:
             out['webview_share_button'] = 'hide'
@@ -202,7 +159,7 @@ class UrlButton(BaseButton):
         This button can be shared only if it is naive, eg it does not track
         URLs and does not embed an auto-connect code.
         """
-        return not self.sign_webview and not self.slug
+        return not self.sign_webview
 
 
 class PostbackButton(BaseButton):
@@ -264,14 +221,13 @@ class CardAction(UrlButton):
 
     def __init__(self,
                  url: Text,
-                 slug: Optional[Text]=None,
                  sign_webview: bool=False,
                  webview_height_ratio: Optional[WebviewRatio]=None,
                  messenger_extensions: Optional[bool]=None,
                  fallback_url: Optional[Text]=None,
                  hide_share: Optional[bool]=None):
         super(CardAction, self).__init__(
-            '', url, slug, sign_webview, webview_height_ratio,
+            '', url, sign_webview, webview_height_ratio,
             messenger_extensions, fallback_url, hide_share
         )
 

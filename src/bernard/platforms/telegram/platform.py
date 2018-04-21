@@ -150,7 +150,18 @@ class TelegramUser(User):
             return self._full_user
 
     async def get_friendly_name(self) -> Text:
-        return self._user.get('first_name')
+        """
+        Let's use the first name of the user as friendly name. In some cases
+        the user object is incomplete, and in those cases the full user is
+        fetched.
+        """
+
+        if 'first_name' not in self._user:
+            user = await self._get_full_user()
+        else:
+            user = self._user
+
+        return user.get('first_name')
 
     async def get_locale(self) -> Text:
         user = await self._get_full_user()

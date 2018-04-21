@@ -63,14 +63,21 @@ class InlineKeyboardButton(object):
 
 
 class InlineKeyboardUrlButton(InlineKeyboardButton):
-    def __init__(self, text: TransText, url: Text):
+    def __init__(self, text: TransText, url: Text, sign_webview: bool = False):
         super(InlineKeyboardUrlButton, self).__init__(text)
         self.url = url
+        self.sign_webview = sign_webview
+
+    async def make_url(self, request: Optional[Request]):
+        if request and self.sign_webview:
+            return await request.sign_url(self.url)
+
+        return self.url
 
     async def serialize(self, request: Optional[Request] = None) -> Dict:
         return patch_dict(
             await super(InlineKeyboardUrlButton, self).serialize(request),
-            url=self.url,
+            url=await self.make_url(request),
         )
 
     def __eq__(self, other):
@@ -556,3 +563,6 @@ class BotCommand(BaseLayer):
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
             and self.command == other.command
+
+    def __hash__(self):
+        return hash(self.command)

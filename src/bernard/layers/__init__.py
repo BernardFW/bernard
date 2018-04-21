@@ -14,8 +14,6 @@ from .definitions import (
     Video,
     File,
     Location,
-    LinkClick,
-    CloseWebview,
     Message,
     Typing,
 )
