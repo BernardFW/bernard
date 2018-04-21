@@ -50,6 +50,34 @@ Allows projects to add their own translation flags, like the user's gender.
 class AddGender(BaseMiddleware):
     async def make_trans_flags(self, request):
         flags = await self.next(request)
-        flags['gender'] = await request.user.get_gender().value
+        flags['gender'] = (await request.user.get_gender()).value
         return flags
+```
+
+### `api_postback_me`
+
+```
+api_postback_me(msg: BaseMessage, platform: Platform)
+```
+
+When `bernard.js` gets information about the current user, by default
+it will return something like
+
+```javascript
+{
+    friendly_name: 'Foo',
+    locale: 'en_US',
+    platform: 'facebook',
+}
+```
+
+You might want more information, like the user's gender. In this case
+you can easily do the following:
+
+```python
+class AddGender(BaseMiddleware):
+    async def api_postback_me(self, msg: BaseMessage, platform: Platform):
+        info = await self.next(msg, platform)
+        info['gender'] = (await msg.get_user().get_gender()).value
+        return info
 ```

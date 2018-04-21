@@ -81,17 +81,18 @@ async def postback_me(msg: BaseMessage, platform: Platform) -> Response:
     completed using the `api_postback_me` middleware hook.
     """
 
-    async def get_basic_info():
-        user = msg.get_user()
+    async def get_basic_info(_msg: BaseMessage, _platform: Platform):
+        user = _msg.get_user()
 
         return {
             'friendly_name': await user.get_friendly_name(),
             'locale': await user.get_locale(),
+            'platform': _platform.NAME,
         }
 
     func = MiddlewareManager.instance().get('api_postback_me', get_basic_info)
 
-    return json_response(await func())
+    return json_response(await func(msg, platform))
 
 
 @bernard_auth
