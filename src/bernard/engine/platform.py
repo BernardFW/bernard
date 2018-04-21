@@ -81,6 +81,10 @@ class Platform(object):
             if candidate == cls:
                 return platform.get('settings', {})
 
+    @property
+    def id(self):
+        return self.NAME
+
     def on_message(self, cb: MessageCallback):
         """
         Register a callback to listen for incoming messages.
@@ -206,6 +210,13 @@ class SimplePlatform(Platform):
         return func(request, stack)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
+        raise NotImplementedError
+
+    async def message_from_token(self, token: Text, payload: Any)\
+            -> Optional[BaseMessage]:
+        raise NotImplementedError
+
+    async def inject_message(self, message: BaseMessage) -> None:
         raise NotImplementedError
 
 

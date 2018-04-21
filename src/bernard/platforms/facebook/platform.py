@@ -1,19 +1,27 @@
 # coding: utf-8
 
 import asyncio
+import hmac
 import logging
 from datetime import (
     tzinfo,
+)
+from hashlib import (
+    sha1,
+    sha256,
 )
 from textwrap import (
     wrap,
 )
 from typing import (
     Any,
+    ByteString,
     Dict,
     List,
     Optional,
+    Set,
     Text,
+    Tuple,
 )
 from urllib.parse import (
     urljoin,
@@ -21,6 +29,16 @@ from urllib.parse import (
 
 import aiohttp
 import jwt
+from aiohttp.web import (
+    Request as HttpRequest,
+)
+from aiohttp.web_response import (
+    Response,
+    json_response,
+)
+from aiohttp.web_urldispatcher import (
+    UrlDispatcher,
+)
 from dateutil import (
     tz,
 )
@@ -35,6 +53,9 @@ from bernard import (
 )
 from bernard.conf import (
     settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
 )
 from bernard.engine.platform import (
     PlatformOperationError,
@@ -68,7 +89,6 @@ from bernard.reporter import (
 )
 from bernard.utils import (
     dict_is_subset,
-    patch_qs,
 )
 
 from .layers import (
@@ -80,12 +100,23 @@ from .layers import (
     QuickReply,
 )
 
-MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
-PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
-USER_ENDPOINT = 'https://graph.facebook.com/v2.6/{}'
+FB_API = '2.12'
+MESSAGES_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messages'
+PROFILE_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messenger_profile'
+GRAPH_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/{"{}"}'
 
 
 logger = logging.getLogger('bernard.platform.facebook')
+
+
+def sign_message(body: ByteString, secret: Text) -> Text:
+    """
+    Compute a message's signature.
+    """
+
+    return 'sha1={}'.format(
+        hmac.new(secret.encode(), body, sha1).hexdigest()
+    )
 
 
 class FacebookUser(User):
@@ -311,12 +342,140 @@ class Facebook(SimplePlatform):
         'typing': '^Typing$',
     }
 
+    @classmethod
+    async def self_check(cls):
+        """
+        Check that the configuration is correct
+
+        - Presence of "BERNARD_BASE_URL" in the global configuration
+        - Presence of a "WEBVIEW_SECRET_KEY"
+        """
+
+        async for check in super().self_check():
+            yield check
+
+        s = cls.settings()
+
+        if not hasattr(settings, 'BERNARD_BASE_URL'):
+            yield HealthCheckFail(
+                '00005',
+                '"BERNARD_BASE_URL" cannot be found in the configuration. The'
+                'Telegram platform needs it because it uses it to '
+                'automatically register its hook.'
+            )
+
+        if not hasattr(settings, 'WEBVIEW_SECRET_KEY'):
+            yield HealthCheckFail(
+                '00005',
+                '"WEBVIEW_SECRET_KEY" cannot be found in the configuration. '
+                'It is required in order to be able to create secure postback '
+                'URLs.'
+            )
+
+    @property
+    def app_access_token(self):
+        """
+        App token to access app configuration API
+        """
+
+        page = self.settings()
+        return f"{page['app_id']}|{page['app_secret']}"
+
+    @property
+    def verify_token(self):
+        """
+        Automatically generated secure verify token
+        """
+
+        h = sha256()
+        h.update(self.app_access_token.encode())
+        return h.hexdigest()
+
+    @property
+    def webhook_path(self):
+        """
+        Path to the webhook
+        """
+
+        return f'/hooks/{self.id}'
+
+    @property
+    def webhook_url(self):
+        """
+        Full URL to the hook
+        """
+
+        return urljoin(settings.BERNARD_BASE_URL, self.webhook_path)
+
+    def hook_up(self, router: UrlDispatcher):
+        """
+        Dynamically hooks the right webhook paths
+        """
+
+        router.add_get(self.webhook_path, self.check_hook)
+        router.add_post(self.webhook_path, self.receive_events)
+
+    async def check_hook(self, request: HttpRequest):
+        """
+        Called when Facebook checks the hook
+        """
+
+        verify_token = request.query.get('hub.verify_token')
+
+        if not verify_token:
+            return json_response({
+                'error': 'No verification token was provided',
+            }, status=400)
+
+        if verify_token == self.verify_token:
+            return Response(text=request.query.get('hub.challenge', ''))
+
+        return json_response({
+            'error': 'could not find the page token in the configuration',
+        })
+
+    async def receive_events(self, request: HttpRequest):
+        """
+        Events received from Facebook
+        """
+
+        body = await request.read()
+        s = self.settings()
+
+        try:
+            content = ujson.loads(body)
+        except ValueError:
+            return json_response({
+                'error': True,
+                'message': 'Cannot decode body'
+            }, status=400)
+
+        secret = s['app_secret']
+        actual_sig = request.headers['X-Hub-Signature']
+        expected_sig = sign_message(body, secret)
+
+        if not hmac.compare_digest(actual_sig, expected_sig):
+            return json_response({
+                'error': True,
+                'message': 'Invalid signature',
+            }, status=401)
+
+        for entry in content['entry']:
+            for raw_message in entry.get('messaging', []):
+                message = FacebookMessage(raw_message, self)
+                await self.handle_event(message)
+
+        return json_response({
+            'ok': True,
+        })
+
     async def _deferred_init(self):
         """
         Run those things in a sepearate tasks as they are not required for the
         bot to work and they take a lot of time to run.
         """
 
+        await self._check_subscriptions()
         await self._set_whitelist()
         await self._set_get_started()
         await self._set_greeting_text()
@@ -393,60 +552,145 @@ class Facebook(SimplePlatform):
         Set the "get started" action for all configured pages.
         """
 
-        for page in self.settings():
-            if 'get_started' in page:
-                payload = page['get_started']
-            else:
-                payload = {'action': 'get_started'}
+        page = self.settings()
 
-            await self._send_to_messenger_profile(page, {
-                'get_started': {
-                    'payload': ujson.dumps(payload),
-                },
-            })
+        if 'get_started' in page:
+            payload = page['get_started']
+        else:
+            payload = {'action': 'get_started'}
 
-            logger.info('Get started set for page %s', page['page_id'])
+        await self._send_to_messenger_profile(page, {
+            'get_started': {
+                'payload': ujson.dumps(payload),
+            },
+        })
+
+        logger.info('Get started set for page %s', page['page_id'])
 
     async def _set_greeting_text(self):
         """
         Set the greeting text of the page
         """
 
-        for page in self.settings():
-            if 'greeting' in page:
-                await self._send_to_messenger_profile(page, {
-                    'greeting': page['greeting'],
-                })
+        page = self.settings()
 
-                logger.info('Greeting text set for page %s', page['page_id'])
+        if 'greeting' in page:
+            await self._send_to_messenger_profile(page, {
+                'greeting': page['greeting'],
+            })
+
+            logger.info('Greeting text set for page %s', page['page_id'])
 
     async def _set_persistent_menu(self):
         """
         Define the persistent menu for all pages
         """
 
-        for page in self.settings():
-            if 'menu' in page:
-                await self._send_to_messenger_profile(page, {
-                    'persistent_menu': page['menu'],
-                })
+        page = self.settings()
 
-                logger.info('Set menu for page %s', page['page_id'])
+        if 'menu' in page:
+            await self._send_to_messenger_profile(page, {
+                'persistent_menu': page['menu'],
+            })
+
+            logger.info('Set menu for page %s', page['page_id'])
 
     async def _set_whitelist(self):
         """
         Whitelist domains for the messenger extensions
         """
 
-        for page in self.settings():
-            if 'whitelist' in page:
-                await self._send_to_messenger_profile(page, {
-                    'whitelisted_domains': page['whitelist'],
-                })
+        page = self.settings()
 
-                logger.info('Whitelisted %s for page %s',
-                            page['whitelist'],
-                            page['page_id'])
+        if 'whitelist' in page:
+            await self._send_to_messenger_profile(page, {
+                'whitelisted_domains': page['whitelist'],
+            })
+
+            logger.info('Whitelisted %s for page %s',
+                        page['whitelist'],
+                        page['page_id'])
+
+    def _get_subscriptions_endpoint(self):
+        """
+        Generates the URL and tokens for the subscriptions endpoint
+        """
+
+        s = self.settings()
+
+        params = {
+            'access_token': self.app_access_token,
+        }
+
+        return (
+            GRAPH_ENDPOINT.format(f'{s["app_id"]}/subscriptions'),
+            params,
+        )
+
+    async def _get_subscriptions(self) -> Tuple[Set[Text], Text]:
+        """
+        List the subscriptions currently active
+        """
+
+        url, params = self._get_subscriptions_endpoint()
+
+        get = self.session.get(url, params=params)
+
+        async with get as r:
+            await self._handle_fb_response(r)
+            data = await r.json()
+
+            for scope in data['data']:
+                if scope['object'] == 'page':
+                    return (
+                        set(x['name'] for x in scope['fields']),
+                        scope['callback_url'],
+                    )
+
+        return set(), ''
+
+    async def _set_subscriptions(self, subscriptions):
+        """
+        Set the subscriptions to a specific list of values
+        """
+
+        url, params = self._get_subscriptions_endpoint()
+
+        data = {
+            'object': 'page',
+            'callback_url': self.webhook_url,
+            'fields': ', '.join(subscriptions),
+            'verify_token': self.verify_token,
+        }
+
+        headers = {
+            'Content-Type': 'application/json',
+        }
+
+        post = self.session.post(
+            url,
+            params=params,
+            data=ujson.dumps(data),
+            headers=headers,
+        )
+
+        async with post as r:
+            await self._handle_fb_response(r)
+            data = await r.json()
+
+    async def _check_subscriptions(self):
+        """
+        Checks that all subscriptions are subscribed
+        """
+
+        subscribed, url = await self._get_subscriptions()
+        expect = set(settings.FACEBOOK_SUBSCRIPTIONS)
+
+        if (expect - subscribed) or url != self.webhook_url:
+            await self._set_subscriptions(expect | subscribed)
+            logger.info('Updated webhook subscriptions')
+        else:
+            logger.info('No need to update webhook subscriptions')
 
     async def handle_event(self, event: FacebookMessage):
         """
@@ -464,9 +708,10 @@ class Facebook(SimplePlatform):
             msg = request.message  # type: FacebookMessage
             page_id = msg.get_page_id()
 
-        for page in self.settings():
-            if page['page_id'] == page_id:
-                return page['page_token']
+        page = self.settings()
+
+        if page['page_id'] == page_id:
+            return page['page_token']
 
         raise PlatformOperationError('Trying to get access token of the '
                                      'page "{}", which is not configured.'
@@ -718,7 +963,7 @@ class Facebook(SimplePlatform):
             'access_token': access_token,
         }
 
-        url = USER_ENDPOINT.format(user_id)
+        url = GRAPH_ENDPOINT.format(user_id)
 
         get = self.session.get(url, params=params)
         async with get as r:
@@ -762,19 +1007,19 @@ class Facebook(SimplePlatform):
         Tries to verify the signed request
         """
 
-        for page in self.settings():
-            secret = page['app_secret']
+        page = self.settings()
+        secret = page['app_secret']
 
-            try:
-                sr_data = SignedRequest.parse(token, secret)
-            except (TypeError, ValueError, SignedRequestError) as e:
-                continue
+        try:
+            sr_data = SignedRequest.parse(token, secret)
+        except (TypeError, ValueError, SignedRequestError) as e:
+            return
 
-            return self._make_fake_message(
-                sr_data['psid'],
-                page['page_id'],
-                payload,
-            )
+        return self._make_fake_message(
+            sr_data['psid'],
+            page['page_id'],
+            payload,
+        )
 
     def _message_from_token(self, token: Text, payload: Any) \
             -> Optional[BaseMessage]:
@@ -795,9 +1040,8 @@ class Facebook(SimplePlatform):
         except (KeyError, AssertionError):
             return
 
-        for page in self.settings():
-            if page['page_id'] == page_id:
-                return self._make_fake_message(user_id, page_id, payload)
+        if self.settings()['page_id'] == page_id:
+            return self._make_fake_message(user_id, page_id, payload)
 
     async def message_from_token(self, token: Text, payload: Any) \
             -> Optional[BaseMessage]:

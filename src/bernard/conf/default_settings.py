@@ -72,6 +72,12 @@ DEFAULT_STATE = 'bernard.engine.state.DefaultState'
 # }
 PLATFORMS = []
 
+FACEBOOK_SUBSCRIPTIONS = [
+    'messages',
+    'messaging_postbacks',
+    'messaging_optins',
+]
+
 redis_params = {}
 redis_url = os.getenv('REDIS_URL')
 
