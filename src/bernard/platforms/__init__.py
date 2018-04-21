@@ -16,6 +16,5 @@ async def start_all():
 
     await manager.init()
 
-    for p in get_platform_settings():
-        cls: Type[Platform] = import_class(p['class'])
-        await manager.get_platform(cls.NAME)
+    async for _ in manager.get_all_platforms():
+        pass

@@ -170,7 +170,7 @@ class PlatformManager(object):
 
         return out
 
-    async def build_platform(self, cls):
+    async def build_platform(self, cls: Type[Platform], custom_id):
         """
         Build the Facebook platform. Nothing fancy.
         """
@@ -178,6 +178,10 @@ class PlatformManager(object):
         from bernard.server.http import router
 
         p = cls()
+
+        if custom_id:
+            p._id = custom_id
+
         await p.async_init()
         p.on_message(self.fsm.handle_message)
         p.hook_up(router)
@@ -205,7 +209,7 @@ class PlatformManager(object):
 
         if name not in self.platforms:
             self.platforms[name] = \
-                await self.build_platform(self.get_class(name))
+                await self.build_platform(self.get_class(name), name)
 
         return self.platforms[name]
 

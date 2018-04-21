@@ -63,8 +63,9 @@ class Platform(object):
     def __init__(self):
         self._listeners = []  # type: List[MessageCallback]
         self._register = None
+        self._id = None
 
-    async def init(self):
+    async def async_init(self):
         pass
 
     @classmethod
@@ -83,6 +84,14 @@ class Platform(object):
 
     @property
     def id(self):
+        """
+        Allows to get several instances of the same class, using a custom
+        `name` attribute in the platform configuration.
+        """
+
+        if self._id:
+            return self._id
+
         return self.NAME
 
     def on_message(self, cb: MessageCallback):
