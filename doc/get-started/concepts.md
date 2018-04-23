@@ -60,8 +60,8 @@ atoms that stood out and that are the base of BERNARD's API.
 
 ### Users
 
-Platforms will give you very little information about your users. You
-will get the following:
+(Messaging) Platforms will give you very little information about your
+users. You will get the following:
 
 - **ID**
 - **Name** (at least some form of it)
@@ -69,7 +69,8 @@ will get the following:
 - **Time zone** (sometimes)
 
 As you can see, the only thing we can reliably count on is an ID. Please
-note that in some platforms like Messenger, IDs are bot-scoped.
+note that in some platforms like Messenger, IDs are bot-scoped (aka the
+same user will have different IDs in different bots).
 
 ### Conversations
 

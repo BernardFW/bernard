@@ -38,6 +38,13 @@ This can be modeled as follows:
   do to trigger a transition from one state to the other.
 - The small disc on top is the initial state.
 
+### Candidates selection
+
+Once a message is received, we need to decide which state is the next.
+To determine this, several triggers will be considered (corresponding
+to the arrows in the schema). Amongst all the candidate triggers, only
+the best one will be kept (see the "Probabilistic model" part).
+
 Triggers can only be activated if the current state is its starting
 point. By exemple, if the user sends his location right at `1.` nothing
 will happen while it would trigger a transition if it was in `3.` or
@@ -53,7 +60,7 @@ seeing bars, the conversation would start again.
 ## Probabilistic model
 
 One thing with user interactions is that you can't always be 100% sure
-of what they mean, espcially if you do NLU. In BERNARD, each trigger
+of what they mean, especially if you do NLU. In BERNARD, each trigger
 will emit a *probability* that a given user action matches what the
 trigger expects. Then BERNARD will select the most likely trigger and
 go with it.
@@ -65,6 +72,6 @@ are connected by triggers. Triggers will be activated by user actions
 based on a probabilistic model. This is what drives transitions between
 states. And finally, the initial state is a meta-state which is always
 considered onto which you can attach the starting points of your
-scenarii.
+scenarios.
 
 **Next step**: [installation](./installation.md)
