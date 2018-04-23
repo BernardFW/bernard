@@ -604,7 +604,10 @@ def unserialize(wd: WordDictionary, text: Dict):
         raise ValueError('Not enough information to unserialize')
 
 
-async def render(text: TransText, request: 'Request', multi_line=False):
+async def render(
+        text: TransText,
+        request: Optional['Request'],
+        multi_line=False) -> Union[Text, List[Text]]:
     """
     Render either a normal string either a string to translate into an actual
     string for the specified request.

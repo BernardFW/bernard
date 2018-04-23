@@ -17,6 +17,8 @@ topics covered:
   platform to get on your feet and start coding.
 - [Health Checks](./health_checks.md) &ndash; Explanation of all health
   checks performed by the framework at startup.
+- [Language management](./lang/readme.md) &ndash; Tools that helps you
+  understanding and generating language.
 - [Middlewares](./middlewares.md) &ndash; List of available hooks for
   middlewares.
 - [Patterns](./patterns.md) &ndash; A few design patterns for bot

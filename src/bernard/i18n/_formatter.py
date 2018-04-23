@@ -13,6 +13,9 @@ from typing import (
 from babel import (
     dates,
 )
+from babel import (
+    numbers,
+)
 from dateutil.parser import (
     parse as parse_date,
 )
@@ -90,6 +93,12 @@ class I18nFormatter(string.Formatter):
         date_ = make_datetime(value)
         return dates.format_datetime(date_, format_, locale=self.lang)
 
+    def format_number(self, value):
+        """
+        Format the number using Babel
+        """
+        return numbers.format_number(value, locale=self.lang)
+
     def format_field(self, value, spec):
         """
         Provide the additional formatters for localization.
@@ -101,5 +110,7 @@ class I18nFormatter(string.Formatter):
         elif spec.startswith('datetime:'):
             _, format_ = spec.split(':', 1)
             return self.format_datetime(value, format_)
+        elif spec == 'number':
+            return self.format_number(value)
         else:
             return super(I18nFormatter, self).format_field(value, spec)

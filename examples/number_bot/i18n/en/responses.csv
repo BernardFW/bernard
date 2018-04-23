@@ -14,3 +14,4 @@ CONGRATULATIONS,Well done!
 CONGRATULATIONS,Awesome!
 DO_YOU_WANT_AGAIN,Do you want to play again?
 PLAY_AGAIN,Play again
+TEST,The number is {x:number}
