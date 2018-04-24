@@ -27,3 +27,5 @@ topics covered:
   supported platforms.
 - [Layers](./layers/readme.md) &ndash; Reference on how to configure
   supported platforms.
+- [Triggers](./triggers.md) &ndash; How to create your own triggers
+  and reference of existing triggers

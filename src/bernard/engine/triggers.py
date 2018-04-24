@@ -109,7 +109,7 @@ class SharedTrigger(BaseTrigger):
 
         raise NotImplementedError
 
-    async def compute_rank(self, value: Any) -> float:
+    async def compute_rank(self, value: Any) -> Optional[float]:
         """
         Compute the rank from the cached value from the API call.
         """
