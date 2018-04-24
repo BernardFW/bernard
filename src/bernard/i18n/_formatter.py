@@ -12,8 +12,6 @@ from typing import (
 
 from babel import (
     dates,
-)
-from babel import (
     numbers,
 )
 from dateutil.parser import (

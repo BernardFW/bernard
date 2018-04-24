@@ -29,3 +29,5 @@ topics covered:
   supported platforms.
 - [Triggers](./triggers.md) &ndash; How to create your own triggers
   and reference of existing triggers
+- [Context](./context.md) &ndash; Storing temporary elements to the
+  bot's context

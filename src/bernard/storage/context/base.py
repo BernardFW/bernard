@@ -6,7 +6,10 @@ from typing import (
     Any,
     Dict,
     Iterator,
+    List,
+    Optional,
     Text,
+    Union,
 )
 
 from bernard.conf import (
@@ -17,6 +20,9 @@ from bernard.core.health_check import (
 )
 from bernard.engine.state import (
     BaseState,
+)
+from bernard.engine.triggers import (
+    BaseTrigger,
 )
 from bernard.utils import (
     import_class,
@@ -117,9 +123,9 @@ class BaseContextStore(object):
         return ContextContextManager(key, self)
 
     def inject(self,
-               require=None,
-               fail='missing_context',
-               var_name='context'):
+               require: Optional[List[Text]] = None,
+               fail: Text = 'missing_context',
+               var_name: Text = 'context'):
         """
         This is a decorator intended to be used on states (and actually only
         work on state handlers).
@@ -150,7 +156,7 @@ class BaseContextStore(object):
                 func.health_check = health_check
 
             @wraps(func)
-            async def wrapper(state: BaseState, **kwargs):
+            async def wrapper(state: Union[BaseState, BaseTrigger], **kwargs):
                 conv_id = state.request.conversation.id
                 key = f'context::{self.name}::{conv_id}'
 
