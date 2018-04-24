@@ -87,16 +87,12 @@ FB_APP_ID=XXXX
 FB_APP_SECRET=XXXX
 FB_PAGE_ID=XXXX
 FB_PAGE_TOKEN=XXXX
-FB_SECURITY_TOKEN=SOME_ARBITRARY_VALUE
 ```
 
 Don't forget to replace the values with the approriate values in your
 case (the public HTTPS URL, the Facebook IDs, etc). By default, the
 `create_project` command has created the `env` file with consistent
 values, so you can just focus on the `FB_*` values.
-
-Please note that you can put any arbitrary value in `FB_SECURITY_TOKEN`,
-it just need to be a unique and secure string.
 
 Once the file is complete, you can source it then start the bot.
 
@@ -109,15 +105,12 @@ And then connect your bot to Facebook. You need to go back to your app's
 settings in Facebook developers, in the "Messenger/Settings" section,
 and then subscribe to the webhook.
 
-You need to put the following values:
+The bot automatically registers its webhook URL when starting, however
+it's up to you to
 
-- **Callback URL**: `https://YOUR.DOMAIN.COM/hooks/facebook`
-- **Verify Token**: The value that you put in `FB_SECURITY_TOKEN`
-- **Subscribed events**: `messages`, `messaging_postbacks`,
-  `messaging_optins`
-
-Once the webhook is validated, still in the "Webhook" section of the
-Messenger settings, you can subscribe the app to the page you created.
+1. Register to the right events (`messages`, `messaging_postbacks`,
+  `messaging_optins`)
+2. Subscribe the app to your page's messages
 
 At this point, you should be able to talk to your bot by going to
 `http://m.me/FB_PAGE_ID` (please replace `FB_PAGE_ID` by the actual ID).
@@ -649,7 +642,6 @@ PLATFORMS = [
         'class': 'bernard.platforms.facebook.platform.Facebook',
         'settings': [
             {
-                'security_token': getenv('FB_SECURITY_TOKEN'),
                 'app_id': getenv('FB_APP_ID'),
                 'app_secret': getenv('FB_APP_SECRET'),
                 'page_id': getenv('FB_PAGE_ID'),

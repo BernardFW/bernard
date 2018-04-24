@@ -66,7 +66,7 @@ if getenv('FB_PAGE_TOKEN'):
     PLATFORMS.append({
         'class': 'bernard.platforms.facebook.platform.Facebook',
         'settings': {
-            'security_token': getenv('FB_SECURITY_TOKEN'),
+            'app_id': getenv('FB_APP_ID'),
             'app_secret': getenv('FB_APP_SECRET'),
             'page_id': getenv('FB_PAGE_ID'),
             'page_token': getenv('FB_PAGE_TOKEN'),

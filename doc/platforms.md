@@ -36,7 +36,6 @@ PLATFORMS = [
         'class': 'bernard.platforms.facebook.platform.Facebook',
         'settings': [
             {
-                'security_token': getenv('FB_SECURITY_TOKEN'),
                 'app_secret': getenv('FB_APP_SECRET'),
                 'page_id': getenv('FB_PAGE_ID'),
                 'page_token': getenv('FB_PAGE_TOKEN'),
@@ -73,8 +72,7 @@ PLATFORMS = [
 Here the settings accept a list of objects which can each point to a different
 page/app. For each object, the keys are:
 
-- `security_token` - An arbitrary secure random token that Facebook will ask
-  you to provide when hooking the bot.
+- `app_id` - The app ID, found in the app configuration page
 - `app_secret` - The app secret, found in the app configuration page
 - `page_id` - The ID of the Facebook page
 - `page_token` - The page subscription token created in your app's admin
@@ -90,8 +88,8 @@ page/app. For each object, the keys are:
   [the FB doc](https://developers.facebook.com/docs/messenger-platform/reference/messenger-profile-api/persistent-menu)
   for syntax.
 
-Please note that only `security_token`, `app_secret`, `page_id` and
-`page_token` are mandatory for the bot to work.
+Please note that only `app_id`, `app_secret`, `page_id` and `page_token`
+are mandatory for the bot to work.
 
 ### Sending
 
