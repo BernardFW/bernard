@@ -57,7 +57,52 @@ DEFAULT_STATE = '__project_name_snake__.states.__project_name_camel__State'
 # --- Platforms ---
 
 # That's the configuration tokens for all the platforms you want to manage.
-PLATFORMS = []  # TODO configure this
+PLATFORMS = []
+
+# Adds the Facebook support if Facebook tokens are detected. Don't forget
+# to set everything right in the Facebook developers website
+# https://developers.facebook.com/
+if getenv('FB_PAGE_TOKEN'):
+    PLATFORMS.append({
+        'class': 'bernard.platforms.facebook.platform.Facebook',
+        'settings': {
+            'security_token': getenv('FB_SECURITY_TOKEN'),
+            'app_secret': getenv('FB_APP_SECRET'),
+            'page_id': getenv('FB_PAGE_ID'),
+            'page_token': getenv('FB_PAGE_TOKEN'),
+        },
+
+        # https://developers.facebook.com/docs/messenger-platform/reference/messenger-profile-api/greeting
+        'greeting': [{
+            'locale': 'default',
+            'text': 'Welcome to this BERNARD bot!',
+        }],
+
+        # https://developers.facebook.com/docs/messenger-platform/send-messages/persistent-menu
+        'menu': [{
+            'locale': 'default',
+            'call_to_actions': [
+                {
+                    'title': 'Get started again',
+                    'type': 'postback',
+                    'payload': '{"action": "get_started"}',
+                },
+            ]
+        }],
+
+        # https://developers.facebook.com/docs/messenger-platform/reference/messenger-profile-api/domain-whitelisting
+        'whitelist': make_whitelist(),
+    })
+
+# Adds Telegram support if Telegram tokens are detected. Don't forget to
+# register and configure your bot by talking to @BotFather
+if getenv('TELEGRAM_TOKEN'):
+    PLATFORMS.append({
+        'class': 'bernard.platforms.telegram.platform.Telegram',
+        'settings': {
+            'token': getenv('TELEGRAM_TOKEN'),
+        },
+    })
 
 
 # --- Self-awareness ---
