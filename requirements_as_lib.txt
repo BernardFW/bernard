@@ -10,3 +10,4 @@ unidecode>=0.4,<0.5
 uvloop>=0.8,<0.9
 raven-aiohttp>=0.5.0,<0.6
 raven>=6.1.0,<6.2
+facepy>=1.0.9,<1.1
