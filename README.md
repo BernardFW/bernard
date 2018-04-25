@@ -1,7 +1,7 @@
 BERNARD
 =======
 
-**Version 0.2beta**
+**Version 0.2**
 
 [![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
 

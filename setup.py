@@ -44,6 +44,6 @@ setup(
     classifiers=[
         'License :: OSI Approved :: GNU Affero General Public License v3 or '
         'later (AGPLv3+)',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
     ]
 )
