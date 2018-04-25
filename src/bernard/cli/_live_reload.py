@@ -10,13 +10,20 @@ Live reload of code works the following way:
   parent picks this status code, it restarts the process.
 """
 import asyncio
-import aionotify
 import logging
-import sys
 import subprocess
-from os import path, environ
-from bernard.conf import list_config_files, settings
+import sys
+from os import (
+    environ,
+    path,
+)
 
+import aionotify
+
+from bernard.conf import (
+    list_config_files,
+    settings,
+)
 
 logger = logging.getLogger('bernard.cli')
 

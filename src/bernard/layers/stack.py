@@ -1,8 +1,21 @@
 # coding: utf-8
-from typing import List, TypeVar, Text, Dict, TYPE_CHECKING, Type
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Text,
+    Type,
+    TypeVar,
+)
 
-from bernard.utils import RoList, ClassExp
-from .definitions import BaseLayer
+from bernard.utils import (
+    ClassExp,
+    RoList,
+)
+
+from .definitions import (
+    BaseLayer,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -38,7 +51,7 @@ class Stack(object):
                 self._layers == other._layers)
 
     def __repr__(self):
-        return 'Layer({})'.format(', '.join(repr(x) for x in self._layers))
+        return 'Stack({})'.format(', '.join(repr(x) for x in self._layers))
 
     @property
     def layers(self) -> List['BaseLayer']:

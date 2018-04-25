@@ -2,20 +2,58 @@
 import asyncio
 import importlib
 import logging
-from typing import List, Tuple, Type, Optional, Text, Iterator, Dict
-from bernard.conf import settings
-from bernard.core.health_check import HealthCheckFail
-from bernard.i18n.translator import MissingTranslationError
-from bernard.utils import import_class
-from bernard.storage.register import BaseRegisterStore, Register
-from bernard.reporter import reporter
-from bernard.layers import RawText
-from .transition import Transition
-from .triggers import BaseTrigger
-from .state import BaseState
-from .request import Request, BaseMessage
-from .responder import Responder
+from typing import (
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Type,
+)
 
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.i18n.translator import (
+    MissingTranslationError,
+)
+from bernard.layers import (
+    RawText,
+)
+from bernard.middleware import (
+    MiddlewareManager,
+)
+from bernard.reporter import (
+    reporter,
+)
+from bernard.storage.register import (
+    BaseRegisterStore,
+    Register,
+)
+from bernard.utils import (
+    import_class,
+)
+
+from .request import (
+    BaseMessage,
+    Request,
+)
+from .responder import (
+    Responder,
+)
+from .state import (
+    BaseState,
+)
+from .transition import (
+    Transition,
+)
+from .triggers import (
+    BaseTrigger,
+)
 
 logger = logging.getLogger('bernard.fsm')
 
@@ -58,6 +96,34 @@ class FSM(object):
         - Make a list of the unique destination states from the transitions
           list, then check the health of each of them.
         """
+
+        ds_class = getattr(settings, 'DEFAULT_STATE', '')
+        forbidden_defaults = [None, '', 'bernard.engine.state.DefaultState']
+
+        if ds_class in forbidden_defaults:
+            yield HealthCheckFail(
+                '00005',
+                f'Default state (`DEFAULT_STATE` in settings) is not set. '
+                f'You need to set it to your own implementation. Please refer '
+                f'yourself to the doc. See '
+                f'https://github.com/BernardFW/bernard/blob/develop/doc/'
+                f'get_started.md#statespy'
+            )
+
+        try:
+            import_class(ds_class)
+        except (ImportError, KeyError, AttributeError, TypeError):
+            yield HealthCheckFail(
+                '00005',
+                f'Cannot import "{ds_class}", which is the value'
+                f' of `DEFAULT_STATE` in the configuration. This means either'
+                f' that your `PYTHONPATH` is wrong or that the value you gave'
+                f' to `DEFAULT_STATE` is wrong. You need to provide a default'
+                f' state class for this framework to work. Please refer'
+                f' yourself to the documentation for more information. See'
+                f' https://github.com/BernardFW/bernard/blob/develop/doc/'
+                f'get_started.md#statespy'
+            )
 
         states = set(t.dest for t in self.transitions)
 
@@ -109,6 +175,7 @@ class FSM(object):
             -> Tuple[
                 Optional[BaseTrigger],
                 Optional[Type[BaseState]],
+                Optional[bool],
             ]:
         """
         Find the best trigger for this request, or go away.
@@ -128,12 +195,12 @@ class FSM(object):
         ))
 
         if len(results):
-            score, trigger, state = max(results, key=lambda x: x[0])
+            score, trigger, state, dnr = max(results, key=lambda x: x[0])
 
             if score >= settings.MINIMAL_TRIGGER_SCORE:
-                return trigger, state
+                return trigger, state, dnr
 
-        return None, None
+        return None, None, None
 
     # noinspection PyTypeChecker
     def _confused_state(self, request: Request) -> Type[BaseState]:
@@ -158,30 +225,32 @@ class FSM(object):
             -> Tuple[
                 Optional[BaseState],
                 Optional[BaseTrigger],
+                Optional[bool],
             ]:
         """
         Build the state for this request.
         """
 
-        logger.debug('Incoming message: %s', request.stack)
-        trigger, state_class = await self._find_trigger(request)
+        trigger, state_class, dnr = await self._find_trigger(request)
 
         if trigger is None:
             if not message.should_confuse():
-                return None, None
+                return None, None, None
             state_class = self._confused_state(request)
             logger.debug('Next state: %s (confused)', state_class.name())
         else:
             logger.debug('Next state: %s', state_class.name())
 
-        state = state_class(request, responder, trigger)
-        return state, trigger
+        state = state_class(request, responder, trigger, trigger)
+        return state, trigger, dnr
 
     async def _run_state(self, responder, state, trigger, request) \
             -> BaseState:
         """
         Execute the state, or if execution fails handle it.
         """
+
+        user_trigger = trigger
 
         # noinspection PyBroadException
         try:
@@ -194,14 +263,14 @@ class FSM(object):
                 if i == settings.MAX_INTERNAL_JUMPS:
                     raise MaxInternalJump()
 
-                trigger, state_class = \
+                trigger, state_class, dnr = \
                     await self._find_trigger(request, state.name(), True)
 
                 if not trigger:
                     break
 
                 logger.debug('Jumping to state: %s', state_class.name())
-                state = state_class(request, responder)
+                state = state_class(request, responder, trigger, user_trigger)
                 await state.handle()
         except Exception:
             logger.exception('Error while handling state "%s"', state.name())
@@ -212,9 +281,9 @@ class FSM(object):
         return state
 
     async def _build_state_register(self,
-                              state: BaseState,
-                              request: Request,
-                              responder: Responder) -> Dict:
+                                    state: BaseState,
+                                    request: Request,
+                                    responder: Responder) -> Dict:
         """
         Build the next register to store.
 
@@ -238,6 +307,10 @@ class FSM(object):
         :return: The register that was saved
         """
 
+        async def noop(request: Request, responder: Responder):
+            pass
+
+        mm = MiddlewareManager.instance()
         reg_manager = self.register\
             .work_on_register(message.get_conversation().id)
 
@@ -245,16 +318,27 @@ class FSM(object):
             request = Request(message, reg)
             await request.transform()
 
+            if not request.stack.layers:
+                return
+
+            logger.debug('Incoming message: %s', request.stack)
+            await mm.get('pre_handle', noop)(request, responder)
+
+            # noinspection PyBroadException
             try:
-                state, trigger = \
+                state, trigger, dnr = \
                     await self._build_state(request, message, responder)
             except Exception:
-                reporter.report(request, None)
                 logger.exception('Error while finding a transition from %s',
                                  reg.get(Register.STATE))
+                reporter.report(request, None)
                 return
 
             if state is None:
+                logger.debug(
+                    'No next state found but "%s" is not confusing, stopping',
+                    request.message,
+                )
                 return
 
             state = await self._run_state(responder, state, trigger, request)
@@ -275,8 +359,12 @@ class FSM(object):
                 logger.exception('Could not flush content after %s',
                                  state.name())
             else:
-                reg.replacement = \
-                    await self._build_state_register(state, request, responder)
+                if not dnr:
+                    reg.replacement = await self._build_state_register(
+                        state,
+                        request,
+                        responder,
+                    )
                 return reg.replacement
 
     def handle_message(self,

@@ -1,28 +1,122 @@
 # coding: utf-8
-import aiohttp
-import asyncio
-import ujson
-import logging
-from textwrap import wrap
-from typing import Text, Coroutine, List, Any, Dict, Optional
-from dateutil import tz
-from datetime import tzinfo
-from bernard.engine.responder import UnacceptableStack, Responder
-from bernard.engine.request import Request, BaseMessage, User, Conversation
-from bernard.i18n.translator import render
-from bernard.layers import Stack, BaseLayer
-from bernard import layers as lyr
-from bernard.engine.platform import Platform, PlatformOperationError
-from bernard.conf import settings
-from bernard.layers.definitions import BaseMediaLayer
-from bernard.media.base import BaseMedia, UrlMedia
 
-MESSAGES_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messages'
-PROFILE_ENDPOINT = 'https://graph.facebook.com/v2.6/me/messenger_profile'
-USER_ENDPOINT = 'https://graph.facebook.com/v2.6/{}'
+import asyncio
+import hmac
+import logging
+from datetime import (
+    tzinfo,
+)
+from hashlib import (
+    sha1,
+    sha256,
+)
+from textwrap import (
+    wrap,
+)
+from typing import (
+    Any,
+    ByteString,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+)
+from urllib.parse import (
+    urljoin,
+)
+
+import aiohttp
+import jwt
+from aiohttp.web import (
+    Request as HttpRequest,
+)
+from aiohttp.web_response import (
+    Response,
+    json_response,
+)
+from aiohttp.web_urldispatcher import (
+    UrlDispatcher,
+)
+from dateutil import (
+    tz,
+)
+from facepy import (
+    SignedRequest,
+    SignedRequestError,
+)
+
+import ujson
+from bernard import (
+    layers as lyr,
+)
+from bernard.conf import (
+    settings,
+)
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.engine.platform import (
+    PlatformOperationError,
+    SimplePlatform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.i18n.translator import (
+    render,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.layers.definitions import (
+    BaseMediaLayer,
+)
+from bernard.media.base import (
+    BaseMedia,
+    UrlMedia,
+)
+from bernard.reporter import (
+    reporter,
+)
+from bernard.utils import (
+    dict_is_subset,
+)
+
+from .layers import (
+    ButtonTemplate,
+    GenericTemplate,
+    MessagingType,
+    OptIn,
+    QuickRepliesList,
+    QuickReply,
+)
+
+FB_API = '2.12'
+MESSAGES_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messages'
+PROFILE_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messenger_profile'
+GRAPH_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/{"{}"}'
 
 
 logger = logging.getLogger('bernard.platform.facebook')
+
+
+def sign_message(body: ByteString, secret: Text) -> Text:
+    """
+    Compute a message's signature.
+    """
+
+    return 'sha1={}'.format(
+        hmac.new(secret.encode(), body, sha1).hexdigest()
+    )
 
 
 class FacebookUser(User):
@@ -31,10 +125,15 @@ class FacebookUser(User):
     ID.
     """
 
-    def __init__(self, fbid: Text, page_id: Text, facebook: 'Facebook'):
+    def __init__(self,
+                 fbid: Text,
+                 page_id: Text,
+                 facebook: 'Facebook',
+                 message: 'FacebookMessage'):
         self.fbid = fbid
         self.page_id = page_id
         self.facebook = facebook
+        self.message = message
         self._cache = None
         super(FacebookUser, self).__init__(self._fbid_to_id(fbid))
 
@@ -50,7 +149,11 @@ class FacebookUser(User):
         """
 
         if self._cache is None:
-            self._cache = await self.facebook.get_user(self.fbid, self.page_id)
+            try:
+                self._cache = \
+                    await self.facebook.get_user(self.fbid, self.page_id)
+            except PlatformOperationError:
+                self._cache = {}
         return self._cache
 
     async def get_full_name(self) -> Text:
@@ -146,6 +249,7 @@ class FacebookMessage(BaseMessage):
             self._event['sender']['id'],
             self.get_page_id(),
             self._facebook,
+            self,
         )
 
     def get_conversation(self) -> FacebookConversation:
@@ -181,25 +285,14 @@ class FacebookMessage(BaseMessage):
                 )))
 
         if 'quick_reply' in msg:
-            out.append(lyr.QuickReply(msg['quick_reply']['payload']))
+            out.append(QuickReply(msg['quick_reply']['payload']))
 
         if 'postback' in self._event:
             payload = ujson.loads(self._event['postback']['payload'])
             out.append(lyr.Postback(payload))
 
-        if 'link_click' in self._event:
-            out.append(lyr.LinkClick(
-                self._event['link_click']['url'],
-                self._event['link_click']['slug'],
-            ))
-
-        if 'close_webview' in self._event:
-            out.append(lyr.CloseWebview(
-                self._event['close_webview']['slug'],
-            ))
-
         if 'optin' in self._event:
-            out.append(lyr.OptIn(self._event['optin']['ref']))
+            out.append(OptIn(self._event['optin']['ref']))
 
         return out
 
@@ -209,22 +302,23 @@ class FacebookMessage(BaseMessage):
         """
         return self._event['recipient']['id']
 
-    def get_url_base(self) -> Optional[Text]:
-        """
-        If available, return the URL base
-        """
-        url : Text = self._event.get('url_base')
-
-        if url and url.startswith('http://'):
-            url = 'https://' + url[7:]
-
-        return url
-
     def should_confuse(self) -> bool:
         """
         The message is marked confusing or not at init
         """
         return self._confusing
+
+    async def get_token(self) -> Text:
+        user = self.get_user()
+
+        return jwt.encode(
+            {
+                'fb_psid': user.fbid,
+                'fb_pid': user.page_id,
+            },
+            settings.WEBVIEW_SECRET_KEY,
+            algorithm=settings.WEBVIEW_JWT_ALGORITHM,
+        )
 
 
 class FacebookResponder(Responder):
@@ -233,24 +327,147 @@ class FacebookResponder(Responder):
     """
 
 
-class Facebook(Platform):
+class Facebook(SimplePlatform):
+    NAME = 'facebook'
+
     PATTERNS = {
-        'text': '(Text|RawText)+ QuickRepliesList?',
-        'generic_template': 'FbGenericTemplate',
-        'attachment': '(Image|Audio|Video|File)',
+        'text': '^(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?$',
+        'generic_template': '^GenericTemplate QuickRepliesList? '
+                            'MessagingType?$',
+        'button_template': '^ButtonTemplate QuickRepliesList? '
+                           'MessagingType?$',
+        'attachment': '^(Image|Audio|Video|File) QuickRepliesList? '
+                      'MessagingType?$',
+        'sleep': '^Sleep$',
+        'typing': '^Typing$',
     }
 
-    def __init__(self):
-        super(Facebook, self).__init__()
-        self.session = None
+    @classmethod
+    async def self_check(cls):
+        """
+        Check that the configuration is correct
 
-    async def async_init(self):
+        - Presence of "BERNARD_BASE_URL" in the global configuration
+        - Presence of a "WEBVIEW_SECRET_KEY"
         """
-        During async init we just need to create a HTTP session so we can keep
-        outgoing connexions to FB alive.
+
+        async for check in super().self_check():
+            yield check
+
+        s = cls.settings()
+
+        if not hasattr(settings, 'BERNARD_BASE_URL'):
+            yield HealthCheckFail(
+                '00005',
+                '"BERNARD_BASE_URL" cannot be found in the configuration. The'
+                'Telegram platform needs it because it uses it to '
+                'automatically register its hook.'
+            )
+
+        if not hasattr(settings, 'WEBVIEW_SECRET_KEY'):
+            yield HealthCheckFail(
+                '00005',
+                '"WEBVIEW_SECRET_KEY" cannot be found in the configuration. '
+                'It is required in order to be able to create secure postback '
+                'URLs.'
+            )
+
+    @property
+    def app_access_token(self):
         """
-        self.session = aiohttp.ClientSession()
-        asyncio.get_event_loop().create_task(self._deferred_init())
+        App token to access app configuration API
+        """
+
+        page = self.settings()
+        return f"{page['app_id']}|{page['app_secret']}"
+
+    @property
+    def verify_token(self):
+        """
+        Automatically generated secure verify token
+        """
+
+        h = sha256()
+        h.update(self.app_access_token.encode())
+        return h.hexdigest()
+
+    @property
+    def webhook_path(self):
+        """
+        Path to the webhook
+        """
+
+        return f'/hooks/{self.id}'
+
+    @property
+    def webhook_url(self):
+        """
+        Full URL to the hook
+        """
+
+        return urljoin(settings.BERNARD_BASE_URL, self.webhook_path)
+
+    def hook_up(self, router: UrlDispatcher):
+        """
+        Dynamically hooks the right webhook paths
+        """
+
+        router.add_get(self.webhook_path, self.check_hook)
+        router.add_post(self.webhook_path, self.receive_events)
+
+    async def check_hook(self, request: HttpRequest):
+        """
+        Called when Facebook checks the hook
+        """
+
+        verify_token = request.query.get('hub.verify_token')
+
+        if not verify_token:
+            return json_response({
+                'error': 'No verification token was provided',
+            }, status=400)
+
+        if verify_token == self.verify_token:
+            return Response(text=request.query.get('hub.challenge', ''))
+
+        return json_response({
+            'error': 'could not find the page token in the configuration',
+        })
+
+    async def receive_events(self, request: HttpRequest):
+        """
+        Events received from Facebook
+        """
+
+        body = await request.read()
+        s = self.settings()
+
+        try:
+            content = ujson.loads(body)
+        except ValueError:
+            return json_response({
+                'error': True,
+                'message': 'Cannot decode body'
+            }, status=400)
+
+        secret = s['app_secret']
+        actual_sig = request.headers['X-Hub-Signature']
+        expected_sig = sign_message(body, secret)
+
+        if not hmac.compare_digest(actual_sig, expected_sig):
+            return json_response({
+                'error': True,
+                'message': 'Invalid signature',
+            }, status=401)
+
+        for entry in content['entry']:
+            for raw_message in entry.get('messaging', []):
+                message = FacebookMessage(raw_message, self)
+                await self.handle_event(message)
+
+        return json_response({
+            'ok': True,
+        })
 
     async def _deferred_init(self):
         """
@@ -258,10 +475,34 @@ class Facebook(Platform):
         bot to work and they take a lot of time to run.
         """
 
+        await self._check_subscriptions()
+        await self._set_whitelist()
         await self._set_get_started()
         await self._set_greeting_text()
         await self._set_persistent_menu()
-        await self._set_whitelist()
+
+    async def _get_messenger_profile(self, page, fields: List[Text]):
+        """
+        Fetch the value of specified fields in order to avoid setting the same
+        field twice at the same value (since Facebook engineers are not able
+        to make menus that keep on working if set again).
+        """
+
+        params = {
+            'access_token': page['page_token'],
+            'fields': ','.join(fields),
+        }
+
+        get = self.session.get(PROFILE_ENDPOINT, params=params)
+        async with get as r:
+            await self._handle_fb_response(r)
+
+            out = {}
+
+            for data in (await r.json())['data']:
+                out.update(data)
+
+            return out
 
     async def _send_to_messenger_profile(self, page, content):
         """
@@ -271,6 +512,15 @@ class Facebook(Platform):
         :param page: page dict from the configuration
         :param content: content to be sent to Facebook (as dict)
         """
+
+        log_name = ', '.join(repr(x) for x in content.keys())
+        page_id = page['page_id']
+
+        current = await self._get_messenger_profile(page, content.keys())
+
+        if dict_is_subset(content, current):
+            logger.info('Page %s: %s is already up to date', page_id, log_name)
+            return
 
         params = {
             'access_token': page['page_token'],
@@ -287,97 +537,160 @@ class Facebook(Platform):
             data=ujson.dumps(content)
         )
 
-        async with post as r:
-            await self._handle_fb_response(r)
+        # noinspection PyBroadException
+        try:
+            async with post as r:
+                await self._handle_fb_response(r)
+        except Exception:
+            logger.exception('Page %s: %s could not be set', page_id, log_name)
+            reporter.report()
+        else:
+            logger.info('Page %s: %s was updated', page_id, log_name)
 
     async def _set_get_started(self):
         """
         Set the "get started" action for all configured pages.
         """
 
-        for page in settings.FACEBOOK:
-            if 'get_started' in page:
-                payload = page['get_started']
-            else:
-                payload = {'action': 'get_started'}
+        page = self.settings()
 
-            await self._send_to_messenger_profile(page, {
-                'get_started': {
-                    'payload': ujson.dumps(payload),
-                },
-            })
+        if 'get_started' in page:
+            payload = page['get_started']
+        else:
+            payload = {'action': 'get_started'}
 
-            logger.info('Get started set for page %s', page['page_id'])
+        await self._send_to_messenger_profile(page, {
+            'get_started': {
+                'payload': ujson.dumps(payload),
+            },
+        })
+
+        logger.info('Get started set for page %s', page['page_id'])
 
     async def _set_greeting_text(self):
         """
         Set the greeting text of the page
         """
 
-        for page in settings.FACEBOOK:
-            if 'greeting' in page:
-                await self._send_to_messenger_profile(page, {
-                    'greeting': page['greeting'],
-                })
+        page = self.settings()
 
-                logger.info('Greeting text set for page %s', page['page_id'])
+        if 'greeting' in page:
+            await self._send_to_messenger_profile(page, {
+                'greeting': page['greeting'],
+            })
+
+            logger.info('Greeting text set for page %s', page['page_id'])
 
     async def _set_persistent_menu(self):
         """
         Define the persistent menu for all pages
         """
 
-        for page in settings.FACEBOOK:
-            if 'menu' in page:
-                await self._send_to_messenger_profile(page, {
-                    'persistent_menu': page['menu'],
-                })
+        page = self.settings()
 
-                logger.info('Set menu for page %s', page['page_id'])
+        if 'menu' in page:
+            await self._send_to_messenger_profile(page, {
+                'persistent_menu': page['menu'],
+            })
+
+            logger.info('Set menu for page %s', page['page_id'])
 
     async def _set_whitelist(self):
         """
         Whitelist domains for the messenger extensions
         """
 
-        for page in settings.FACEBOOK:
-            if 'whitelist' in page:
-                await self._send_to_messenger_profile(page, {
-                    'whitelisted_domains': page['whitelist'],
-                })
+        page = self.settings()
 
-                logger.info('Whitelisted %s for page %s',
-                            page['whitelist'],
-                            page['page_id'])
+        if 'whitelist' in page:
+            await self._send_to_messenger_profile(page, {
+                'whitelisted_domains': page['whitelist'],
+            })
 
-    def accept(self, stack: Stack):
+            logger.info('Whitelisted %s for page %s',
+                        page['whitelist'],
+                        page['page_id'])
+
+    def _get_subscriptions_endpoint(self):
         """
-        Checks that the stack can be accepted according to the `PATTERNS`.
-
-        If the pattern is found, then its name is stored in the `annotation`
-        attribute of the stack.
+        Generates the URL and tokens for the subscriptions endpoint
         """
 
-        for name, pattern in self.PATTERNS.items():
-            if stack.match_exp(pattern):
-                stack.annotation = name
-                return True
-        return False
+        s = self.settings()
 
-    def send(self, request: Request, stack: Stack) -> Coroutine:
+        params = {
+            'access_token': self.app_access_token,
+        }
+
+        return (
+            GRAPH_ENDPOINT.format(f'{s["app_id"]}/subscriptions'),
+            params,
+        )
+
+    async def _get_subscriptions(self) -> Tuple[Set[Text], Text]:
         """
-        Send a stack to Facebook
-
-        Actually this will delegate to one of the `_send_*` functions depending
-        on what the stack looks like.
+        List the subscriptions currently active
         """
 
-        if stack.annotation not in self.PATTERNS:
-            if not self.accept(stack):
-                raise UnacceptableStack('Cannot accept stack {}'.format(stack))
+        url, params = self._get_subscriptions_endpoint()
 
-        func = getattr(self, '_send_' + stack.annotation)
-        return func(request, stack)
+        get = self.session.get(url, params=params)
+
+        async with get as r:
+            await self._handle_fb_response(r)
+            data = await r.json()
+
+            for scope in data['data']:
+                if scope['object'] == 'page':
+                    return (
+                        set(x['name'] for x in scope['fields']),
+                        scope['callback_url'],
+                    )
+
+        return set(), ''
+
+    async def _set_subscriptions(self, subscriptions):
+        """
+        Set the subscriptions to a specific list of values
+        """
+
+        url, params = self._get_subscriptions_endpoint()
+
+        data = {
+            'object': 'page',
+            'callback_url': self.webhook_url,
+            'fields': ', '.join(subscriptions),
+            'verify_token': self.verify_token,
+        }
+
+        headers = {
+            'Content-Type': 'application/json',
+        }
+
+        post = self.session.post(
+            url,
+            params=params,
+            data=ujson.dumps(data),
+            headers=headers,
+        )
+
+        async with post as r:
+            await self._handle_fb_response(r)
+            data = await r.json()
+
+    async def _check_subscriptions(self):
+        """
+        Checks that all subscriptions are subscribed
+        """
+
+        subscribed, url = await self._get_subscriptions()
+        expect = set(settings.FACEBOOK_SUBSCRIPTIONS)
+
+        if (expect - subscribed) or url != self.webhook_url:
+            await self._set_subscriptions(expect | subscribed)
+            logger.info('Updated webhook subscriptions')
+        else:
+            logger.info('No need to update webhook subscriptions')
 
     async def handle_event(self, event: FacebookMessage):
         """
@@ -395,29 +708,43 @@ class Facebook(Platform):
             msg = request.message  # type: FacebookMessage
             page_id = msg.get_page_id()
 
-        for page in settings.FACEBOOK:
-            if page['page_id'] == page_id:
-                return page['page_token']
+        page = self.settings()
+
+        if page['page_id'] == page_id:
+            return page['page_token']
 
         raise PlatformOperationError('Trying to get access token of the '
                                      'page "{}", which is not configured.'
                                      .format(page_id))
 
-    async def _make_qr(self, qr: lyr.QuickRepliesList.BaseOption, request: Request):
+    async def _make_qr(self,
+                       qr: QuickRepliesList.BaseOption,
+                       request: Request):
         """
         Generate a single quick reply's content.
         """
 
-        if isinstance(qr, lyr.QuickRepliesList.TextOption):
+        if isinstance(qr, QuickRepliesList.TextOption):
             return {
                 'content_type': 'text',
                 'title': await render(qr.text, request),
                 'payload': qr.slug,
             }
-        elif isinstance(qr, lyr.QuickRepliesList.LocationOption):
+        elif isinstance(qr, QuickRepliesList.LocationOption):
             return {
                 'content_type': 'location',
             }
+
+    async def _add_qr(self, stack, msg, request):
+        try:
+            qr = stack.get_layer(QuickRepliesList)
+        except KeyError:
+            pass
+        else:
+            # noinspection PyUnresolvedReferences
+            msg['quick_replies'] = [
+                await self._make_qr(o, request) for o in qr.options
+            ]
 
     async def _send_text(self, request: Request, stack: Stack):
         """
@@ -431,7 +758,12 @@ class Facebook(Platform):
         parts = []
 
         for layer in stack.layers:
-            if isinstance(layer, (lyr.Text, lyr.RawText)):
+            if isinstance(layer, lyr.MultiText):
+                lines = await render(layer.text, request, multi_line=True)
+                for line in lines:
+                    for part in wrap(line, 320):
+                        parts.append(part)
+            elif isinstance(layer, (lyr.Text, lyr.RawText)):
                 text = await render(layer.text, request)
                 for part in wrap(text, 320):
                     parts.append(part)
@@ -439,7 +771,7 @@ class Facebook(Platform):
         for part in parts[:-1]:
             await self._send(request, {
                 'text': part,
-            })
+            }, stack)
 
         part = parts[-1]
 
@@ -447,34 +779,16 @@ class Facebook(Platform):
             'text': part,
         }
 
-        try:
-            qr = stack.get_layer(lyr.QuickRepliesList)
-        except KeyError:
-            pass
-        else:
-            # noinspection PyUnresolvedReferences
-            msg['quick_replies'] = [
-                await self._make_qr(o, request) for o in qr.options
-            ]
-
-        await self._send(request, msg)
+        await self._add_qr(stack, msg, request)
+        await self._send(request, msg, stack)
 
     async def _send_generic_template(self, request: Request, stack: Stack):
         """
         Generates and send a generic template.
         """
 
-        gt = stack.get_layer(lyr.FbGenericTemplate)
-
-        # noinspection PyUnresolvedReferences
-        payload = {
-            'template_type': 'generic',
-            'elements': [await e.serialize(request) for e in gt.elements],
-            'sharable': gt.is_sharable(),
-        }
-
-        if gt.aspect_ratio:
-            payload['image_aspect_ratio'] = gt.aspect_ratio.value
+        gt = stack.get_layer(GenericTemplate)
+        payload = await gt.serialize(request)
 
         msg = {
             'attachment': {
@@ -483,7 +797,31 @@ class Facebook(Platform):
             }
         }
 
-        await self._send(request, msg)
+        await self._add_qr(stack, msg, request)
+        await self._send(request, msg, stack)
+
+    async def _send_button_template(self, request: Request, stack: Stack):
+        """
+        Generates and send a button template.
+        """
+
+        gt = stack.get_layer(ButtonTemplate)
+
+        payload = {
+            'template_type': 'button',
+            'text': await render(gt.text, request),
+            'buttons': [await b.serialize(request) for b in gt.buttons],
+        }
+
+        msg = {
+            'attachment': {
+                'type': 'template',
+                'payload': payload
+            }
+        }
+
+        await self._add_qr(stack, msg, request)
+        await self._send(request, msg, stack)
 
     async def _send_attachment(self, request: Request, stack: Stack):
         types = {
@@ -506,36 +844,29 @@ class Facebook(Platform):
             },
         }
 
-        await self._send(request, msg)
+        await self._add_qr(stack, msg, request)
+        await self._send(request, msg, stack)
 
-    async def _handle_fb_response(self, response: aiohttp.ClientResponse):
+    async def _send_sleep(self, request: Request, stack: Stack):
         """
-        Check that Facebook was OK with the API call we just made and raise
-        an exception if it failed.
+        Sleep for the amount of time specified in the Sleep layer
         """
 
-        ok = response.status == 200
+        duration = stack.get_layer(lyr.Sleep).duration
+        await asyncio.sleep(duration)
 
-        if not ok:
-            # noinspection PyBroadException
-            try:
-                error = (await response.json())['error']['message']
-            except Exception:
-                error = '(nothing)'
-
-            raise PlatformOperationError('Facebook says: "{}"'
-                                         .format(error))
-
-    async def _send(self, request: Request, content: Dict[Text, Any]):
+    async def _send_typing(self, request: Request, stack: Stack):
         """
-        Actually proceed to sending the message to the Facebook API.
+        Send to Facebook typing indications
         """
+
+        active = stack.get_layer(lyr.Typing).active
 
         msg = ujson.dumps({
             'recipient': {
                 'id': request.conversation.fbid,
             },
-            'message': content,
+            'sender_action': 'typing_on' if active else 'typing_off',
         })
 
         headers = {
@@ -558,6 +889,67 @@ class Facebook(Platform):
         async with post as r:
             await self._handle_fb_response(r)
 
+    async def _handle_fb_response(self, response: aiohttp.ClientResponse):
+        """
+        Check that Facebook was OK with the API call we just made and raise
+        an exception if it failed.
+        """
+
+        ok = response.status == 200
+
+        if not ok:
+            # noinspection PyBroadException
+            try:
+                error = (await response.json())['error']['message']
+            except Exception:
+                error = '(nothing)'
+
+            raise PlatformOperationError('Facebook says: "{}"'
+                                         .format(error))
+
+    async def _send(self,
+                    request: Request,
+                    content: Dict[Text, Any],
+                    stack: Stack):
+        """
+        Actually proceed to sending the message to the Facebook API.
+        """
+
+        msg = {
+            'recipient': {
+                'id': request.conversation.fbid,
+            },
+            'message': content,
+        }
+
+        if stack and stack.has_layer(MessagingType):
+            mt = stack.get_layer(MessagingType)
+        else:
+            mt = MessagingType(response=True)
+
+        msg.update(mt.serialize())
+        msg_json = ujson.dumps(msg)
+
+        headers = {
+            'content-type': 'application/json',
+        }
+
+        params = {
+            'access_token': self._access_token(request),
+        }
+
+        post = self.session.post(
+            MESSAGES_ENDPOINT,
+            params=params,
+            data=msg_json,
+            headers=headers,
+        )
+
+        logger.debug('Sending: %s', msg_json)
+
+        async with post as r:
+            await self._handle_fb_response(r)
+
     async def get_user(self, user_id, page_id):
         """
         Query a user from the API and return its JSON
@@ -571,7 +963,7 @@ class Facebook(Platform):
             'access_token': access_token,
         }
 
-        url = USER_ENDPOINT.format(user_id)
+        url = GRAPH_ENDPOINT.format(user_id)
 
         get = self.session.get(url, params=params)
         async with get as r:
@@ -588,3 +980,86 @@ class Facebook(Platform):
             raise ValueError('Facebook platform only accepts URL media')
 
         return media
+
+    def _make_fake_message(self, user_id, page_id, payload):
+        """
+        Creates a fake message for the given user_id. It contains a postback
+        with the given payload.
+        """
+
+        event = {
+            'sender': {
+                'id': user_id,
+            },
+            'recipient': {
+                'id': page_id,
+            },
+            'postback': {
+                'payload': ujson.dumps(payload),
+            },
+        }
+
+        return FacebookMessage(event, self, False)
+
+    def _message_from_sr(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        Tries to verify the signed request
+        """
+
+        page = self.settings()
+        secret = page['app_secret']
+
+        try:
+            sr_data = SignedRequest.parse(token, secret)
+        except (TypeError, ValueError, SignedRequestError) as e:
+            return
+
+        return self._make_fake_message(
+            sr_data['psid'],
+            page['page_id'],
+            payload,
+        )
+
+    def _message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        Analyzes a signed token and generates the matching message
+        """
+
+        try:
+            tk = jwt.decode(token, settings.WEBVIEW_SECRET_KEY)
+        except jwt.InvalidTokenError:
+            return
+
+        try:
+            user_id = tk['fb_psid']
+            assert isinstance(user_id, Text)
+            page_id = tk['fb_pid']
+            assert isinstance(page_id, Text)
+        except (KeyError, AssertionError):
+            return
+
+        if self.settings()['page_id'] == page_id:
+            return self._make_fake_message(user_id, page_id, payload)
+
+    async def message_from_token(self, token: Text, payload: Any) \
+            -> Optional[BaseMessage]:
+        """
+        There is two ways of getting a FB user: either with a signed request or
+        either with a platform token. Both are tried out.
+        """
+
+        methods = [
+            self._message_from_sr,
+            self._message_from_token,
+        ]
+
+        for method in methods:
+            msg = method(token, payload)
+
+            if msg:
+                return msg
+
+    async def inject_message(self, message: FacebookMessage) -> None:
+        await self.handle_event(message)

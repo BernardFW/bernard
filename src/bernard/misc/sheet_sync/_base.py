@@ -1,15 +1,26 @@
 # coding: utf-8
-import httplib2
-import os
-import ujson
 import csv
-from tempfile import NamedTemporaryFile
-from apiclient import discovery
-from oauth2client import client
-from oauth2client import tools
-from oauth2client.file import Storage
-from bernard.conf import settings
+import os
+from tempfile import (
+    NamedTemporaryFile,
+)
 
+import httplib2
+from apiclient import (
+    discovery,
+)
+from oauth2client import (
+    client,
+    tools,
+)
+from oauth2client.file import (
+    Storage,
+)
+
+import ujson
+from bernard.conf import (
+    settings,
+)
 
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 APPLICATION_NAME = 'Bernard Sheet Sync'

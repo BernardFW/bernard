@@ -1,12 +1,34 @@
 # coding: utf-8
 import asyncio
-from typing import Optional, Text as TextT, Callable, Type, List, Any
-from bernard.i18n.intents import Intent
-from bernard.i18n import intents, render
-from bernard.trigram import Matcher, Trigram
-from bernard.engine.request import Request
-from bernard import layers as l
-from bernard.utils import run_or_return
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    Text as TextT,
+    Type,
+)
+
+from bernard import (
+    layers as l,
+)
+from bernard.engine.request import (
+    Request,
+)
+from bernard.i18n import (
+    intents,
+    render,
+)
+from bernard.i18n.intents import (
+    Intent,
+)
+from bernard.trigram import (
+    Matcher,
+    Trigram,
+)
+from bernard.utils import (
+    run_or_return,
+)
 
 
 class BaseTrigger(object):
@@ -87,7 +109,7 @@ class SharedTrigger(BaseTrigger):
 
         raise NotImplementedError
 
-    async def compute_rank(self, value: Any) -> float:
+    async def compute_rank(self, value: Any) -> Optional[float]:
         """
         Compute the rank from the cached value from the API call.
         """
@@ -149,7 +171,8 @@ class Text(BaseTrigger):
 
         tl = self.request.get_layer(l.RawText)
         matcher = Matcher([
-            Trigram(x) for x in self.intent.strings(self.request)
+            tuple(Trigram(y) for y in x)
+            for x in await self.intent.strings(self.request)
         ])
 
         return matcher % Trigram(tl.text)
@@ -178,9 +201,10 @@ class Choice(BaseTrigger):
         """
         Look for the QuickReply layer's slug into available choices.
         """
+        from bernard.platforms.facebook import layers as fbl
 
         try:
-            qr = self.request.get_layer(l.QuickReply)
+            qr = self.request.get_layer(fbl.QuickReply)
             self.chosen = choices[qr.slug]
             self.slug = qr.slug
 
@@ -202,12 +226,12 @@ class Choice(BaseTrigger):
 
             if params['intent']:
                 intent = getattr(intents, params['intent'])
-                strings += intent.strings(self.request)
+                strings += await intent.strings(self.request)
 
             if params['text']:
-                strings.append(params['text'])
+                strings.append((params['text'],))
 
-            matcher = Matcher([Trigram(x) for x in strings])
+            matcher = Matcher([tuple(Trigram(y) for y in x) for x in strings])
             score = matcher % Trigram(await render(tl.text, self.request))
 
             if score > best:
@@ -226,13 +250,14 @@ class Choice(BaseTrigger):
         - If there is a quick reply, then use its payload as choice slug
         - Otherwise, try to match each choice with its intent
         """
+        from bernard.platforms.facebook import layers as fbl
 
         choices = self.request.get_trans_reg('choices')
 
         if not choices:
             return
 
-        if self.request.has_layer(l.QuickReply):
+        if self.request.has_layer(fbl.QuickReply):
             return self._rank_qr(choices)
         elif self.request.has_layer(l.RawText):
             return await self._rank_text(choices)
@@ -296,22 +321,6 @@ class BaseSlugTrigger(BaseTrigger):
                 return 1.0
 
 
-class LinkClick(BaseSlugTrigger):
-    """
-    This layer is triggered by the user clicking on an URL button.
-    """
-
-    LAYER_TYPE = l.LinkClick
-
-
-class CloseWebview(BaseSlugTrigger):
-    """
-    This layer is triggered by the user closing a webview.
-    """
-
-    LAYER_TYPE = l.CloseWebview
-
-
 class Worst(BaseTrigger):
     """
     Run several triggers and only keep the worst one. Queries are not made
@@ -340,7 +349,22 @@ class Worst(BaseTrigger):
 
         return m
 
-        return min(x or 0.0 for x in await asyncio.gather(*(
-            run_or_return(x(self.request).rank())
-            for x in self.triggers
-        )))
+
+class Equal(BaseTrigger):
+    """
+    Tests if, in the received layers, there is one layer that is equal to the
+    provided layer.
+    """
+
+    def __init__(self, request: Request, layer: l.BaseLayer):
+        super().__init__(request)
+        self.layer = layer
+
+    def rank(self):
+        try:
+            other = self.request.get_layer(self.layer.__class__)
+            assert self.layer == other
+        except (KeyError, AssertionError):
+            return 0.0
+        else:
+            return 1.0

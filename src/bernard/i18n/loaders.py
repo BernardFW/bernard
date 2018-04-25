@@ -1,18 +1,29 @@
 # coding: utf-8
-import csv
-import aionotify
 import asyncio
+import csv
 import logging
 import os.path
-from bernard.conf import settings
-from typing import Callable, Dict, Text, List
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 
+import aionotify
+
+from bernard.conf import (
+    settings,
+)
 
 logger = logging.getLogger('bernard.i18n.loaders')
 
 
-TransDict = Dict[Text, Text]
-IntentDict = Dict[Text, List[Text]]
+TransDict = Dict[Optional[Text], List[Tuple[Text, Text]]]
+IntentDict = Dict[Optional[Text], Dict[Text, List[Tuple[Text, ...]]]]
 
 
 class LiveFileLoaderMixin(object):
@@ -29,6 +40,8 @@ class LiveFileLoaderMixin(object):
         self._watcher = None
         self._file_path = None
         self._running = False
+        self._locale = None
+        self._kwargs = {}
 
     async def _load(self):
         """
@@ -61,13 +74,17 @@ class LiveFileLoaderMixin(object):
                     self._file_path
                 )
 
-    async def start(self, file_path):
+    async def start(self, file_path, locale=None, kwargs=None):
         """
         Setup the watching utilities, start the loop and load data a first
         time.
         """
 
         self._file_path = os.path.realpath(file_path)
+        self._locale = locale
+
+        if kwargs:
+            self._kwargs = kwargs
 
         if settings.I18N_LIVE_RELOAD:
             loop = asyncio.get_event_loop()
@@ -106,7 +123,7 @@ class BaseTranslationLoader(object):
         """
         self.listeners.append(cb)
 
-    def _update(self, data: TransDict):
+    def _update(self, data: TransDict, *args, **kwargs):
         """
         Propagate updates to listeners
 
@@ -114,7 +131,7 @@ class BaseTranslationLoader(object):
         """
 
         for l in self.listeners:
-            l(data)
+            l(data, *args, **kwargs)
 
     async def load(self, **kwargs) -> None:
         """
@@ -137,17 +154,35 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
         Load data from a Excel-formatted CSV file.
         """
 
+        flags = self._kwargs.get('flags')
+
+        if not flags:
+            flags = {1: {}}
+
+        cols = {k: [] for k in flags.keys()}
+
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            data = {k: v for k, v in reader}
-        self._update(data)
 
-    async def load(self, file_path):
+            for row in reader:
+                for i, col in cols.items():
+                    try:
+                        val = row[i].strip()
+                        assert val
+                    except (IndexError, AssertionError):
+                        pass
+                    else:
+                        col.append((row[0], val))
+
+        for i, col in cols.items():
+            self._update({self._locale: col}, flags[i])
+
+    async def load(self, file_path, locale=None, flags=None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path)
+        await self.start(file_path, locale, {'flags': flags})
 
 
 class BaseIntentsLoader(object):
@@ -189,6 +224,36 @@ class BaseIntentsLoader(object):
         raise NotImplementedError
 
 
+ColRanges = List[Union[
+    int,
+    Tuple[int, Optional[int]],
+]]
+
+
+def extract_ranges(row, ranges: ColRanges) -> List[Text]:
+    """
+    Extracts a list of ranges from a row:
+
+    - If the range is an int, just get the data at this index
+    - If the range is a tuple of two ints, use them as indices in a slice
+    - If the range is an int then a None, start the slice at the int and go
+      up to the end of the row.
+    """
+
+    out = []
+
+    for r in ranges:
+        if isinstance(r, int):
+            r = (r, r + 1)
+
+        if r[1] is None:
+            r = (r[0], len(row))
+
+        out.extend(row[r[0]:r[1]])
+
+    return [x for x in (y.strip() for y in out) if x]
+
+
 class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
     """
     Load intents from a CSV
@@ -201,18 +266,39 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
         Load data from a Excel-formatted CSV file.
         """
 
+        key = self._kwargs['key']
+        pos = self._kwargs['pos']
+        neg = self._kwargs['neg']
+
         with open(self._file_path, newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
             data = {}
 
-            for k, v in reader:
-                data[k] = data.get(k, []) + [v]
+            for row in reader:
+                try:
+                    data[row[key]] = data.get(row[key], []) + [
+                        tuple(extract_ranges(row, [pos] + neg))
+                    ]
+                except IndexError:
+                    pass
 
-        self._update(data)
+        self._update({self._locale: data})
 
-    async def load(self, file_path):
+    async def load(self,
+                   file_path,
+                   locale=None,
+                   key: int = 0,
+                   pos: int = 1,
+                   neg: Optional[ColRanges] = None):
         """
         Start the loading/watching process
         """
 
-        await self.start(file_path)
+        if neg is None:
+            neg: ColRanges = [(2, None)]
+
+        await self.start(file_path, locale, kwargs={
+            'key': key,
+            'pos': pos,
+            'neg': neg,
+        })

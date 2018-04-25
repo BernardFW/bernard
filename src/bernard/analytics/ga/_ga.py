@@ -1,9 +1,17 @@
 # coding: utf-8
 import logging
-from urllib.parse import urlencode
-from aiohttp import ClientSession
-from ..base import BaseAnalytics, new_task
+from urllib.parse import (
+    urlencode,
+)
 
+from aiohttp import (
+    ClientSession,
+)
+
+from ..base import (
+    BaseAnalytics,
+    new_task,
+)
 
 logger = logging.getLogger('bernard.analytics.ga')
 

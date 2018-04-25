@@ -1,7 +1,9 @@
 # coding: utf-8
 import os
 import sys
-from urllib.parse import urlparse
+from urllib.parse import (
+    urlparse,
+)
 
 # Are we in debug mode?
 # So far it changes nothing, but hey who knows.
@@ -30,12 +32,15 @@ I18N_TRANSLATION_LOADERS = []
 # List of intents loaders.
 I18N_INTENTS_LOADERS = []
 
-# Default lang
-I18N_DEFAULT_LANG = 'en'
-
 # Enable automatic reload of translation/intents files
 I18N_LIVE_RELOAD = (DEBUG and sys.platform in {'linux', 'linux2'}) or \
                    os.getenv('I18N_LIVE_RELOAD') == 'yes'
+
+# Translators have the freedom to split messages into several sentences.
+# However, due to the memory structures involved, they could really hurt the
+# program by using absurd values. This puts a limit on the list sizes they can
+# generate
+I18N_MAX_SENTENCES_PER_GROUP = 10
 
 # How long should a register lock last? Registers are locked when starting to
 # answer a message and freed when the response is sent. One minute sounds
@@ -60,15 +65,18 @@ MINIMAL_TRIGGER_SCORE = 0.3
 # active (and something fails)
 DEFAULT_STATE = 'bernard.engine.state.DefaultState'
 
-# Configure here the Facebook pages you want to handle.
-# Each item is expected to be like:
+# A list of platforms to load, in the form of:
 # {
-#     'security_token': 'xxxx',
-#     'app_secret': 'xxxx',
-#     'page_id': 'xxxx',
-#     'page_token': 'xxxx',
+#     'class': 'bernard.platforms.facebook.platform.Facebook',
+#     'settings': [...],
 # }
-FACEBOOK = []
+PLATFORMS = []
+
+FACEBOOK_SUBSCRIPTIONS = [
+    'messages',
+    'messaging_postbacks',
+    'messaging_optins',
+]
 
 redis_params = {}
 redis_url = os.getenv('REDIS_URL')
@@ -110,7 +118,10 @@ WEBVIEW_SECRET_KEY = None
 WEBVIEW_JWT_ALGORITHM = 'HS256'
 
 # Where to store the webview token
-WEBVIEW_TOKEN_KEY = '_bnd_user'
+WEBVIEW_TOKEN_KEY = '_b'
+
+# What is the header name
+WEBVIEW_HEADER_NAME = 'X-BERNARD-AUTH'
 
 # Webviews are supposed to send a message when they close. However, it can
 # happen on some shitty devices (follow my eyes) that connections are not
@@ -138,3 +149,12 @@ ANALYTICS_PROVIDERS = [
     if (os.getenv('GOOGLE_ANALYTICS_ID') and
         os.getenv('GOOGLE_ANALYTICS_DOMAIN')) \
     else []
+
+# All middlewares
+MIDDLEWARES = []
+
+# Users reading speed in words per minute
+USERS_READING_SPEED = 150
+
+# How long does it take to the user to see start reading a bubble
+USERS_READING_BUBBLE_START = 0.3

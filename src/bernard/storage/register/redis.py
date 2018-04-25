@@ -1,10 +1,22 @@
 # coding: utf-8
 import asyncio
+from typing import (
+    Any,
+    Dict,
+    Text,
+)
+
 import ujson
-from typing import Text, Any, Dict
-from bernard.conf import settings
-from .base import BaseRegisterStore
-from ..redis import BaseRedisStore
+from bernard.conf import (
+    settings,
+)
+
+from ..redis import (
+    BaseRedisStore,
+)
+from .base import (
+    BaseRegisterStore,
+)
 
 
 class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):

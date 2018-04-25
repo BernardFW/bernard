@@ -5,10 +5,22 @@ code here is inspired from PostgreSQL's pg_trgm module and should give similar
 or identical results.
 """
 import re
-from collections import deque
-from typing import Text, Iterable, Tuple, TypeVar, Optional, List
-from unidecode import unidecode
+from collections import (
+    deque,
+)
+from typing import (
+    Iterable,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
+from unidecode import (
+    unidecode,
+)
 
 RE_WHITESPACES = re.compile(r'[\W.,;?!\'"«»\-_\s]+')
 
@@ -99,17 +111,57 @@ class Matcher(object):
     Allows to match several trigrams at once. This is useful to detect intents.
     """
 
-    def __init__(self, trigrams: List[Trigram]):
-        self.trigrams = trigrams
+    def __init__(self, trigrams: List[Union[Trigram, Tuple[Trigram, ...]]]):
+        self.trigrams = [
+            (t,) if isinstance(t, Trigram) else t
+            for t in trigrams
+        ]
+
+    def _match(self, local: Tuple[Trigram, ...], other: Trigram) -> float:
+        """
+        Match a trigram with another one. If the negative matching wins,
+        returns an inverted matching.
+        """
+
+        pos = local[0] % other
+        neg = max((x % other for x in local[1:]), default=0)
+
+        if neg > pos:
+            return 0.0
+
+        return pos
 
     def similarity(self, other: Trigram) -> float:
         """
         Find the best similarity within known trigrams.
         """
-        return max(x % other for x in self.trigrams)
+        return max((self._match(x, other) for x in self.trigrams), default=0)
 
     def __mod__(self, other) -> float:
         """
         Shortcut notation using the modulo operator.
         """
         return self.similarity(other)
+
+
+L = TypeVar('L')
+
+
+class LabelMatcher(object):
+    """
+    Allows to match trigrams and associate an arbitrary label to them. When
+    matching, the label will be returned along with the score.
+    """
+
+    def __init__(self, trigrams: List[Tuple[Trigram, L]]):
+        self.trigrams = trigrams
+
+    def similarity(self, other: Trigram) -> Tuple[float, L]:
+        """
+        Returns the best matching score and the associated label.
+        """
+
+        return max(
+            ((t % other, l) for t, l in self.trigrams),
+            key=lambda x: x[0],
+        )

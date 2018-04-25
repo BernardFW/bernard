@@ -1,23 +1,65 @@
 # coding: utf-8
-import pytest
 import os
-from unittest.mock import Mock
-from bernard.engine.request import Request, Conversation, User, BaseMessage
-from bernard.engine.responder import Responder
-from bernard.layers.stack import stack
-from bernard.platforms.test.platform import make_test_fsm
-from bernard.storage.register import Register
-from bernard.storage.register import RedisRegisterStore
-from bernard import layers as l
-from bernard.engine import triggers as trig
-from bernard.engine.fsm import FSM
-from bernard.engine.transition import Transition
-from bernard.conf.utils import patch_conf
-from bernard.i18n import intents, translate as t
-from bernard.utils import run
-from bernard.engine.platform import Platform
-from .states import Hello, Great, BaseTestState, HowAreYou
+from unittest.mock import (
+    Mock,
+)
 
+import pytest
+
+from bernard import (
+    layers as l,
+)
+from bernard.conf.utils import (
+    patch_conf,
+)
+from bernard.engine import (
+    triggers as trig,
+)
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.engine.platform import (
+    Platform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.engine.transition import (
+    Transition,
+)
+from bernard.i18n import (
+    intents,
+    translate as t,
+)
+from bernard.layers.stack import (
+    stack,
+)
+from bernard.platforms.facebook import (
+    layers as fbl,
+)
+from bernard.platforms.test.platform import (
+    make_test_fsm,
+)
+from bernard.storage.register import (
+    RedisRegisterStore,
+    Register,
+)
+from bernard.utils import (
+    run,
+)
+
+from .states import (
+    BaseTestState,
+    Great,
+    Hello,
+    HowAreYou,
+)
 
 LOADER_CONFIG = {
     'I18N_TRANSLATION_LOADERS': [
@@ -98,7 +140,7 @@ class MockTextMessage(BaseMockMessage):
 
         if self.add_qr:
             out += [
-                l.QuickReply('foo'),
+                fbl.QuickReply('foo'),
             ]
 
         return out
@@ -107,7 +149,7 @@ class MockTextMessage(BaseMockMessage):
 class MockChoiceMessage(BaseMockMessage):
     def get_layers(self):
         return [
-            l.QuickReply('yes'),
+            fbl.QuickReply('yes'),
             l.Text('yes'),
         ]
 
@@ -117,10 +159,15 @@ class MockEmptyMessage(BaseMockMessage):
         return []
 
 
+class MockRequest(Request):
+    async def get_locale(self):
+        return None
+
+
 # noinspection PyShadowingNames
 @pytest.fixture('module')
 def text_request(reg):
-    req = Request(
+    req = MockRequest(
         MockTextMessage('foo'),
         reg,
     )
@@ -130,7 +177,7 @@ def text_request(reg):
 
 # noinspection PyShadowingNames
 def test_request_trans_reg(reg):
-    req = Request(MockTextMessage('foo'), reg)
+    req = MockRequest(MockTextMessage('foo'), reg)
     run(req.transform())
     assert req.get_trans_reg('foo') == 42
     assert req.get_trans_reg('bar') is None
@@ -139,7 +186,7 @@ def test_request_trans_reg(reg):
 
 # noinspection PyShadowingNames
 def test_request_stack(reg):
-    req = Request(MockTextMessage('foo'), reg)
+    req = MockRequest(MockTextMessage('foo'), reg)
     run(req.transform())
     assert req.has_layer(l.Text)
     assert req.get_layer(l.Text).text == 'foo'
@@ -169,14 +216,14 @@ def test_text_trigger(text_request):
 # noinspection PyShadowingNames
 def test_choice_trigger(reg):
     with patch_conf(LOADER_CONFIG):
-        req = Request(MockTextMessage('foo', True), reg)
+        req = MockRequest(MockTextMessage('foo', True), reg)
         run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
         assert run(ct.rank()) == 1.0
         assert ct.slug == 'foo'
 
-        req = Request(MockTextMessage('some other stuff'), reg)
+        req = MockRequest(MockTextMessage('some other stuff'), reg)
         run(req.transform())
         ct_factory = trig.Choice.builder()
         ct = ct_factory(req)  # type: trig.Choice
@@ -198,16 +245,17 @@ def test_fsm_init():
 def test_fsm_find_trigger(reg):
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
-        req = Request(MockTextMessage('hello'), reg)
+        run(fsm.async_init())
+        req = MockRequest(MockTextMessage('hello'), reg)
         run(req.transform())
 
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Text)
         assert state == Hello
 
-        req = Request(MockChoiceMessage(), reg)
+        req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert trigger is None
         assert state is None
 
@@ -227,9 +275,9 @@ def test_fsm_find_trigger(reg):
             },
         })
 
-        req = Request(MockChoiceMessage(), reg)
+        req = MockRequest(MockChoiceMessage(), reg)
         run(req.transform())
-        trigger, state = run(fsm._find_trigger(req))
+        trigger, state, dnr = run(fsm._find_trigger(req))
         assert isinstance(trigger, trig.Choice)
         assert state == Great
 
@@ -238,6 +286,7 @@ def test_fsm_find_trigger(reg):
 def test_fsm_confused_state():
     with patch_conf(settings_file=ENGINE_SETTINGS_FILE):
         fsm = FSM()
+        run(fsm.async_init())
 
         reg = Register({})
         req = Request(MockEmptyMessage(), reg)
@@ -275,16 +324,16 @@ def test_story_hello():
             stack(l.Text(t.HELLO)),
             stack(
                 l.Text(t.HOW_ARE_YOU),
-                l.QuickRepliesList([
-                    l.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
-                    l.QuickRepliesList.TextOption('no', t.NO, intents.NO),
+                fbl.QuickRepliesList([
+                    fbl.QuickRepliesList.TextOption('yes', t.YES, intents.YES),
+                    fbl.QuickRepliesList.TextOption('no', t.NO, intents.NO),
                 ])
             ),
         )
 
         platform.handle(
             l.Text('Yes'),
-            l.QuickReply('yes'),
+            fbl.QuickReply('yes'),
         )
         platform.assert_sent(
             stack(l.Text(t.GREAT))

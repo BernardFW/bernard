@@ -1,14 +1,23 @@
 # coding: utf-8
-from enum import Enum
-from typing import Dict, Text as TextT, List, Optional, TYPE_CHECKING, \
-    TypeVar, Type, NamedTuple
-from bernard.i18n import TransText, render
-from bernard.i18n.intents import Intent
-from .helpers import FbBaseButton, FbCard
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    NamedTuple,
+    Optional,
+    Text as TextT,
+    Type,
+    TypeVar,
+)
+
+from bernard.i18n import (
+    TransText,
+    render,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
     from bernard.engine.platform import Platform
+    from bernard.engine.request import BaseMessage
 
 
 L = TypeVar('L')
@@ -109,6 +118,13 @@ class Text(BaseLayer):
         return RawText(await render(self.text, request))
 
 
+class MultiText(Text):
+    """
+    That's exactly like a Text layer but which can output several messages at
+    once.
+    """
+
+
 class RawText(BaseLayer):
     """
     That is a text message that warranties it will never have to be translated.
@@ -125,115 +141,40 @@ class RawText(BaseLayer):
         return [self.text]
 
 
-class QuickRepliesList(BaseLayer):
+class Markdown(BaseLayer):
     """
-    This layer is a bunch of quick replies options that will be presented to
-    the user.
+    Like the Text but for Markdown.
     """
 
-    class BaseOption(object):
-        """
-        Base object for a quick reply option
-        """
-        type = None
-
-    class TextOption(BaseOption):
-        """
-        A quick reply that will trigger a text response (with a QuickReply
-        layer).
-        """
-        type = 'text'
-
-        def __init__(self,
-                     slug: TextT,
-                     text: TransText,
-                     intent: Optional[Intent]=None):
-            self.slug = slug
-            self.text = text
-            self.intent = intent
-
-        def __eq__(self, other):
-            return (self.__class__ == other.__class__ and
-                    self.slug == other.slug and
-                    self.text == other.text and
-                    self.intent == other.intent)
-
-        def __repr__(self):
-            return 'Text({}, {}, {})'.format(
-                repr(self.slug),
-                repr(self.text),
-                repr(self.intent)
-            )
-
-    class LocationOption(BaseOption):
-        """
-        A quick reply that will generate a location response (with a Location
-        layer).
-        """
-        type = 'location'
-
-        def __init__(self):
-            pass
-
-        def __eq__(self, other):
-            return self.__class__ == other.__class__
-
-        def __repr__(self):
-            return 'Location()'
-
-    def __init__(self, options: List[BaseOption]):
-        self.options = options
+    def __init__(self, text: TextT):
+        self.text = text
 
     def __eq__(self, other):
-        if self.__class__ != other.__class__:
-            return False
-
-        if len(self.options) != len(other.options):
-            return False
-
-        for o1, o2 in zip(self.options, other.options):
-            if o1 != o2:
-                return False
-
-        return True
+        return self.__class__ == other.__class__ and self.text == other.text
 
     def _repr_arguments(self):
-        return self.options
+        if len(self.text) > 15:
+            text = self.text[:12] + '...'
+        else:
+            text = self.text
 
-    async def patch_register(self, register: Dict, request: 'Request'):
-        """
-        Store all options in the "choices" sub-register. We store both the
-        text and the potential intent, in order to match both regular
-        quick reply clicks but also the user typing stuff on his keyboard that
-        matches more or less the content of quick replies.
-        """
-
-        # noinspection PyUnresolvedReferences
-        register['choices'] = {
-            o.slug: {
-                'intent': o.intent.key if o.intent else None,
-                'text': await render(o.text, request),
-            } for o in self.options
-            if isinstance(o, QuickRepliesList.TextOption)
-        }
-
-        return register
+        return [text]
 
 
-class QuickReply(BaseLayer):
+class Sleep(BaseLayer):
     """
-    This is what we receive when the user clicks a quick reply.
+    Permit to slow down the debit of the message
     """
 
-    def __init__(self, slug):
-        self.slug = slug
+    def __init__(self, duration: float):
+        self.duration = duration
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
-                self.slug == other.slug)
+                self.duration == other.duration)
 
     def _repr_arguments(self):
-        return [self.slug]
+        return [self.duration]
 
 
 class Postback(BaseLayer):
@@ -323,129 +264,34 @@ class Location(BaseLayer):
         return [self.point]
 
 
-class FbButtonTemplate(BaseLayer):
+class Message(BaseLayer):
     """
-    Represents the Facebook "button template"
+    This layer represents a message embedded in another
     """
-    def __init__(self,
-                 text: Text,
-                 buttons: List[FbBaseButton],
-                 sharable: bool=False):
-        self.text = text
-        self.buttons = buttons
-        self.sharable = sharable
 
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.text == other.text and
-                self.buttons == other.buttons)
+    def __init__(self, message: 'BaseMessage'):
+        from bernard.layers import Stack
+        self.message = message
+        self.stack: Stack = Stack(message.get_layers())
 
     def _repr_arguments(self):
-        return [self.text, self.buttons]
-
-    def is_sharable(self):
-        """
-        Is sharable if marked as and if buttons are sharable (they might
-        hold sensitive data).
-        """
-        return self.sharable and all(x.is_sharable() for x in self.buttons)
-
-
-class FbGenericTemplate(BaseLayer):
-    """
-    Represents the Facebook "generic template"
-    """
-
-    class AspectRatio(Enum):
-        """
-        Aspect ratio of card images
-        """
-        horizontal = 'horizontal'
-        square = 'square'
-
-    def __init__(self,
-                 elements: List[FbCard],
-                 aspect_ratio: Optional[AspectRatio]=None,
-                 sharable: Optional[bool]=None):
-        self.elements = elements
-        self.aspect_ratio = aspect_ratio
-        self.sharable = sharable
+        return [x for x in self.stack.layers]
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                list(self.elements) == list(other.elements) and
-                self.sharable == other.sharable)
-
-    def _repr_arguments(self):
-        return self.elements
-
-    def is_sharable(self):
-        """
-        Can only be sharable if marked as such and no child element is blocking
-        sharing due to security reasons.
-        """
-        return bool(
-            self.sharable and
-            all(x.is_sharable() for x in self.elements)
-        )
-
-    async def convert_media(self, platform: 'Platform'):
-        """
-        Forward the "convert media" call to all children.
-        """
-        for element in self.elements:
-            await element.convert_media(platform)
+        return self.__class__ == other.__class__ and self.stack == other.stack
 
 
-class LinkClick(BaseLayer):
+class Typing(BaseLayer):
     """
-    That layer is triggered when the user clicks on a link
+    Indicates that the bot is currently "typing" its response
     """
 
-    def __init__(self, url: Text, slug: Optional[Text]=None):
-        self.url = url
-        self.slug = slug
+    def __init__(self, active=True):
+        self.active = active
 
     def _repr_arguments(self):
-        if self.slug:
-            return [self.slug]
-        else:
-            return [self.url]
+        return [self.active]
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.slug == other.slug and
-                self.url == other.url)
-
-
-class CloseWebview(BaseLayer):
-    """
-    Triggered when a webview gets closed.
-    """
-
-    def __init__(self, slug: Optional[Text]):
-        self.slug = slug
-
-    def _repr_arguments(self):
-        return [self.slug]
-
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.slug == other.slug)
-
-
-class OptIn(BaseLayer):
-    """
-    That kind of layers indicates that the bot now has a right to talk to the
-    specified user, even if the user did not start a conversation right now.
-    """
-
-    def __init__(self, ref=''):
-        self.ref = ref
-
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self.ref == other.ref)
-
-    def _repr_arguments(self):
-        return [self.ref]
+        return self.__class__ == other.__class__ \
+            and self.active == other.active

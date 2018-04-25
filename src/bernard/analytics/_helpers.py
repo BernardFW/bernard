@@ -1,8 +1,14 @@
 # coding: utf-8
-from functools import wraps
-from bernard.engine.state import BaseState
+from functools import (
+    wraps,
+)
 
-from bernard.analytics.base import providers
+from bernard.analytics.base import (
+    providers,
+)
+from bernard.engine.state import (
+    BaseState,
+)
 
 
 def page_view(url):
@@ -34,4 +40,3 @@ def page_view(url):
             return await func(self, *args, **kwargs)
         return wrapper
     return decorator
-

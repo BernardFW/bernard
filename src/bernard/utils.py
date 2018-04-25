@@ -1,15 +1,37 @@
 # coding: utf-8
-import re
-import importlib
 import asyncio
-from asyncio import iscoroutine
-from collections import Sequence, Mapping
-from itertools import chain
-from typing import Text, Coroutine, Any, Union, Dict, Iterator, List, Tuple
-from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode
+import importlib
+import re
+from asyncio import (
+    iscoroutine,
+)
+from collections import (
+    Mapping,
+    Sequence,
+)
+from itertools import (
+    chain,
+)
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Text,
+    Tuple,
+    Type,
+    Union,
+)
+from urllib.parse import (
+    parse_qsl,
+    urlencode,
+    urlparse,
+    urlunparse,
+)
 
 
-def import_class(name: Text) -> type:
+def import_class(name: Text) -> Type:
     """
     Import a class based on its full name.
 
@@ -157,8 +179,8 @@ class ClassExp(object):
         Transform a class exp into an actual regex
         """
 
-        x = self.RE_SPACES.sub('', expression)
-        x = self.RE_PYTHON_VAR.sub('(:?\\1,)', x)
+        x = self.RE_PYTHON_VAR.sub('(?:\\1,)', expression)
+        x = self.RE_SPACES.sub('', x)
         return re.compile(x)
 
     def _make_string(self, objects: List[Any]) -> Text:
@@ -201,3 +223,37 @@ def patch_qs(url: Text, data: Dict[Text, Text]) -> Text:
     p[qs_id] = urlencode(patched_qs)
 
     return urlunparse(p)
+
+
+def patch_dict(orig: Dict, **items):
+    out = dict(orig)
+    out.update(items)
+    return out
+
+
+def dict_is_subset(subset: Any, full_set: Any) -> bool:
+    """
+    Checks that all keys present in `subset` are present and have the same
+    value in `full_set`. If a key is in `full_set` but not in `subset` then
+    True will be returned anyways.
+    """
+
+    if not isinstance(subset, full_set.__class__):
+        return False
+    elif isinstance(subset, dict):
+        for k, v in subset.items():
+            if k not in full_set or not dict_is_subset(v, full_set[k]):
+                return False
+
+        return True
+    elif isinstance(subset, list):
+        if len(subset) != len(full_set):
+            return False
+
+        for a, b in zip(subset, full_set):
+            if not dict_is_subset(a, b):
+                return False
+
+        return True
+    else:
+        return subset == full_set

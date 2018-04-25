@@ -1,9 +1,19 @@
 # coding: utf-8
 import os
-from sys import modules
-from bernard.conf import settings
-from contextlib import contextmanager
-from ..conf import ENVIRONMENT_VARIABLE
+from contextlib import (
+    contextmanager,
+)
+from sys import (
+    modules,
+)
+
+from bernard.conf import (
+    settings,
+)
+
+from ..conf import (
+    ENVIRONMENT_VARIABLE,
+)
 
 
 def reload_config() -> None:
@@ -27,6 +37,7 @@ def patch_conf(settings_patch=None, settings_file=None):
     This is for unit tests only!
 
     :param settings_patch: Custom configuration values to insert
+    :param settings_file: Custom settings file to read
     """
 
     if settings_patch is None:

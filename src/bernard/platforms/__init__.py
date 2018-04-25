@@ -1,7 +1,12 @@
 # coding: utf-8
-from .management import PlatformManager
+from typing import Type
+
+from .management import PlatformManager, get_platform_settings
+from ..utils import import_class
+from ..engine.platform import Platform, SimplePlatform
 
 manager = PlatformManager()
+
 
 async def start_all():
     """
@@ -9,4 +14,7 @@ async def start_all():
     lazily wait for them to start.
     """
 
-    await manager.get_platform('facebook')
+    await manager.init()
+
+    async for _ in manager.get_all_platforms():
+        pass

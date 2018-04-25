@@ -1,19 +1,38 @@
 # coding: utf-8
+import datetime
 import os
+from unittest.mock import (
+    Mock,
+)
+
 import pytest
 import pytz
-import datetime
-# noinspection PyProtectedMember
-from bernard.i18n._formatter import make_date, I18nFormatter
-from bernard.i18n.translator import *
-from bernard.i18n.loaders import BaseTranslationLoader, CsvTranslationLoader, \
-    BaseIntentsLoader, CsvIntentsLoader
-from bernard.i18n.intents import Intent, IntentsMaker, IntentsDb
-from bernard.conf.utils import patch_conf
-from bernard.utils import run
-from dateutil import tz
-from unittest.mock import Mock
+from dateutil import (
+    tz,
+)
 
+from bernard.conf.utils import (
+    patch_conf,
+)
+# noinspection PyProtectedMember
+from bernard.i18n._formatter import (
+    make_date,
+)
+from bernard.i18n.intents import (
+    Intent,
+    IntentsDb,
+    IntentsMaker,
+)
+from bernard.i18n.loaders import (
+    BaseIntentsLoader,
+    BaseTranslationLoader,
+    CsvIntentsLoader,
+    CsvTranslationLoader,
+)
+from bernard.i18n.translator import *
+from bernard.utils import (
+    run,
+)
 
 TRANS_FILE_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -66,7 +85,7 @@ LOADER_CONFIG_3 = {
 # noinspection PyProtectedMember
 def test_translations_events_spreading():
     mock_cb = Mock()
-    data = {'updated': 'yes'}
+    data = {None: []}
 
     loader = BaseTranslationLoader()
     loader.on_update(mock_cb)
@@ -78,7 +97,7 @@ def test_translations_events_spreading():
 # noinspection PyProtectedMember
 def test_intents_events_spreading():
     mock_cb = Mock()
-    data = {'updated': ['yes']}
+    data = {None: {'updated': ['yes']}}
 
     loader = BaseIntentsLoader()
     loader.on_update(mock_cb)
@@ -98,7 +117,7 @@ def test_load_translations_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=TRANS_FILE_PATH))
 
-    mock_cb.assert_called_once_with(data)
+    mock_cb.assert_called_once_with({None: list(data.items())}, {})
 
 
 def test_base_translations_loader_is_abstract():
@@ -116,9 +135,13 @@ def test_base_intents_loader_is_abstract():
 def test_load_intents_csv():
     mock_cb = Mock()
     data = {
-        'FOO': ['bar', 'baz'],
-        'BAR': ['ᕕ( ՞ ᗜ ՞ )ᕗ', '∩༼˵☯‿☯˵༽つ¤=[]:::::>', 'c( ⁰ 〰 ⁰ )੭'],
-        'BAZ': ['foo'],
+        'FOO': [('bar',), ('baz',)],
+        'BAR': [
+            ('ᕕ( ՞ ᗜ ՞ )ᕗ',),
+            ('∩༼˵☯‿☯˵༽つ¤=[]:::::>',),
+            ('c( ⁰ 〰 ⁰ )੭',)
+        ],
+        'BAZ': [('foo',)],
     }
     file_path = os.path.join(
         os.path.dirname(__file__),
@@ -130,13 +153,7 @@ def test_load_intents_csv():
     loader.on_update(mock_cb)
     run(loader.load(file_path=file_path))
 
-    mock_cb.assert_called_once_with(data)
-
-
-def test_word_dict():
-    with patch_conf(LOADER_CONFIG):
-        wd = WordDictionary()
-        assert wd.get('FOO') == 'éléphant'
+    mock_cb.assert_called_once_with({None: data})
 
 
 def test_word_dict_count():
@@ -156,7 +173,7 @@ def test_word_dict_missing():
 def test_word_dict_param():
     with patch_conf(LOADER_CONFIG_2):
         wd = WordDictionary()
-        assert wd.get('WITH_PARAM', name='Mike') == 'Hello Mike'
+        assert wd.get('WITH_PARAM', params={'name': 'Mike'}) == ['Hello Mike']
 
 
 def test_word_dict_missing_param():
@@ -269,21 +286,21 @@ def test_unserialize():
 def test_intents_db():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
-        assert db.get('FOO') == ['bar', 'baz']
+        assert db.get('FOO', None) == [('bar',), ('baz',)]
 
 
 def test_intent():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         intent = Intent(db, 'FOO')
-        assert intent.strings() == ['bar', 'baz']
+        assert run(intent.strings()) == [('bar',), ('baz',)]
 
 
 def test_intents_maker():
     with patch_conf(LOADER_CONFIG_3):
         db = IntentsDb()
         maker = IntentsMaker(db)
-        assert maker.FOO.strings() == ['bar', 'baz']
+        assert run(maker.FOO.strings()) == [('bar',), ('baz',)]
 
 
 def test_intents_maker_singleton():
@@ -293,7 +310,7 @@ def test_intents_maker_singleton():
             del modules['bernard.i18n']
 
         from bernard.i18n import intents as i
-        assert i.FOO.strings() == ['bar', 'baz']
+        assert run(i.FOO.strings()) == [('bar',), ('baz',)]
 
 
 def test_make_date():

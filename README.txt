@@ -1,24 +1,28 @@
 BERNARD
 =======
 
+**Version 0.2**
+
 |Build Status|
 
-Create powerful and flexible bots using BERNARD. It comes
-batteries-included and with strong opinions. You'll be able to:
+Building *instant services* (or chatbots) is a brand new craft. BERNARD
+is here to bring it up to speed for the professional world.
 
--  Represent conversations as finite-state machines
--  Multi-platform (Facebook Messenger, WeChat, VK, Line, Twilio, ...)
--  Flexible translation system. Handles language, plurals, gender and
-   anything you'd like
--  Run-time analysis through logging
+-  Take advantage of each platform's specificities (Facebook, Telegram,
+   ...)
+-  Connect your existing business API
+-  Translate and decline your texts
+-  Extensible to any platform, without merging to upstream
 
-BERNARD stands for "Bot Engine Responding Naturally At Requests
-Detection".
+Get started!
+============
 
-Get started
-===========
+This documentation will bring you methodology, concepts and patterns to
+build bots as well as hands-on experience with the code of a bot.
 
-Please go to the `get started <doc/get_started.md>`__ section!
+-  **`Get Started <./doc/get-started/readme.md>`__** course and tutorial
+-  **`Table of contents <./doc/readme.md>`__** of all topics in
+   documentation
 
 Licensing
 =========
@@ -49,6 +53,7 @@ Coding Rules
 Coding rules are very, very important. There is not too many yet:
 
 -  PEP 8
+-  Imports are normalized by the ``make imports`` command
 -  No undocumented code gets merged
 -  Code bringing test coverage down or breaking tests doesn't get merged
 
@@ -56,14 +61,6 @@ Testing
 -------
 
 Use ``py.test``. Node for later: document this part a bit better.
-
-Vision
-======
-
-The vision of the framework API was established in the `the vision
-doc <doc/vision.md>`__. This document is the basis of any development
-going on as it tries to bring consistency to all the different concepts
-and problems encountered in bot making.
 
 .. |Build Status| image:: https://travis-ci.org/BernardFW/bernard.svg?branch=develop
    :target: https://travis-ci.org/BernardFW/bernard

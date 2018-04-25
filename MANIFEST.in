@@ -2,3 +2,4 @@ include README.*
 include LICENSE.*
 include requirements.txt
 include requirements_as_lib.txt
+recursive-include src/bernard/misc/start_project/files *

@@ -1,13 +1,42 @@
 # coding: utf-8
-from typing import List, Tuple, Type
-from bernard.engine.platform import Platform
-from bernard.engine.request import BaseMessage, User, Conversation, Request
-from bernard.engine.responder import Responder
-from bernard.engine.state import BaseState
-from bernard.layers import Stack, BaseLayer
-from bernard.engine.fsm import FSM
-from bernard.storage.register import Register
-from bernard.utils import run
+from typing import (
+    List,
+    Text,
+    Tuple,
+    Type,
+)
+
+from bernard.engine.fsm import (
+    FSM,
+)
+from bernard.engine.platform import (
+    Platform,
+)
+from bernard.engine.request import (
+    BaseMessage,
+    Conversation,
+    Request,
+    User,
+)
+from bernard.engine.responder import (
+    Responder,
+)
+from bernard.engine.state import (
+    BaseState,
+)
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
+from bernard.media.base import (
+    BaseMedia,
+)
+from bernard.storage.register import (
+    Register,
+)
+from bernard.utils import (
+    run,
+)
 
 
 class TestUser(User):
@@ -15,7 +44,19 @@ class TestUser(User):
     Mock user object
     """
 
+    def get_friendly_name(self) -> Text:
+        return 'Test'
+
+    def get_formal_name(self) -> Text:
+        return 'Formal Test'
+
+    def get_full_name(self) -> Text:
+        return 'Full Test'
+
     async def get_timezone(self):
+        return None
+
+    async def get_locale(self):
         return None
 
 
@@ -80,6 +121,8 @@ class TestPlatform(Platform):
     >>> platform.assert_sent(l.stack(l.Text(t.HELLO)))
     """
 
+    NAME = 'test'
+
     fsm_creates_task = False
 
     def __init__(self):
@@ -132,6 +175,9 @@ class TestPlatform(Platform):
         assert self._register
         assert Register.STATE in self._register
         assert self._register[Register.STATE] == state_class.name()
+
+    def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
+        return media
 
 
 def make_test_fsm() -> Tuple[FSM, TestPlatform]:

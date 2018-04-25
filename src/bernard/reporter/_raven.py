@@ -1,10 +1,26 @@
 # coding: utf-8
-from typing import TYPE_CHECKING, Text
-from raven import Client
-from raven_aiohttp import AioHttpTransport
-from bernard.conf import settings
-from bernard.utils import make_rw
-from ._base import BaseReporter
+from typing import (
+    TYPE_CHECKING,
+    Text,
+)
+
+from raven import (
+    Client,
+)
+from raven_aiohttp import (
+    AioHttpTransport,
+)
+
+from bernard.conf import (
+    settings,
+)
+from bernard.utils import (
+    make_rw,
+)
+
+from ._base import (
+    BaseReporter,
+)
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request

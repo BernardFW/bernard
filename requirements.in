@@ -11,9 +11,11 @@ babel
 python-dateutil
 pytz
 aionotify
+facepy
 
 # For Google import
 google-api-python-client
 
 # For dev
 pytest
+isort

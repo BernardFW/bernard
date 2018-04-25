@@ -1,8 +1,15 @@
 # coding: utf-8
 import logging
-from typing import Text, Any, Dict, Optional
-from bernard.utils import RoDict
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Text,
+)
 
+from bernard.utils import (
+    RoDict,
+)
 
 logger = logging.getLogger('bernard.storage.register')
 

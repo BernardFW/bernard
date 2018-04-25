@@ -1,7 +1,10 @@
 # coding: utf-8
-import types
 import re
-from typing import Text, Any
+import types
+from typing import (
+    Any,
+    Text,
+)
 
 CONFIG_ATTR = re.compile(r'^[A-Z](?:_?[A-Z0-9]+)*$')
 

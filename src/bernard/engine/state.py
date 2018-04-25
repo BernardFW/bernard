@@ -1,10 +1,25 @@
 # coding: utf-8
-from typing import Optional, Iterator
-from bernard.core.health_check import HealthCheckFail
-from bernard.engine.triggers import BaseTrigger
-from bernard.layers import BaseLayer, Text
-from .responder import Responder
-from .request import Request
+from typing import (
+    Iterator,
+)
+
+from bernard.core.health_check import (
+    HealthCheckFail,
+)
+from bernard.engine.triggers import (
+    BaseTrigger,
+)
+from bernard.layers import (
+    BaseLayer,
+    Text,
+)
+
+from .request import (
+    Request,
+)
+from .responder import (
+    Responder,
+)
 
 
 class BaseState(object):
@@ -21,10 +36,12 @@ class BaseState(object):
     def __init__(self,
                  request: Request,
                  responder: Responder,
-                 trigger: Optional[BaseTrigger]=None):
+                 trigger: BaseTrigger,
+                 user_trigger: BaseTrigger):
         self.request = request
         self.responder = responder
         self.trigger = trigger
+        self.user_trigger = user_trigger
 
     @classmethod
     def name(cls):
@@ -109,4 +126,3 @@ class DefaultState(BaseState):
         Send another stupid text.
         """
         self.send(Text('Something went wrong in my head and I cannot answer'))
-

@@ -1,11 +1,25 @@
 # coding: utf-8
-from hashlib import sha256
-from functools import wraps
-from asyncio import get_event_loop
-from typing import Dict, Tuple, Any
+from asyncio import (
+    get_event_loop,
+)
+from functools import (
+    wraps,
+)
+from hashlib import (
+    sha256,
+)
+from typing import (
+    Any,
+    Dict,
+    Tuple,
+)
 
-from bernard.utils import import_class
-from bernard.conf import settings
+from bernard.conf import (
+    settings,
+)
+from bernard.utils import (
+    import_class,
+)
 
 
 class BaseAnalytics(object):

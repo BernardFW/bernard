@@ -1,6 +1,14 @@
 # coding: utf-8
-from typing import TYPE_CHECKING, Union, List
-from bernard.layers import Stack, BaseLayer
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Union,
+)
+
+from bernard.layers import (
+    BaseLayer,
+    Stack,
+)
 
 if TYPE_CHECKING:
     from .platform import Platform
@@ -63,11 +71,21 @@ class Responder(object):
         The first step is to convert all media in the stacked layers then the
         second step is to send all messages as grouped in time as possible.
         """
+        from bernard.middleware import MiddlewareManager
 
         for stack in self._stacks:
             await stack.convert_media(self.platform)
 
-        for stack in self._stacks:
+        func = MiddlewareManager.instance().get('flush', self._flush)
+        await func(request, self._stacks)
+
+    async def _flush(self, request: 'Request', stacks: List[Stack]):
+        """
+        Perform the actual sending to platform. This is separated from
+        `flush()` since it needs to be inside a middleware call.
+        """
+
+        for stack in stacks:
             await self.platform.send(request, stack)
 
     async def make_transition_register(self, request: 'Request'):
