@@ -5,8 +5,8 @@ BERNARD
 
 [![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
 
-Building chatbots is a brand new craft. BERNARD is here to bring it up
-to speed for the professional world.
+Building *instant services* (or chatbots) is a brand new craft. BERNARD
+is here to bring it up to speed for the professional world.
 
 - Take advantage of each platform's specificities (Facebook, Telegram,
   ...)
