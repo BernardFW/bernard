@@ -58,6 +58,45 @@ Example of a `Choice` trigger to do some filtering:
 trg.Choice.builder()
 ```
 
+## Train jumping
+
+Sometimes, you want some parts of the flow to connect to each other. By
+example, suppose that you make a food deliver bot:
+
+- If you ask "what is my order status?" it should reply with the current
+  order status.
+- When you complete an order, you want to directly display this status
+
+You might be tempted to handle this from within the handler, but
+actually it is much more simple and readable to handle it using the
+flow:
+
+![Train jumping pattern](./img/pattern-train-jumping.svg)
+
+Now, you might note that "Anything" is underlined. That is because it is
+not a regular transition that waits on user input but rather an
+*internal* transition that is automatically evaluated when the handling
+of the previous state is done.
+
+This flow would be implemented the following way:
+
+```python
+transitions = [
+    # ...
+
+    Tr(
+        dest=CurrentStatus,
+        factory=trg.Action.builder('order_status'),
+    ),
+    Tr(
+        dest=CurrentStatus,
+        origin=OrderComplete,
+        factory=trg.Anything.builder(),
+        internal=True,
+    ),
+]
+```
+
 ## Background check
 
 Sometimes you want to take different branches depending on things that
@@ -122,3 +161,54 @@ transitions = [
     ),
 ]
 ```
+
+## Window
+
+While bots are really useful to provide instant services, some parts of
+the service work way better inside a webview. By example if you want
+to ask for some password or some payment details you'll need to go
+through a webview since you're collecting sensitive data that wouldn't
+be fit for a chat (which is historized).
+
+One of the main goals of BERNARD is helping you create those webview
+by providing means of communication between the webview and the bot.
+You will find all the information you need in the
+[bernard.js](https://www.npmjs.com/package/bernard-js) package which is
+specifically made to help you deal with the technical side of this.
+
+Here we'll rather explain the overview of the *Window* pattern, which
+allows to do part of your flow within a webview. It's useful for things
+like:
+
+- Log-in/Registration
+- Payment/checkout
+- User profiling
+- Anything with a lot of fields or requiring to put in secrets
+
+In this case, we'll consider a bot that allows you to log in:
+
+1. In the conversation, display a "Log in" button (using a
+   [Facebook Button Template](layers/facebook.md#buttontemplate), by
+   example)
+2. The user opens the webview by clicking the button
+3. They log in with their username and password
+4. The window closes
+5. The bot tells them "Congratulations!"
+
+![Window pattern](./img/pattern-window.svg)
+
+In this case, the "Log in" state will open a webview with a login form,
+which in the nominal case will:
+
+1. Ask the user for his login/password
+2. Authenticate against your backend (it's up to you! have a look at the
+   [`api_postback_me`](./middlewares.md#api_postback_me) middleware for
+   more information).
+3. Confirm the login to the bot
+
+```javascript
+bernard.sendPostback(token, {action: 'log_in'));
+```
+
+4. Close the window while the bot replies to your postback, saying
+   "Congratulations!"

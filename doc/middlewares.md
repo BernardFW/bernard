@@ -81,3 +81,6 @@ class AddGender(BaseMiddleware):
         info['gender'] = (await msg.get_user().get_gender()).value
         return info
 ```
+
+If you need an authentication token to your API, it's also the place
+to communicate it to your webview.
