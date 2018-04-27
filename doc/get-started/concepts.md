@@ -44,7 +44,7 @@ if you're selling bots, your clients will ask for it and even if they
 don't they will expect it and if you don't plan ahead this is going to
 suck up all your energy. Which is not worth it for about 3% of users.
 
-There is a built-in [intents detection system](./nlu.md) based on very
+There is a built-in [intents detection system](../lang/nlu.md) based on very
 simple techniques. There is also the
 [Iron Throne](https://github.com/BernardFW/iron-throne) project that
 proposes a very simple NLU engine which can be quite effective for
