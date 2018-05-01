@@ -36,7 +36,7 @@ is a very hot topic at the moment. However, let's dial down a bit:
 
 In short, don't try to pass the
 [Turing test](https://en.wikipedia.org/wiki/Turing_test). Instead,
-create an experience that don't depend on understanding what your users
+create an experience that doesn't depend on understanding what your users
 say.
 
 However, there is still a need to understand a few things. And also,
