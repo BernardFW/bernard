@@ -1,15 +1,17 @@
 # coding: utf-8
 from typing import (
+    NamedTuple,
     Optional,
     Text,
-    Tuple,
     Type,
+    Union,
 )
 
 from bernard.conf import (
     settings,
 )
 from bernard.utils import (
+    import_class,
     run_or_return,
 )
 
@@ -19,6 +21,22 @@ from .state import (
 from .triggers import (
     BaseTrigger,
 )
+
+Target = Union[Type[BaseState]]
+
+
+class TransitionRank(NamedTuple):
+    """
+    Ranking for a given transition as a result of testing it with a given
+    request.
+    """
+
+    score: float
+    trigger: Optional[BaseTrigger]
+    dest: Optional[Target]
+    dnr: Optional[bool]
+    transition_origin: Optional[Target]
+    actual_origin: Optional[Target]
 
 
 class Transition(object):
@@ -69,21 +87,9 @@ class Transition(object):
             self.dest.__name__,
         )
 
-    async def rank(self, request, origin: Optional[Text]) \
-            -> Tuple[
-                float,
-                Optional[BaseTrigger],
-                Optional[type],
-                Optional[bool],
-            ]:
+    async def rank(self, request, origin: Optional[Text]) -> TransitionRank:
         """
         Computes the rank of this transition for a given request.
-
-        It returns (in order):
-
-            - The score (from 0 to 1)
-            - The trigger instance (if it matched)
-            - The class of the destination state (if matched)
         """
 
         if self.origin_name == origin:
@@ -91,10 +97,22 @@ class Transition(object):
         elif self.origin_name is None:
             score = settings.JUMPING_TRIGGER_PENALTY
         else:
-            return 0.0, None, None, None
+            return TransitionRank(.0, None, None, None, self.origin, None)
 
         trigger = self.factory(request)
         rank = await run_or_return(trigger.rank())
         score *= self.weight * (rank or 0.0)
 
-        return score, trigger, self.dest, self.do_not_register
+        if origin:
+            actual_origin = import_class(origin)
+        else:
+            actual_origin = None
+
+        return TransitionRank(
+            score=score,
+            trigger=trigger,
+            dest=self.dest,
+            dnr=self.do_not_register,
+            transition_origin=self.origin,
+            actual_origin=actual_origin,
+        )

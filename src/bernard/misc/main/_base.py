@@ -1,5 +1,6 @@
 # coding: utf-8
 import argparse
+import logging
 
 
 def make_parser():
@@ -55,6 +56,18 @@ def make_parser():
     return parser
 
 
+def configure_logger():
+    """
+    Configure logs to be a little bit more readable
+    """
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s %(name)-25s %(levelname)-8s %(message)s',
+        datefmt='%H:%M',
+    )
+
+
 def main():
     """
     Run the appropriate main function according to the output of the parser.
@@ -66,6 +79,8 @@ def main():
     if not hasattr(args, 'action'):
         parser.print_help()
         exit(1)
+
+    configure_logger()
 
     if args.action == 'sheet':
         from bernard.misc.sheet_sync import main as main_sheet

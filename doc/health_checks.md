@@ -7,7 +7,7 @@ explanation associated.
 
 ## 00001 - Missing fail method
 
-When you use the context's `@inject()` decorator with a non-empty `require` 
+When you use the context's `@inject()` decorator with a non-empty `require`
 list then it might happen that the required context entry goes missing. In this
 case, your state is required to have a fail method which will be called in
 stead of the handler. The default name of this method is `missing_context` but
@@ -32,3 +32,8 @@ In the `PLATFORMS` list, you need to specify a class name.
 
 Something is missing in the configuration. The error message should give you
 information about what exactly is missing.
+
+## 00006 - FSM App error
+
+The way you use your FSM app is incorrect. You'll find details in the
+error message.

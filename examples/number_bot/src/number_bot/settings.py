@@ -60,30 +60,28 @@ DEFAULT_STATE = 'number_bot.states.NumberBotState'
 PLATFORMS = [
     {
         'class': 'bernard.platforms.facebook.platform.Facebook',
-        'settings': [
-            {
-                'security_token': getenv('FB_SECURITY_TOKEN'),
-                'app_id': getenv('FB_APP_ID'),
-                'app_secret': getenv('FB_APP_SECRET'),
-                'page_id': getenv('FB_PAGE_ID'),
-                'page_token': getenv('FB_PAGE_TOKEN'),
-                'greeting': [{
-                    'locale': 'default',
-                    'text': 'Welcome to the number bot!',
-                }],
-                'menu': [{
-                    'locale': 'default',
-                    'call_to_actions': [
-                        {
-                            'title': 'Guess a number',
-                            'type': 'postback',
-                            'payload': '{"action": "guess"}',
-                        },
-                    ]
-                }],
-                'whitelist': make_whitelist()
-            },
-        ],
+        'settings': {
+            'security_token': getenv('FB_SECURITY_TOKEN'),
+            'app_id': getenv('FB_APP_ID'),
+            'app_secret': getenv('FB_APP_SECRET'),
+            'page_id': getenv('FB_PAGE_ID'),
+            'page_token': getenv('FB_PAGE_TOKEN'),
+            'greeting': [{
+                'locale': 'default',
+                'text': 'Welcome to the number bot!',
+            }],
+            'menu': [{
+                'locale': 'default',
+                'call_to_actions': [
+                    {
+                        'title': 'Guess a number',
+                        'type': 'postback',
+                        'payload': '{"action": "guess"}',
+                    },
+                ]
+            }],
+            'whitelist': make_whitelist()
+        },
     }
 ]
 
