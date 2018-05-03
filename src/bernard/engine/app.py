@@ -32,10 +32,6 @@ from bernard.utils import (
     import_class,
 )
 
-from ._base import (
-    TransitionManager,
-    UpcomingState,
-)
 from .request import (
     Request,
 )
@@ -49,6 +45,8 @@ from .state import (
 from .transition import (
     Target,
     Transition,
+    TransitionManager,
+    UpcomingState,
 )
 
 logger = logging.getLogger('bernard.engine.app')
