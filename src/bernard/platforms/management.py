@@ -16,8 +16,8 @@ from bernard.conf import (
 from bernard.core.health_check import (
     HealthCheckFail,
 )
-from bernard.engine.fsm import (
-    FSM,
+from bernard.engine import (
+    Engine,
 )
 from bernard.engine.platform import (
     Platform,
@@ -63,15 +63,15 @@ class PlatformManager(object):
     That is the core of the system. This class has the responsibilities to:
 
         - Create the platform instances
-        - Create the FSM
-        - Hook the platforms to the FSM
+        - Create the Engine
+        - Hook the platforms to the Engine
 
     For unit testing purposes it can also wipe existing instances and start
     again.
     """
 
     def __init__(self):
-        self.fsm = None
+        self.engine = None
         self.platforms = {}
         self._classes = self._index_classes()
 
@@ -80,17 +80,17 @@ class PlatformManager(object):
         """
         Check if initialization was done
         """
-        return self.fsm is not None
+        return self.engine is not None
 
     async def init(self):
         """
-        Creates the FSM and the cache. It can be called several times to reset
-        stuff (like for unit tests...).
+        Creates the Engine and the cache. It can be called several times to
+        reset stuff (like for unit tests...).
 
         It also runs all the health checks in order to see if everything is fit
         for running.
         """
-        self.fsm = FSM()
+        self.engine = Engine()
 
         checks = []
 
@@ -102,16 +102,16 @@ class PlatformManager(object):
         if checks:
             exit(1)
 
-        await self.fsm.async_init()
+        await self.engine.async_init()
 
         self.platforms = {}
 
     async def run_checks(self):
         """
-        Run checks on itself and on the FSM
+        Run checks on itself and on the Engine
         """
 
-        async for check in self.fsm.health_check():
+        async for check in self.engine.health_check():
             yield check
 
         async for check in self.self_check():
@@ -183,7 +183,7 @@ class PlatformManager(object):
             p._id = custom_id
 
         await p.async_init()
-        p.on_message(self.fsm.handle_message)
+        p.on_message(self.engine.handle_message)
         p.hook_up(router)
         return p
 
