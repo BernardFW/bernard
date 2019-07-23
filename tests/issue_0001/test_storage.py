@@ -113,8 +113,8 @@ def redis_store():
     yield store
 
     async def shutdown():
-        store.pool.close()
-        await store.pool.wait_closed()
+        store.redis.close()
+        await store.redis.wait_closed()
 
     run(shutdown())
 
