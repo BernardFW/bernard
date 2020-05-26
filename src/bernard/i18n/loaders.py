@@ -13,11 +13,12 @@ from typing import (
     Union,
 )
 
-import aionotify
-
 from bernard.conf import (
     settings,
 )
+
+if settings.I18N_LIVE_RELOAD:
+    import aionotify
 
 logger = logging.getLogger('bernard.i18n.loaders')
 
