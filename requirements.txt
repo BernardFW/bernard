@@ -5,36 +5,89 @@
 #    pip-compile --output-file requirements.txt requirements.in
 #
 aiohttp==2.1.0
+    # via
+    #   -r requirements.in
+    #   raven-aiohttp
 aionotify==0.2.0
+    # via -r requirements.in
 aioredis==0.3.1
-async-timeout==1.2.1      # via aiohttp
+    # via -r requirements.in
+async-timeout==1.2.1
+    # via aiohttp
 babel==2.4.0
-certifi==2018.4.16        # via requests
-chardet==3.0.4            # via aiohttp, requests
-contextlib2==0.5.5        # via raven
+    # via -r requirements.in
+certifi==2018.4.16
+    # via requests
+chardet==3.0.4
+    # via
+    #   aiohttp
+    #   requests
+contextlib2==0.5.5
+    # via raven
 facepy==1.0.9
+    # via -r requirements.in
 google-api-python-client==1.6.2
-hiredis==0.2.0            # via aioredis
-httplib2==0.10.3          # via google-api-python-client, oauth2client
-idna==2.6                 # via requests
+    # via -r requirements.in
+hiredis==0.2.0
+    # via aioredis
+httplib2==0.10.3
+    # via
+    #   google-api-python-client
+    #   oauth2client
+idna==2.6
+    # via requests
 isort==4.3.4
-multidict==2.1.6          # via aiohttp, yarl
-oauth2client==4.1.1       # via google-api-python-client
-py==1.4.34                # via pytest
-pyasn1-modules==0.0.9     # via oauth2client
-pyasn1==0.2.3             # via oauth2client, pyasn1-modules, rsa
+    # via -r requirements.in
+multidict==2.1.6
+    # via
+    #   aiohttp
+    #   yarl
+oauth2client==4.1.1
+    # via google-api-python-client
+py==1.4.34
+    # via pytest
+pyasn1-modules==0.0.9
+    # via oauth2client
+pyasn1==0.2.3
+    # via
+    #   oauth2client
+    #   pyasn1-modules
+    #   rsa
 pyjwt==1.5.0
+    # via -r requirements.in
 pytest==3.1.2
+    # via -r requirements.in
 python-dateutil==2.6.0
+    # via -r requirements.in
 pytz==2017.2
+    # via
+    #   -r requirements.in
+    #   babel
 raven-aiohttp==0.5.0
+    # via -r requirements.in
 raven==6.1.0
-requests==2.18.4          # via facepy
-rsa==3.4.2                # via oauth2client
-six==1.10.0               # via facepy, google-api-python-client, oauth2client, python-dateutil
+    # via
+    #   -r requirements.in
+    #   raven-aiohttp
+requests==2.18.4
+    # via facepy
+rsa==4.1
+    # via oauth2client
+six==1.10.0
+    # via
+    #   facepy
+    #   google-api-python-client
+    #   oauth2client
+    #   python-dateutil
 ujson==1.35
+    # via -r requirements.in
 unidecode==0.4.20
-uritemplate==3.0.0        # via google-api-python-client
-urllib3==1.22             # via requests
+    # via -r requirements.in
+uritemplate==3.0.0
+    # via google-api-python-client
+urllib3==1.22
+    # via requests
 uvloop==0.8.0
-yarl==0.10.2              # via aiohttp
+    # via -r requirements.in
+yarl==0.10.2
+    # via aiohttp
