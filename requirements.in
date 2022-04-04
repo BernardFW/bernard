@@ -15,6 +15,7 @@ facepy
 
 # For Google import
 google-api-python-client
+oauth2client
 
 # For dev
 pytest

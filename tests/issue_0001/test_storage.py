@@ -113,8 +113,8 @@ def redis_store():
     yield store
 
     async def shutdown():
-        store.pool.close()
-        await store.pool.wait_closed()
+        store.redis.close()
+        await store.redis.wait_closed()
 
     run(shutdown())
 
@@ -129,8 +129,7 @@ def test_redis_register_store(redis_store):
     assert redis_store.register_key(key) == register_key
 
     async def test():
-        with await redis_store.pool as r:
-            await r.delete(register_key, lock_key)
+        await redis_store.redis.delete(register_key, lock_key)
 
         async with redis_store.work_on_register(key) as reg:
             assert reg == {}

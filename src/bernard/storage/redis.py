@@ -36,14 +36,14 @@ class BaseRedisStore(object):
         self.db_id = db_id
         self.min_pool_size = min_pool_size
         self.max_pool_size = max_pool_size
-        self.pool = None
+        self.redis = None
 
     async def async_init(self):
         """
         Handle here the asynchronous part of the init.
         """
 
-        self.pool = await aioredis.create_pool(
+        self.redis = await aioredis.create_redis_pool(
             (self.host, self.port),
             db=self.db_id,
             minsize=self.min_pool_size,

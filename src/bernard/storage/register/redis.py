@@ -46,16 +46,15 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Here we use a SETNX-based algorithm. It's quite shitty, change it.
         """
         for _ in range(0, 1000):
-            with await self.pool as r:
-                just_set = await r.set(
-                    self.lock_key(key),
-                    '',
-                    expire=settings.REGISTER_LOCK_TIME,
-                    exist=r.SET_IF_NOT_EXIST,
-                )
+            just_set = await self.redis.set(
+                self.lock_key(key),
+                '',
+                expire=settings.REGISTER_LOCK_TIME,
+                exist=self.redis.SET_IF_NOT_EXIST,
+            )
 
-                if just_set:
-                    break
+            if just_set:
+                break
 
             await asyncio.sleep(settings.REDIS_POLL_INTERVAL)
 
@@ -64,8 +63,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Remove the lock.
         """
 
-        with await self.pool as r:
-            await r.delete(self.lock_key(key))
+        await self.redis.delete(self.lock_key(key))
 
     async def _get(self, key: Text) -> Dict[Text, Any]:
         """
@@ -74,8 +72,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         """
 
         try:
-            with await self.pool as r:
-                return ujson.loads(await r.get(self.register_key(key)))
+            return ujson.loads(await self.redis.get(self.register_key(key)))
         except (ValueError, TypeError):
             return {}
 
@@ -84,5 +81,4 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Replace the register with a new value.
         """
 
-        with await self.pool as r:
-            await r.set(self.register_key(key), ujson.dumps(data))
+        await self.redis.set(self.register_key(key), ujson.dumps(data))

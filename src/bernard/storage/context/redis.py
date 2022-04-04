@@ -22,11 +22,9 @@ class RedisContextStore(BaseRedisStore, BaseContextStore):
 
     async def _get(self, key: Text) -> Context:
         try:
-            with await self.pool as r:
-                return ujson.loads(await r.get(key))
+            return ujson.loads(await self.redis.get(key))
         except (ValueError, TypeError):
             return {}
 
     async def _set(self, key: Text, data: Context) -> None:
-        with await self.pool as r:
-            await r.set(key, ujson.dumps(data), expire=self.ttl)
+        await self.redis.set(key, ujson.dumps(data), expire=self.ttl)
