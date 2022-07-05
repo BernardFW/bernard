@@ -5,7 +5,7 @@ babel>=2.8,<2.9
 pyjwt>=1.7,<1.8
 python-dateutil>=2.8,<2.9
 pytz
-ujson>=2.0,<2.1
+ujson>=2.0,<5.5
 unidecode>=1.0,<1.1
 uvloop>=0.14,<0.15
 raven-aiohttp>=0.7,<0.8
