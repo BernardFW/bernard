@@ -4,6 +4,9 @@ jobs:
   tests:
     name: Run tests
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
