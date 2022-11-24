@@ -12,7 +12,7 @@ class BaseRedisStore(object):
         db_id: int = 0,
         min_pool_size: int = 5,
         max_pool_size: int = 10,
-        **kwargs
+        **kwargs,
     ):
         """
         Give here the connection parameters to the redis. There is going to be
@@ -42,10 +42,6 @@ class BaseRedisStore(object):
         Handle here the asynchronous part of the init.
         """
 
-        self.redis = await aioredis.create_redis_pool(
-            (self.host, self.port),
-            db=self.db_id,
-            minsize=self.min_pool_size,
-            maxsize=self.max_pool_size,
-            loop=asyncio.get_event_loop(),
+        self.redis = await aioredis.from_url(
+            f"redis://{self.host}:{self.port}/{self.db_id}"
         )

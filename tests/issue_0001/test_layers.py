@@ -39,7 +39,7 @@ LOADER_CONFIG = {
 }
 
 
-@pytest.fixture("module")
+@pytest.fixture(scope="module")
 def reg():
     return Register(
         {
@@ -67,7 +67,7 @@ class MockTextMessage(BaseMessage):
 
 
 # noinspection PyShadowingNames
-@pytest.fixture("module")
+@pytest.fixture
 def text_request(reg):
     req = Request(
         MockTextMessage(),

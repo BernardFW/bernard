@@ -36,12 +36,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Here we use a SETNX-based algorithm. It's quite shitty, change it.
         """
         for _ in range(0, 1000):
-            just_set = await self.redis.set(
-                self.lock_key(key),
-                "",
-                expire=settings.REGISTER_LOCK_TIME,
-                exist=self.redis.SET_IF_NOT_EXIST,
-            )
+            just_set = await self.redis.setnx(self.lock_key(key), "")
 
             if just_set:
                 break

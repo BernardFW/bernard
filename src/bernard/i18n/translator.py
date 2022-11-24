@@ -1,4 +1,4 @@
-from collections import Mapping, defaultdict
+from collections import defaultdict
 from itertools import zip_longest
 from random import SystemRandom
 from string import Formatter
@@ -7,6 +7,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NamedTuple,
     Optional,
     Text,

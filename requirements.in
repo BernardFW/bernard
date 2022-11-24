@@ -5,8 +5,7 @@ ujson
 unidecode
 pyjwt
 uvloop
-raven
-raven-aiohttp
+sentry-sdk
 babel
 python-dateutil
 pytz
@@ -20,3 +19,4 @@ oauth2client
 # For dev
 pytest
 isort
+black

@@ -2,9 +2,20 @@ import asyncio
 import importlib
 import re
 from asyncio import iscoroutine
-from collections import Mapping, Sequence
 from itertools import chain
-from typing import Any, Coroutine, Dict, Iterator, List, Text, Tuple, Type, Union
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Sequence,
+    Text,
+    Tuple,
+    Type,
+    Union,
+)
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 

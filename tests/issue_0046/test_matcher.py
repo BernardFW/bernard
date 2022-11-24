@@ -47,7 +47,7 @@ class MockRequest(Request):
         return None
 
 
-@pytest.fixture("module")
+@pytest.fixture(scope="module")
 def reg():
     return Register({})
 

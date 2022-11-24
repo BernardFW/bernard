@@ -3,12 +3,13 @@ import importlib
 import logging
 from typing import Dict, Iterator, List, Optional, Text, Tuple, Type
 
+import sentry_sdk
+
 from bernard.conf import settings
 from bernard.core.health_check import HealthCheckFail
 from bernard.i18n.translator import MissingTranslationError
 from bernard.layers import RawText
 from bernard.middleware import MiddlewareManager
-from bernard.reporter import reporter
 from bernard.storage.register import BaseRegisterStore, Register
 from bernard.utils import import_class
 
@@ -224,10 +225,10 @@ class FSM(object):
                 logger.debug("Jumping to state: %s", state_class.name())
                 state = state_class(request, responder, trigger, user_trigger)
                 await state.handle()
-        except Exception:
+        except Exception as e:
             logger.exception('Error while handling state "%s"', state.name())
             responder.clear()
-            reporter.report(request, state.name())
+            sentry_sdk.capture_exception(e)
             await state.error()
 
         return state
@@ -278,11 +279,11 @@ class FSM(object):
                 state, trigger, dnr = await self._build_state(
                     request, message, responder
                 )
-            except Exception:
+            except Exception as e:
                 logger.exception(
                     "Error while finding a transition from %s", reg.get(Register.STATE)
                 )
-                reporter.report(request, None)
+                sentry_sdk.capture_exception(e)
                 return
 
             if state is None:
@@ -302,10 +303,10 @@ class FSM(object):
                 responder.send([RawText(str(e))])
                 await responder.flush(request)
 
-                reporter.report(request, state.name())
+                sentry_sdk.capture_exception(e)
                 logger.exception("Missing translation in state %s", state.name())
-            except Exception:
-                reporter.report(request, state.name())
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.exception("Could not flush content after %s", state.name())
             else:
                 if not dnr:

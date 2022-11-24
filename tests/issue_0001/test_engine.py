@@ -55,7 +55,7 @@ ENGINE_SETTINGS_FILE = os.path.join(
 )
 
 
-@pytest.fixture("module")
+@pytest.fixture(scope="module")
 def reg():
     return Register(
         {
@@ -124,7 +124,7 @@ class MockRequest(Request):
 
 
 # noinspection PyShadowingNames
-@pytest.fixture("module")
+@pytest.fixture
 def text_request(reg):
     req = MockRequest(
         MockTextMessage("foo"),

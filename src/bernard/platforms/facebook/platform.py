@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 import aiohttp
 import jwt
+import sentry_sdk
 import ujson
 from aiohttp.web import Request as HttpRequest
 from aiohttp.web_response import Response, json_response
@@ -26,7 +27,6 @@ from bernard.i18n.translator import render
 from bernard.layers import BaseLayer, Stack
 from bernard.layers.definitions import BaseMediaLayer
 from bernard.media.base import BaseMedia, UrlMedia
-from bernard.reporter import reporter
 from bernard.utils import dict_is_subset
 
 from .layers import (
@@ -485,9 +485,9 @@ class Facebook(SimplePlatform):
         try:
             async with post as r:
                 await self._handle_fb_response(r)
-        except Exception:
+        except Exception as e:
             logger.exception("Page %s: %s could not be set", page_id, log_name)
-            reporter.report()
+            sentry_sdk.capture_exception(e)
         else:
             logger.info("Page %s: %s was updated", page_id, log_name)
 
