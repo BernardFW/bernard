@@ -1,26 +1,12 @@
-from typing import (
-    Callable,
-    List,
-    Text,
-    Type,
-    TypeVar,
-)
+from typing import Callable, List, Text, Type, TypeVar
 
-from bernard.conf import (
-    settings,
-)
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.utils import (
-    import_class,
-)
+from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
+from bernard.utils import import_class
 
-from ._builtins import (
-    BaseMiddleware,
-)
+from ._builtins import BaseMiddleware
 
-C = TypeVar('C')
+C = TypeVar("C")
 
 
 class Caller(object):
@@ -31,10 +17,9 @@ class Caller(object):
     It's useful to stack middlewares.
     """
 
-    def __init__(self,
-                 manager: 'MiddlewareManager',
-                 name: Text,
-                 final: Callable) -> None:
+    def __init__(
+        self, manager: "MiddlewareManager", name: Text, final: Callable
+    ) -> None:
         """
         Save attributes and generate the proper stack of calls.
 
@@ -86,13 +71,14 @@ class Caller(object):
             out = await self.final(*args, **kwargs)
             self._complete = True
         else:
-            raise ValueError('A caller cannot be called twice')
+            raise ValueError("A caller cannot be called twice")
 
         if is_root and not self._complete:
             # noinspection PyUnresolvedReferences
             faulty = self._stack[self._pos - 1].__qualname__
-            raise TypeError(f'"{faulty}" did not call `self.next()`, or '
-                            f'forgot to await it')
+            raise TypeError(
+                f'"{faulty}" did not call `self.next()`, or ' f"forgot to await it"
+            )
 
         return out
 
@@ -121,7 +107,7 @@ class MiddlewareManager(object):
         self.middlewares: List[Type[BaseMiddleware]] = []
 
     @classmethod
-    def instance(cls) -> 'MiddlewareManager':
+    def instance(cls) -> "MiddlewareManager":
         """
         Creates, initializes and returns a unique MiddlewareManager instance.
         """
@@ -141,9 +127,8 @@ class MiddlewareManager(object):
             assert isinstance(settings.MIDDLEWARES, list)
         except AssertionError:
             yield HealthCheckFail(
-                '00005',
-                'The "MIDDLEWARES" configuration key should be assigned '
-                'to a list',
+                "00005",
+                'The "MIDDLEWARES" configuration key should be assigned ' "to a list",
             )
             return
 
@@ -152,15 +137,14 @@ class MiddlewareManager(object):
                 c = import_class(m)
             except (TypeError, ValueError, AttributeError, ImportError):
                 yield HealthCheckFail(
-                    '00005',
+                    "00005",
                     f'Cannot import middleware "{m}"',
                 )
             else:
                 if not issubclass(c, BaseMiddleware):
                     yield HealthCheckFail(
-                        '00005',
-                        f'Middleware "{m}" does not implement '
-                        f'"BaseMiddleware"',
+                        "00005",
+                        f'Middleware "{m}" does not implement ' f'"BaseMiddleware"',
                     )
 
     def init(self):

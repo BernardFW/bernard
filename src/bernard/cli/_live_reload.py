@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Live reload of code works the following way:
 
@@ -13,19 +12,13 @@ import asyncio
 import logging
 import subprocess
 import sys
-from os import (
-    environ,
-    path,
-)
+from os import environ, path
 
 import aionotify
 
-from bernard.conf import (
-    list_config_files,
-    settings,
-)
+from bernard.conf import list_config_files, settings
 
-logger = logging.getLogger('bernard.cli')
+logger = logging.getLogger("bernard.cli")
 
 
 def _list_module_dirs():
@@ -55,7 +48,7 @@ def _list_syntax_error():
     """
 
     _, e, _ = sys.exc_info()
-    if isinstance(e, SyntaxError) and hasattr(e, 'filename'):
+    if isinstance(e, SyntaxError) and hasattr(e, "filename"):
         yield path.dirname(e.filename)
 
 
@@ -76,7 +69,7 @@ def exit_for_reload():
     This triggers an exit with the appropriate signal for the parent to reload
     the code.
     """
-    logger.warning('Reloading!')
+    logger.warning("Reloading!")
     sys.exit(settings.CODE_RELOAD_EXIT)
 
 
@@ -85,20 +78,20 @@ async def start_child():
     Start the child process that will look for changes in modules.
     """
 
-    logger.info('Started to watch for code changes')
+    logger.info("Started to watch for code changes")
 
     loop = asyncio.get_event_loop()
     watcher = aionotify.Watcher()
 
     flags = (
-        aionotify.Flags.MODIFY |
-        aionotify.Flags.DELETE |
-        aionotify.Flags.ATTRIB |
-        aionotify.Flags.MOVED_TO |
-        aionotify.Flags.MOVED_FROM |
-        aionotify.Flags.CREATE |
-        aionotify.Flags.DELETE_SELF |
-        aionotify.Flags.MOVE_SELF
+        aionotify.Flags.MODIFY
+        | aionotify.Flags.DELETE
+        | aionotify.Flags.ATTRIB
+        | aionotify.Flags.MOVED_TO
+        | aionotify.Flags.MOVED_FROM
+        | aionotify.Flags.CREATE
+        | aionotify.Flags.DELETE_SELF
+        | aionotify.Flags.MOVE_SELF
     )
 
     watched_dirs = list_dirs()
@@ -112,7 +105,7 @@ async def start_child():
         evt = await watcher.get_event()
         file_path = path.join(evt.alias, evt.name)
 
-        if file_path in watched_dirs or file_path.endswith('.py'):
+        if file_path in watched_dirs or file_path.endswith(".py"):
             await asyncio.sleep(settings.CODE_RELOAD_DEBOUNCE)
             break
 
@@ -128,7 +121,7 @@ def start_parent():
     while True:
         args = [sys.executable] + sys.argv
         new_environ = environ.copy()
-        new_environ["_IN_CHILD"] = 'yes'
+        new_environ["_IN_CHILD"] = "yes"
         ret = subprocess.call(args, env=new_environ)
 
         if ret != settings.CODE_RELOAD_EXIT:

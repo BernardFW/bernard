@@ -1,17 +1,7 @@
-# coding: utf-8
-from collections import (
-    Mapping,
-    defaultdict,
-)
-from itertools import (
-    zip_longest,
-)
-from random import (
-    SystemRandom,
-)
-from string import (
-    Formatter,
-)
+from collections import Mapping, defaultdict
+from itertools import zip_longest
+from random import SystemRandom
+from string import Formatter
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,26 +14,13 @@ from typing import (
     Union,
 )
 
-from bernard.conf import (
-    settings,
-)
-from bernard.i18n.loaders import (
-    TransDict,
-)
-from bernard.utils import (
-    import_class,
-    run,
-)
+from bernard.conf import settings
+from bernard.i18n.loaders import TransDict
+from bernard.utils import import_class, run
 
-from ._formatter import (
-    I18nFormatter,
-)
-from .loaders import (
-    BaseTranslationLoader,
-)
-from .utils import (
-    LocalesDict,
-)
+from ._formatter import I18nFormatter
+from .loaders import BaseTranslationLoader
+from .utils import LocalesDict
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -156,7 +133,7 @@ class Sentence(object):
         """
         return bool(self.items)
 
-    def update(self, new: 'Sentence', flags: Flags):
+    def update(self, new: "Sentence", flags: Flags):
         """
         Erase items with the specified flags and insert the new items from
         the other sentence instead.
@@ -209,7 +186,7 @@ class SentenceGroup(object):
     def check(self):
         return len(self.sentences) and all(x.check() for x in self.sentences)
 
-    def update(self, group: 'SentenceGroup', flags: Flags) -> None:
+    def update(self, group: "SentenceGroup", flags: Flags) -> None:
         """
         This object is considered to be a "global" sentence group while the
         other one is flags-specific. All data related to the specified flags
@@ -239,8 +216,7 @@ class SortingDict(object):
     """
 
     def __init__(self):
-        self.data: Dict[Text, SentenceGroup] = \
-            defaultdict(lambda: SentenceGroup())
+        self.data: Dict[Text, SentenceGroup] = defaultdict(lambda: SentenceGroup())
 
     def extract(self):
         """
@@ -279,17 +255,17 @@ class WordDictionary(LocalesDict):
         """
 
         for loader in settings.I18N_TRANSLATION_LOADERS:
-            loader_class = import_class(loader['loader'])
+            loader_class = import_class(loader["loader"])
             instance = loader_class()
             instance.on_update(self.update)
-            run(instance.load(**loader['params']))
+            run(instance.load(**loader["params"]))
 
     def parse_item(self, key, value, flags: Flags) -> Optional[TransItem]:
         """
         Parse an item (and more specifically its key).
         """
 
-        parts = key.split('+')
+        parts = key.split("+")
         pure_key = parts[0]
 
         try:
@@ -312,10 +288,9 @@ class WordDictionary(LocalesDict):
             flags=flags,
         )
 
-    def update_lang(self,
-                    lang: Optional[Text],
-                    data: List[Tuple[Text, Text]],
-                    flags: Flags):
+    def update_lang(
+        self, lang: Optional[Text], data: List[Tuple[Text, Text]], flags: Flags
+    ):
         """
         Update translations for one specific lang
         """
@@ -345,13 +320,15 @@ class WordDictionary(LocalesDict):
         for lang, lang_data in data.items():
             self.update_lang(lang, lang_data, flags)
 
-    def get(self,
-            key: Text,
-            count: Optional[int]=None,
-            formatter: Formatter=None,
-            locale: Text=None,
-            params: Optional[Dict[Text, Any]]=None,
-            flags: Optional[Flags]=None) -> List[Text]:
+    def get(
+        self,
+        key: Text,
+        count: Optional[int] = None,
+        formatter: Formatter = None,
+        locale: Text = None,
+        params: Optional[Dict[Text, Any]] = None,
+        flags: Optional[Flags] = None,
+    ) -> List[Text]:
         """
         Get the appropriate translation given the specified parameters.
 
@@ -367,15 +344,14 @@ class WordDictionary(LocalesDict):
             params = {}
 
         if count is not None:
-            raise TranslationError('Count parameter is not supported yet')
+            raise TranslationError("Count parameter is not supported yet")
 
         locale = self.choose_locale(locale)
 
         try:
             group: SentenceGroup = self.dict[locale][key]
         except KeyError:
-            raise MissingTranslationError('Translation "{}" does not exist'
-                                          .format(key))
+            raise MissingTranslationError('Translation "{}" does not exist'.format(key))
 
         try:
             trans = group.render(flags or {})
@@ -388,8 +364,7 @@ class WordDictionary(LocalesDict):
                     out.append(formatter.format(line, **params))
         except KeyError as e:
             raise MissingParamError(
-                'Parameter "{}" missing to translate "{}"'
-                .format(e.args[0], key)
+                'Parameter "{}" missing to translate "{}"'.format(e.args[0], key)
             )
         else:
             return out
@@ -401,13 +376,15 @@ class StringToTranslate(object):
     rendered.
     """
 
-    LINE_SEPARATOR = '\n'
+    LINE_SEPARATOR = "\n"
 
-    def __init__(self,
-                 wd: WordDictionary,
-                 key: Text,
-                 count: Optional[int]=None,
-                 params: Dict[Text, Any] = None):
+    def __init__(
+        self,
+        wd: WordDictionary,
+        key: Text,
+        count: Optional[int] = None,
+        params: Dict[Text, Any] = None,
+    ):
         if params is None:
             params = {}
 
@@ -417,10 +394,12 @@ class StringToTranslate(object):
         self.params = params
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.key == other.key and
-                self.count == other.count and
-                self.params == other.params)
+        return (
+            self.__class__ == other.__class__
+            and self.key == other.key
+            and self.count == other.count
+            and self.params == other.params
+        )
 
     def __repr__(self):
         parts = [repr(self.key)]
@@ -429,13 +408,13 @@ class StringToTranslate(object):
             parts.append(repr(self.count))
 
         for k, v in self.params.items():
-            parts.append('{}={}'.format(k, repr(v)))
+            parts.append("{}={}".format(k, repr(v)))
 
-        return 't({})'.format(', '.join(parts))
+        return "t({})".format(", ".join(parts))
 
-    async def _resolve_params(self,
-                              params: Dict[Text, Any],
-                              request: Optional['Request']):
+    async def _resolve_params(
+        self, params: Dict[Text, Any], request: Optional["Request"]
+    ):
         """
         If any StringToTranslate was passed as parameter then it is rendered
         at this moment.
@@ -481,8 +460,9 @@ class StringToTranslate(object):
             locale = self.wd.list_locales()[0]
             flags = {}
 
-        rp = MiddlewareManager.instance()\
-            .get('resolve_trans_params', self._resolve_params)
+        rp = MiddlewareManager.instance().get(
+            "resolve_trans_params", self._resolve_params
+        )
 
         resolved_params = await rp(self.params, request)
 
@@ -502,7 +482,7 @@ class Translator(object):
     That's the basic object that you use to produce translations.
     """
 
-    def __init__(self, wd: Optional[WordDictionary]=None):
+    def __init__(self, wd: Optional[WordDictionary] = None):
         """
         We need the word dictionary here in order to pass it to the string to
         translate when it will get rendered.
@@ -531,8 +511,9 @@ class Translator(object):
 
         return self(key)
 
-    def __call__(self, key: Text, count: Optional[int]=None, **params) \
-            -> StringToTranslate:
+    def __call__(
+        self, key: Text, count: Optional[int] = None, **params
+    ) -> StringToTranslate:
         """
         Allow the `t('FOO')` style.
 
@@ -556,19 +537,18 @@ def serialize(text: TransText):
 
     if isinstance(text, str):
         return {
-            'type': 'string',
-            'value': text,
+            "type": "string",
+            "value": text,
         }
     elif isinstance(text, StringToTranslate):
         return {
-            'type': 'trans',
-            'key': text.key,
-            'count': text.count,
-            'params': text.params,
+            "type": "trans",
+            "key": text.key,
+            "count": text.count,
+            "params": text.params,
         }
     else:
-        raise ValueError('Cannot accept type "{}"'
-                         .format(text.__class__.__name__))
+        raise ValueError('Cannot accept type "{}"'.format(text.__class__.__name__))
 
 
 def unserialize(wd: WordDictionary, text: Dict):
@@ -577,37 +557,36 @@ def unserialize(wd: WordDictionary, text: Dict):
     """
 
     if not isinstance(text, Mapping):
-        raise ValueError('Text has not the right format')
+        raise ValueError("Text has not the right format")
 
     try:
-        t = text['type']
+        t = text["type"]
 
-        if t == 'string':
-            return text['value']
-        elif t == 'trans':
-            if not isinstance(text['params'], Mapping):
-                raise ValueError('Params should be a dictionary')
+        if t == "string":
+            return text["value"]
+        elif t == "trans":
+            if not isinstance(text["params"], Mapping):
+                raise ValueError("Params should be a dictionary")
 
-            for param in text['params']:
+            for param in text["params"]:
                 if not isinstance(param, str):
-                    raise ValueError('Params are not all text-keys')
+                    raise ValueError("Params are not all text-keys")
 
             return StringToTranslate(
                 wd=wd,
-                key=text['key'],
-                count=text['count'],
-                params=text['params'],
+                key=text["key"],
+                count=text["count"],
+                params=text["params"],
             )
         else:
             raise ValueError('Unknown type "{}"'.format(t))
     except KeyError:
-        raise ValueError('Not enough information to unserialize')
+        raise ValueError("Not enough information to unserialize")
 
 
 async def render(
-        text: TransText,
-        request: Optional['Request'],
-        multi_line=False) -> Union[Text, List[Text]]:
+    text: TransText, request: Optional["Request"], multi_line=False
+) -> Union[Text, List[Text]]:
     """
     Render either a normal string either a string to translate into an actual
     string for the specified request.
@@ -618,9 +597,9 @@ async def render(
     elif isinstance(text, StringToTranslate):
         out = await text.render_list(request)
     else:
-        raise TypeError('Provided text cannot be rendered')
+        raise TypeError("Provided text cannot be rendered")
 
     if multi_line:
         return out
     else:
-        return ' '.join(out)
+        return " ".join(out)

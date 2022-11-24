@@ -1,25 +1,10 @@
-# coding: utf-8
-from asyncio import (
-    get_event_loop,
-)
-from functools import (
-    wraps,
-)
-from hashlib import (
-    sha256,
-)
-from typing import (
-    Any,
-    Dict,
-    Tuple,
-)
+from asyncio import get_event_loop
+from functools import wraps
+from hashlib import sha256
+from typing import Any, Dict, Tuple
 
-from bernard.conf import (
-    settings,
-)
-from bernard.utils import (
-    import_class,
-)
+from bernard.conf import settings
+from bernard.utils import import_class
 
 
 class BaseAnalytics(object):
@@ -29,16 +14,14 @@ class BaseAnalytics(object):
     empty and document it.
     """
 
-    _instances: Dict[Tuple[Any, ...], 'BaseAnalytics'] = {}
+    _instances: Dict[Tuple[Any, ...], "BaseAnalytics"] = {}
 
     async def async_init(self):
         pass
 
-    async def page_view(self,
-                        url: str,
-                        title: str,
-                        user_id: str,
-                        user_lang: str='') -> None:
+    async def page_view(
+        self, url: str, title: str, user_id: str, user_lang: str = ""
+    ) -> None:
         """
         Track the view of a page
         """
@@ -55,7 +38,7 @@ class BaseAnalytics(object):
         return h.hexdigest()
 
     @classmethod
-    async def instance(cls, *args) -> 'BaseAnalytics':
+    async def instance(cls, *args) -> "BaseAnalytics":
         if args not in cls._instances:
             cls._instances[args] = cls(*args)
             await cls._instances[args].async_init()
@@ -71,6 +54,7 @@ def new_task(func):
     async def wrapper(self, *args, **kwargs):
         loop = get_event_loop()
         loop.create_task(func(self, *args, **kwargs))
+
     return wrapper
 
 
@@ -80,5 +64,5 @@ async def providers():
     """
 
     for provider in settings.ANALYTICS_PROVIDERS:
-        cls: BaseAnalytics = import_class(provider['class'])
-        yield await cls.instance(*provider['args'])
+        cls: BaseAnalytics = import_class(provider["class"])
+        yield await cls.instance(*provider["args"])

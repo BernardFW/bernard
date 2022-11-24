@@ -1,30 +1,18 @@
-# coding: utf-8
 import csv
 import os
-from tempfile import (
-    NamedTemporaryFile,
-)
+from tempfile import NamedTemporaryFile
 
 import httplib2
-from apiclient import (
-    discovery,
-)
-from oauth2client import (
-    client,
-    tools,
-)
-from oauth2client.file import (
-    Storage,
-)
-
 import ujson
-from bernard.conf import (
-    settings,
-)
+from apiclient import discovery
+from oauth2client import client, tools
+from oauth2client.file import Storage
 
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
-APPLICATION_NAME = 'Bernard Sheet Sync'
-DISCOVERY_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
+from bernard.conf import settings
+
+SCOPES = "https://www.googleapis.com/auth/spreadsheets.readonly"
+APPLICATION_NAME = "Bernard Sheet Sync"
+DISCOVERY_URL = "https://sheets.googleapis.com/$discovery/rest?version=v4"
 
 
 class SheetDownloader(object):
@@ -55,8 +43,8 @@ class SheetDownloader(object):
         self.credentials = self._get_credentials()
         self.http = self.credentials.authorize(httplib2.Http())
         self.service = discovery.build(
-            'sheets',
-            'v4',
+            "sheets",
+            "v4",
             http=self.http,
             discoveryServiceUrl=DISCOVERY_URL,
         )
@@ -72,30 +60,30 @@ class SheetDownloader(object):
             Credentials, the obtained credential.
         """
 
-        home_dir = os.path.expanduser('~')
-        credential_dir = os.path.join(home_dir, '.credentials')
+        home_dir = os.path.expanduser("~")
+        credential_dir = os.path.join(home_dir, ".credentials")
 
         if not os.path.exists(credential_dir):
             os.makedirs(credential_dir)
 
         credential_path = os.path.join(
             credential_dir,
-            'bernard.sheets-sync.json',
+            "bernard.sheets-sync.json",
         )
 
         store = Storage(credential_path)
         credentials = store.get()
 
         if not credentials or credentials.invalid:
-            with NamedTemporaryFile(suffix='.json') as f:
-                data = ujson.dumps(settings.GOOGLE_SHEET_SYNC['credentials'])
-                f.write(data.encode('utf-8'))
+            with NamedTemporaryFile(suffix=".json") as f:
+                data = ujson.dumps(settings.GOOGLE_SHEET_SYNC["credentials"])
+                f.write(data.encode("utf-8"))
                 f.flush()
                 flow = client.flow_from_clientsecrets(f.name, SCOPES)
 
             flow.user_agent = APPLICATION_NAME
             credentials = tools.run_flow(flow, store, self.flags)
-            print('Storing credentials to ' + credential_path)
+            print("Storing credentials to " + credential_path)
 
         return credentials
 
@@ -105,15 +93,20 @@ class SheetDownloader(object):
         `file_path` file.
         """
 
-        result = self.service.spreadsheets().values().get(
-            spreadsheetId=sheet_id,
-            range=cell_range,
-        ).execute()
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=sheet_id,
+                range=cell_range,
+            )
+            .execute()
+        )
 
-        values = result.get('values', [])
+        values = result.get("values", [])
 
-        with open(file_path, newline='', encoding='utf-8', mode='w') as f:
-            writer = csv.writer(f, lineterminator='\n')
+        with open(file_path, newline="", encoding="utf-8", mode="w") as f:
+            writer = csv.writer(f, lineterminator="\n")
 
             for row in values:
                 writer.writerow(row)
@@ -127,10 +120,10 @@ def main(flags):
     dl = SheetDownloader(flags)
     dl.init()
 
-    for file_info in settings.GOOGLE_SHEET_SYNC['files']:
-        print('Downloading {}'.format(file_info['path']))
+    for file_info in settings.GOOGLE_SHEET_SYNC["files"]:
+        print("Downloading {}".format(file_info["path"]))
         dl.download_sheet(
-            file_info['path'],
-            file_info['sheet'],
-            file_info['range'],
+            file_info["path"],
+            file_info["sheet"],
+            file_info["range"],
         )

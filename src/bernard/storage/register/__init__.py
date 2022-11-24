@@ -1,6 +1,4 @@
-# coding: utf-8
-
-from .base import Register, BaseRegisterStore
+from .base import BaseRegisterStore, Register
 
 try:
     # noinspection PyUnresolvedReferences

@@ -1,30 +1,17 @@
-# coding: utf-8
 """
 Trigram computation utils. Although the algorithm are pretty different, the
 code here is inspired from PostgreSQL's pg_trgm module and should give similar
 or identical results.
 """
 import re
-from collections import (
-    deque,
-)
-from typing import (
-    Iterable,
-    List,
-    Optional,
-    Text,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from collections import deque
+from typing import Iterable, List, Optional, Text, Tuple, TypeVar, Union
 
-from unidecode import (
-    unidecode,
-)
+from unidecode import unidecode
 
 RE_WHITESPACES = re.compile(r'[\W.,;?!\'"«»\-_\s]+')
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def normalize(string: Text) -> Text:
@@ -39,17 +26,18 @@ def normalize(string: Text) -> Text:
 
     string = string.lower()
     string = unidecode(string)
-    string = RE_WHITESPACES.sub(' ', string).strip()
+    string = RE_WHITESPACES.sub(" ", string).strip()
 
     return string
 
 
 def make_words(string: Text) -> List[Text]:
-    return string.split(' ')
+    return string.split(" ")
 
 
-def make_trigrams(i: Iterable[T]) \
-        -> Iterable[Tuple[Optional[T], Optional[T], Optional[T]]]:
+def make_trigrams(
+    i: Iterable[T],
+) -> Iterable[Tuple[Optional[T], Optional[T], Optional[T]]]:
     """
     Compute all trigrams of an iterable and yield them. You probably want
     to do something like:
@@ -61,7 +49,7 @@ def make_trigrams(i: Iterable[T]) \
     def nxt():
         q.append(x)
         q.popleft()
-        return tuple(c if c is not None else ' ' for c in q)
+        return tuple(c if c is not None else " " for c in q)
 
     for x in i:
         yield nxt()
@@ -84,9 +72,9 @@ class Trigram(object):
         self._trigrams = set(t for w in self._words for t in make_trigrams(w))
 
     def __repr__(self):
-        return f'Trigram({repr(self._norm)})'
+        return f"Trigram({repr(self._norm)})"
 
-    def similarity(self, other: 'Trigram') -> float:
+    def similarity(self, other: "Trigram") -> float:
         """
         Compute the similarity with the provided other trigram.
         """
@@ -99,7 +87,7 @@ class Trigram(object):
 
         return count / (len1 + len2 - count)
 
-    def __mod__(self, other: 'Trigram') -> float:
+    def __mod__(self, other: "Trigram") -> float:
         """
         Shortcut notation using modulo symbol.
         """
@@ -112,10 +100,7 @@ class Matcher(object):
     """
 
     def __init__(self, trigrams: List[Union[Trigram, Tuple[Trigram, ...]]]):
-        self.trigrams = [
-            (t,) if isinstance(t, Trigram) else t
-            for t in trigrams
-        ]
+        self.trigrams = [(t,) if isinstance(t, Trigram) else t for t in trigrams]
 
     def _match(self, local: Tuple[Trigram, ...], other: Trigram) -> float:
         """
@@ -144,7 +129,7 @@ class Matcher(object):
         return self.similarity(other)
 
 
-L = TypeVar('L')
+L = TypeVar("L")
 
 
 class LabelMatcher(object):

@@ -1,22 +1,12 @@
-# coding: utf-8
 import asyncio
-from typing import (
-    Any,
-    Dict,
-    Text,
-)
+from typing import Any, Dict, Text
 
 import ujson
-from bernard.conf import (
-    settings,
-)
 
-from ..redis import (
-    BaseRedisStore,
-)
-from .base import (
-    BaseRegisterStore,
-)
+from bernard.conf import settings
+
+from ..redis import BaseRedisStore
+from .base import BaseRegisterStore
 
 
 class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
@@ -31,13 +21,13 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         """
         Compute the internal lock key for the specified key
         """
-        return 'register::lock:{}'.format(key)
+        return "register::lock:{}".format(key)
 
     def register_key(self, key: Text) -> Text:
         """
         Compute the internal register content key for the specified key
         """
-        return 'register::content:{}'.format(key)
+        return "register::content:{}".format(key)
 
     async def _start(self, key: Text) -> None:
         """
@@ -48,7 +38,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         for _ in range(0, 1000):
             just_set = await self.redis.set(
                 self.lock_key(key),
-                '',
+                "",
                 expire=settings.REGISTER_LOCK_TIME,
                 exist=self.redis.SET_IF_NOT_EXIST,
             )

@@ -1,58 +1,44 @@
-# coding: utf-8
 import asyncio
-from collections import (
-    defaultdict,
-)
+from collections import defaultdict
 
 import pytest
 
-from bernard.conf.utils import (
-    patch_conf,
-)
-from bernard.storage.register import (
-    BaseRegisterStore,
-    RedisRegisterStore,
-    Register,
-)
-from bernard.utils import (
-    RoDict,
-    RoList,
-    make_ro,
-    run,
-)
+from bernard.conf.utils import patch_conf
+from bernard.storage.register import BaseRegisterStore, RedisRegisterStore, Register
+from bernard.utils import RoDict, RoList, make_ro, run
 
 SAMPLE_DATA = {
-    'foo': 'bar',
-    'one': {
-        'two': 'three',
+    "foo": "bar",
+    "one": {
+        "two": "three",
     },
-    'four': ['five', 'six', {'seven': 'eight'}],
-    'nine': 10,
-    'eleven': 12.0,
-    'thirteen': None,
-    'fourteen': True,
+    "four": ["five", "six", {"seven": "eight"}],
+    "nine": 10,
+    "eleven": 12.0,
+    "thirteen": None,
+    "fourteen": True,
 }
 
 
 def test_make_ro():
     d = make_ro(SAMPLE_DATA)
     assert isinstance(d, RoDict)
-    assert d['foo'] == 'bar'
+    assert d["foo"] == "bar"
     assert len(d) == 7
     assert [x for x in d] == [x for x in SAMPLE_DATA]
-    assert isinstance(d['four'], RoList)
-    assert isinstance(d['nine'], int)
-    assert isinstance(d['eleven'], float)
-    assert d['thirteen'] is None
-    assert isinstance(d['fourteen'], bool)
-    assert len(d['four']) == 3
-    assert isinstance(d['four'][2], RoDict)
+    assert isinstance(d["four"], RoList)
+    assert isinstance(d["nine"], int)
+    assert isinstance(d["eleven"], float)
+    assert d["thirteen"] is None
+    assert isinstance(d["fourteen"], bool)
+    assert len(d["four"]) == 3
+    assert isinstance(d["four"][2], RoDict)
 
 
 def test_ro_on_ro():
     d = make_ro(SAMPLE_DATA)
     d = make_ro(d)
-    assert d['foo'] == 'bar'
+    assert d["foo"] == "bar"
 
 
 def test_ro_fail():
@@ -71,42 +57,42 @@ class MockRegisterStore(BaseRegisterStore):
         self.called = defaultdict(lambda: False)
 
     async def _start(self, key):
-        assert key == 'my-key'
-        self.called['start'] = True
+        assert key == "my-key"
+        self.called["start"] = True
 
     async def _get(self, key):
-        assert key == 'my-key'
-        self.called['get'] = True
-        return {'fake_context': True}
+        assert key == "my-key"
+        self.called["get"] = True
+        return {"fake_context": True}
 
     async def _replace(self, key, data):
-        assert key == 'my-key'
-        assert data == {'new_data': True}
-        self.called['replace'] = True
+        assert key == "my-key"
+        assert data == {"new_data": True}
+        self.called["replace"] = True
 
     async def _finish(self, key):
-        assert key == 'my-key'
-        self.called['finish'] = True
+        assert key == "my-key"
+        self.called["finish"] = True
 
 
 def test_register_context_manager():
     store = MockRegisterStore()
 
     async def test():
-        async with store.work_on_register('my-key') as reg:
-            assert store.called['start']
-            assert store.called['get']
+        async with store.work_on_register("my-key") as reg:
+            assert store.called["start"]
+            assert store.called["get"]
             assert isinstance(reg, Register)
-            assert reg == {'fake_context': True}
-            reg.replacement = {'new_data': True}
+            assert reg == {"fake_context": True}
+            reg.replacement = {"new_data": True}
 
-        assert store.called['replace']
-        assert store.called['finish']
+        assert store.called["replace"]
+        assert store.called["finish"]
 
     run(test())
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def redis_store():
     store = RedisRegisterStore()
     run(store.async_init())
@@ -121,9 +107,9 @@ def redis_store():
 
 # noinspection PyShadowingNames
 def test_redis_register_store(redis_store):
-    key = 'my-key'
-    register_key = 'register::content:my-key'
-    lock_key = 'register::lock:my-key'
+    key = "my-key"
+    register_key = "register::content:my-key"
+    lock_key = "register::lock:my-key"
 
     assert redis_store.lock_key(key) == lock_key
     assert redis_store.register_key(key) == register_key
@@ -133,17 +119,17 @@ def test_redis_register_store(redis_store):
 
         async with redis_store.work_on_register(key) as reg:
             assert reg == {}
-            reg.replacement = {'key_was_set': True}
+            reg.replacement = {"key_was_set": True}
 
         async with redis_store.work_on_register(key) as reg:
-            assert reg == {'key_was_set': True}
+            assert reg == {"key_was_set": True}
 
     run(test())
 
 
 # noinspection PyShadowingNames
 def test_redis_register_lock(redis_store):
-    key = 'my-key'
+    key = "my-key"
 
     async def test_one():
         async with redis_store.work_on_register(key):
@@ -153,9 +139,11 @@ def test_redis_register_lock(redis_store):
         async with redis_store.work_on_register(key):
             pass
 
-    with patch_conf({'REDIS_POLL_INTERVAL': 0.001}):
+    with patch_conf({"REDIS_POLL_INTERVAL": 0.001}):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.gather(
-            test_one(),
-            test_two(),
-        ))
+        loop.run_until_complete(
+            asyncio.gather(
+                test_one(),
+                test_two(),
+            )
+        )

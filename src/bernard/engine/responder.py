@@ -1,14 +1,6 @@
-# coding: utf-8
-from typing import (
-    TYPE_CHECKING,
-    List,
-    Union,
-)
+from typing import TYPE_CHECKING, List, Union
 
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
+from bernard.layers import BaseLayer, Stack
 
 if TYPE_CHECKING:
     from .platform import Platform
@@ -39,7 +31,7 @@ class Responder(object):
     won't need to change anything.
     """
 
-    def __init__(self, platform: 'Platform'):
+    def __init__(self, platform: "Platform"):
         self.platform = platform
         self._stacks = []  # type: List[Stack]
 
@@ -52,8 +44,9 @@ class Responder(object):
             stack = Stack(stack)
 
         if not self.platform.accept(stack):
-            raise UnacceptableStack('The platform does not allow "{}"'
-                                    .format(stack.describe()))
+            raise UnacceptableStack(
+                'The platform does not allow "{}"'.format(stack.describe())
+            )
 
         self._stacks.append(stack)
 
@@ -64,7 +57,7 @@ class Responder(object):
 
         self._stacks = []
 
-    async def flush(self, request: 'Request'):
+    async def flush(self, request: "Request"):
         """
         Send all queued messages.
 
@@ -76,10 +69,10 @@ class Responder(object):
         for stack in self._stacks:
             await stack.convert_media(self.platform)
 
-        func = MiddlewareManager.instance().get('flush', self._flush)
+        func = MiddlewareManager.instance().get("flush", self._flush)
         await func(request, self._stacks)
 
-    async def _flush(self, request: 'Request', stacks: List[Stack]):
+    async def _flush(self, request: "Request", stacks: List[Stack]):
         """
         Perform the actual sending to platform. This is separated from
         `flush()` since it needs to be inside a middleware call.
@@ -88,7 +81,7 @@ class Responder(object):
         for stack in stacks:
             await self.platform.send(request, stack)
 
-    async def make_transition_register(self, request: 'Request'):
+    async def make_transition_register(self, request: "Request"):
         """
         Use all underlying stacks to generate the next transition register.
         """

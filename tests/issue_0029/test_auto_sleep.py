@@ -1,18 +1,9 @@
 import pytest
 
-from bernard import (
-    layers as lyr,
-)
-from bernard.middleware import (
-    AutoSleep,
-    MiddlewareManager,
-)
-from bernard.platforms.facebook import (
-    layers as fbl,
-)
-from bernard.utils import (
-    run,
-)
+from bernard import layers as lyr
+from bernard.middleware import AutoSleep, MiddlewareManager
+from bernard.platforms.facebook import layers as fbl
+from bernard.utils import run
 
 
 async def alist(it):
@@ -34,17 +25,14 @@ def test_reading_time():
 def test_expand():
     a = AutoSleep(None)
 
-    t = lyr.RawText('hello')
-    assert run(alist(a.expand(None, t))) \
-        == [lyr.RawText('hello'), lyr.Sleep(0.7)]
+    t = lyr.RawText("hello")
+    assert run(alist(a.expand(None, t))) == [lyr.RawText("hello"), lyr.Sleep(0.7)]
 
-    t = lyr.Text('hello')
-    assert run(alist(a.expand(None, t))) \
-        == [lyr.RawText('hello'), lyr.Sleep(0.7)]
+    t = lyr.Text("hello")
+    assert run(alist(a.expand(None, t))) == [lyr.RawText("hello"), lyr.Sleep(0.7)]
 
-    t = lyr.MultiText('hello')
-    assert run(alist(a.expand(None, t))) \
-        == [lyr.RawText('hello'), lyr.Sleep(0.7)]
+    t = lyr.MultiText("hello")
+    assert run(alist(a.expand(None, t))) == [lyr.RawText("hello"), lyr.Sleep(0.7)]
 
     t = lyr.Sleep(1.0)
     assert run(alist(a.expand(None, t))) == [lyr.Sleep(1.0)]
@@ -61,20 +49,29 @@ def test_flush():
     mm = MiddlewareManager.instance()
     mm.middlewares = [AutoSleep]
 
-    flush = mm.get('flush', do_flush)
-    run(flush(None, [lyr.Stack([lyr.Text('hello'), lyr.Text('wassup')])]))
+    flush = mm.get("flush", do_flush)
+    run(flush(None, [lyr.Stack([lyr.Text("hello"), lyr.Text("wassup")])]))
 
-    assert args == [None, [
-        lyr.Stack([
-            lyr.RawText('hello'),
-        ]),
-        lyr.Stack([
-            lyr.Sleep(0.7),
-        ]),
-        lyr.Stack([
-            lyr.RawText('wassup'),
-        ]),
-    ]]
+    assert args == [
+        None,
+        [
+            lyr.Stack(
+                [
+                    lyr.RawText("hello"),
+                ]
+            ),
+            lyr.Stack(
+                [
+                    lyr.Sleep(0.7),
+                ]
+            ),
+            lyr.Stack(
+                [
+                    lyr.RawText("wassup"),
+                ]
+            ),
+        ],
+    ]
 
     assert kwargs == {}
 
@@ -90,26 +87,42 @@ def test_flush_qr():
     mm = MiddlewareManager.instance()
     mm.middlewares = [AutoSleep]
 
-    flush = mm.get('flush', do_flush)
-    run(flush(None, [
-        lyr.Stack([
-            lyr.Text('hello'),
-            lyr.Text('wassup'),
-            fbl.QuickRepliesList([]),
-        ]),
-    ]))
+    flush = mm.get("flush", do_flush)
+    run(
+        flush(
+            None,
+            [
+                lyr.Stack(
+                    [
+                        lyr.Text("hello"),
+                        lyr.Text("wassup"),
+                        fbl.QuickRepliesList([]),
+                    ]
+                ),
+            ],
+        )
+    )
 
-    assert args == [None, [
-        lyr.Stack([
-            lyr.RawText('hello'),
-        ]),
-        lyr.Stack([
-            lyr.Sleep(0.7),
-        ]),
-        lyr.Stack([
-            lyr.RawText('wassup'),
-            fbl.QuickRepliesList([]),
-        ]),
-    ]]
+    assert args == [
+        None,
+        [
+            lyr.Stack(
+                [
+                    lyr.RawText("hello"),
+                ]
+            ),
+            lyr.Stack(
+                [
+                    lyr.Sleep(0.7),
+                ]
+            ),
+            lyr.Stack(
+                [
+                    lyr.RawText("wassup"),
+                    fbl.QuickRepliesList([]),
+                ]
+            ),
+        ],
+    ]
 
     assert kwargs == {}

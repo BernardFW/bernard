@@ -1,40 +1,17 @@
-from hashlib import (
-    md5,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Text,
-)
+from hashlib import md5
+from typing import Any, Dict, List, Optional, Text
 
 import ujson
-from bernard.engine.request import (
-    Request,
-)
-from bernard.i18n.intents import (
-    Intent,
-)
-from bernard.i18n.translator import (
-    TransText,
-    render,
-)
-from bernard.layers import (
-    Markdown,
-    Stack,
-    Text as TextLayer,
-)
-from bernard.layers.definitions import (
-    BaseLayer,
-)
-from bernard.utils import (
-    patch_dict,
-)
 
-from ._utils import (
-    set_reply_markup,
-)
+from bernard.engine.request import Request
+from bernard.i18n.intents import Intent
+from bernard.i18n.translator import TransText, render
+from bernard.layers import Markdown, Stack
+from bernard.layers import Text as TextLayer
+from bernard.layers.definitions import BaseLayer
+from bernard.utils import patch_dict
+
+from ._utils import set_reply_markup
 
 
 class InlineKeyboardButton(object):
@@ -51,15 +28,14 @@ class InlineKeyboardButton(object):
 
     async def serialize(self, request: Optional[Request] = None) -> Dict:
         return {
-            'text': await render(self.text, request),
+            "text": await render(self.text, request),
         }
 
     def __repr__(self):
         return self.text
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.text == other.text
+        return self.__class__ == other.__class__ and self.text == other.text
 
 
 class InlineKeyboardUrlButton(InlineKeyboardButton):
@@ -81,9 +57,11 @@ class InlineKeyboardUrlButton(InlineKeyboardButton):
         )
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.text == other.text \
-               and self.url == other.url
+        return (
+            self.__class__ == other.__class__
+            and self.text == other.text
+            and self.url == other.url
+        )
 
 
 class InlineKeyboardCallbackButton(InlineKeyboardButton):
@@ -98,16 +76,17 @@ class InlineKeyboardCallbackButton(InlineKeyboardButton):
         )
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.text == other.text \
-               and self.payload == other.payload
+        return (
+            self.__class__ == other.__class__
+            and self.text == other.text
+            and self.payload == other.payload
+        )
 
 
 class InlineKeyboardSwitchInlineQueryButton(InlineKeyboardButton):
     async def serialize(self, request: Optional[Request] = None) -> Dict:
         return patch_dict(
-            await super(InlineKeyboardSwitchInlineQueryButton, self)
-            .serialize(request),
+            await super(InlineKeyboardSwitchInlineQueryButton, self).serialize(request),
             switch_inline_query=True,
         )
 
@@ -115,8 +94,9 @@ class InlineKeyboardSwitchInlineQueryButton(InlineKeyboardButton):
 class InlineKeyboardSwitchInlineQueryCurrentChatButton(InlineKeyboardButton):
     async def serialize(self, request: Optional[Request] = None) -> Dict:
         return patch_dict(
-            await super(InlineKeyboardSwitchInlineQueryCurrentChatButton, self)
-            .serialize(request),
+            await super(
+                InlineKeyboardSwitchInlineQueryCurrentChatButton, self
+            ).serialize(request),
             switch_inline_query_current_chat=True,
         )
 
@@ -145,12 +125,11 @@ class InlineKeyboard(BaseLayer):
             out.append(row_ser)
 
         return {
-            'inline_keyboard': out,
+            "inline_keyboard": out,
         }
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.rows == other.rows
+        return self.__class__ == other.__class__ and self.rows == other.rows
 
     def _repr_arguments(self):
         return self.rows
@@ -176,33 +155,35 @@ class AnswerCallbackQuery(BaseLayer):
         self.url = url
         self.cache_time = cache_time
 
-    async def serialize(self,
-                        callback_query_id: Text,
-                        request: Optional[Request] = None) -> Dict:
+    async def serialize(
+        self, callback_query_id: Text, request: Optional[Request] = None
+    ) -> Dict:
         out = {
-            'callback_query_id': callback_query_id,
+            "callback_query_id": callback_query_id,
         }
 
         if self.text:
-            out['text'] = await render(self.text, request)
+            out["text"] = await render(self.text, request)
 
         if self.show_alert is not None:
-            out['show_alert'] = self.show_alert
+            out["show_alert"] = self.show_alert
 
         if self.url:
-            out['url'] = self.url
+            out["url"] = self.url
 
         if self.cache_time is not None:
-            out['cache_time'] = self.cache_time
+            out["cache_time"] = self.cache_time
 
         return out
 
     def __eq__(self, other):
-        return self.__class__ == other.__class \
-               and self.text == other.text \
-               and self.show_alert == other.show_alert \
-               and self.url == other.url \
-               and self.cache_time == other.cache_time
+        return (
+            self.__class__ == other.__class
+            and self.text == other.text
+            and self.show_alert == other.show_alert
+            and self.url == other.url
+            and self.cache_time == other.cache_time
+        )
 
     def _repr_arguments(self):
         return [self.text]
@@ -245,10 +226,12 @@ class Reply(BaseLayer):
 
 
 class KeyboardButton(object):
-    def __init__(self,
-                 text: TransText,
-                 choice: Optional[Text] = None,
-                 intent: Optional[Intent] = None) -> None:
+    def __init__(
+        self,
+        text: TransText,
+        choice: Optional[Text] = None,
+        intent: Optional[Intent] = None,
+    ) -> None:
         self.text = text
         self.choice = choice
         self.intent = intent
@@ -264,7 +247,7 @@ class KeyboardButton(object):
 
     async def serialize(self, request: Optional[Request] = None) -> Dict:
         return {
-            'text': await self.get_chosen_text(request),
+            "text": await self.get_chosen_text(request),
         }
 
 
@@ -290,7 +273,7 @@ class ReplyKeyboard(BaseLayer):
         keyboard: List[List[KeyboardButton]],
         resize_keyboard: Optional[bool] = None,
         one_time_keyboard: Optional[bool] = None,
-        selective: Optional[bool] = None
+        selective: Optional[bool] = None,
     ) -> None:
         """
         See https://core.telegram.org/bots/api#replykeyboardmarkup
@@ -302,19 +285,19 @@ class ReplyKeyboard(BaseLayer):
         self.selective = selective
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.keyboard == other.keyboard \
-               and self.resize_keyboard == other.resize_keyboard \
-               and self.one_time_keyboard == other.one_time_keyboard \
-               and self.selective == other.selective
+        return (
+            self.__class__ == other.__class__
+            and self.keyboard == other.keyboard
+            and self.resize_keyboard == other.resize_keyboard
+            and self.one_time_keyboard == other.one_time_keyboard
+            and self.selective == other.selective
+        )
 
     def _repr_arguments(self):
         return [[b.serialize() for b in r] for r in self.keyboard]
 
     async def serialize(self, request: Optional[Request] = None) -> Dict:
-        out = {
-            'keyboard': []
-        }
+        out = {"keyboard": []}
 
         for row in self.keyboard:
             row_ser = []
@@ -322,20 +305,20 @@ class ReplyKeyboard(BaseLayer):
             for button in row:
                 row_ser.append(await button.serialize(request))
 
-            out['keyboard'].append(row_ser)
+            out["keyboard"].append(row_ser)
 
         if self.resize_keyboard is not None:
-            out['resize_keyboard'] = self.resize_keyboard
+            out["resize_keyboard"] = self.resize_keyboard
 
         if self.one_time_keyboard is not None:
-            out['one_time_keyboard'] = self.one_time_keyboard
+            out["one_time_keyboard"] = self.one_time_keyboard
 
         if self.selective is not None:
-            out['selective'] = self.selective
+            out["selective"] = self.selective
 
         return out
 
-    async def patch_register(self, register: Dict, request: 'Request'):
+    async def patch_register(self, register: Dict, request: "Request"):
         choices = {}
 
         for row in self.keyboard:
@@ -347,12 +330,12 @@ class ReplyKeyboard(BaseLayer):
                         intent = None
 
                     choices[button.choice] = {
-                        'intent': intent,
-                        'text': await button.get_chosen_text(request),
+                        "intent": intent,
+                        "text": await button.get_chosen_text(request),
                     }
 
         if choices:
-            register['choices'] = choices
+            register["choices"] = choices
 
         return register
 
@@ -362,22 +345,21 @@ class ReplyKeyboardRemove(BaseLayer):
         self.selective = selective
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.selective == other.selective
+        return self.__class__ == other.__class__ and self.selective == other.selective
 
     def _repr_arguments(self):
         if self.selective:
-            return ['selective']
+            return ["selective"]
         else:
             return []
 
     def serialize(self) -> Dict:
         out = {
-            'remove_keyboard': True,
+            "remove_keyboard": True,
         }
 
         if self.selective is not None:
-            out['selective'] = self.selective
+            out["selective"] = self.selective
 
         return out
 
@@ -388,11 +370,13 @@ class InlineQuery(BaseLayer):
 
     @property
     def query(self):
-        return self.inline_query['query']
+        return self.inline_query["query"]
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.inline_query == other.inline_query
+        return (
+            self.__class__ == other.__class__
+            and self.inline_query == other.inline_query
+        )
 
     def _repr_arguments(self):
         return [self.query]
@@ -410,7 +394,7 @@ class InlineQueryResult(object):
         h = md5()
 
         for k in sorted(self.identifiers.keys()):
-            h.update(f'{k}={self.identifiers[k]}'.encode())
+            h.update(f"{k}={self.identifiers[k]}".encode())
 
         return h.hexdigest()
 
@@ -422,43 +406,44 @@ class InlineQueryResult(object):
 
     async def serialize(self, request: Optional[Request] = None):
         out = {
-            'type': self.TYPE,
-            'id': self.unique_id,
+            "type": self.TYPE,
+            "id": self.unique_id,
         }
 
         await set_reply_markup(out, request, self.input_stack)
 
         if self.input_stack.has_layer(TextLayer):
             txt = self.input_stack.get_layer(TextLayer)
-            out['input_message_content'] = {
-                'message_text': await render(txt.text, request),
+            out["input_message_content"] = {
+                "message_text": await render(txt.text, request),
             }
 
         if self.input_stack.has_layer(Markdown):
             txt = self.input_stack.get_layer(Markdown)
-            out['input_message_content'] = {
-                'message_text': await render(txt.text, request),
-                'parse_mode': 'Markdown',
+            out["input_message_content"] = {
+                "message_text": await render(txt.text, request),
+                "parse_mode": "Markdown",
             }
 
         return out
 
 
 class InlineQueryResultArticle(InlineQueryResult):
-    TYPE = 'article'
+    TYPE = "article"
 
-    def __init__(self,
-                 identifiers: Dict,
-                 input_stack: Stack,
-                 title: TransText,
-                 url: Optional[Text] = None,
-                 hide_url: Optional[bool] = None,
-                 description: Optional[Text] = None,
-                 thumb_url: Optional[Text] = None,
-                 thumb_width: Optional[int] = None,
-                 thumb_height: Optional[int] = None):
-        super(InlineQueryResultArticle, self) \
-            .__init__(identifiers, input_stack)
+    def __init__(
+        self,
+        identifiers: Dict,
+        input_stack: Stack,
+        title: TransText,
+        url: Optional[Text] = None,
+        hide_url: Optional[bool] = None,
+        description: Optional[Text] = None,
+        thumb_url: Optional[Text] = None,
+        thumb_width: Optional[int] = None,
+        thumb_height: Optional[int] = None,
+    ):
+        super(InlineQueryResultArticle, self).__init__(identifiers, input_stack)
 
         self.title = title
         self.url = url
@@ -471,9 +456,15 @@ class InlineQueryResultArticle(InlineQueryResult):
     async def serialize(self, request: Optional[Request] = None):
         out = await super(InlineQueryResultArticle, self).serialize(request)
 
-        out['title'] = await render(self.title, request)
-        fields = ['url', 'hide_url', 'description', 'thumb_url', 'thumb_width',
-                  'thumb_height']
+        out["title"] = await render(self.title, request)
+        fields = [
+            "url",
+            "hide_url",
+            "description",
+            "thumb_url",
+            "thumb_width",
+            "thumb_height",
+        ]
 
         for field in fields:
             if getattr(self, field) is not None:
@@ -482,37 +473,43 @@ class InlineQueryResultArticle(InlineQueryResult):
         return out
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.identifiers == other.identifiers \
-               and self.input_stack == other.input_stack \
-               and self.title == other.title \
-               and self.url == other.url \
-               and self.hide_url == other.hide_url \
-               and self.description == other.description \
-               and self.thumb_url == other.thumb_url \
-               and self.thumb_width == other.thumb_width \
-               and self.thumb_height == other.thumb_height
+        return (
+            self.__class__ == other.__class__
+            and self.identifiers == other.identifiers
+            and self.input_stack == other.input_stack
+            and self.title == other.title
+            and self.url == other.url
+            and self.hide_url == other.hide_url
+            and self.description == other.description
+            and self.thumb_url == other.thumb_url
+            and self.thumb_width == other.thumb_width
+            and self.thumb_height == other.thumb_height
+        )
 
     def __repr__(self):
         return self.title
 
 
 class AnswerInlineQuery(BaseLayer):
-    def __init__(self,
-                 results: List[InlineQueryResult],
-                 cache_time: Optional[int] = None,
-                 is_personal: Optional[bool] = None):
+    def __init__(
+        self,
+        results: List[InlineQueryResult],
+        cache_time: Optional[int] = None,
+        is_personal: Optional[bool] = None,
+    ):
         self.inline_query_id = None
         self.results = results
         self.cache_time = cache_time
         self.is_personal = is_personal
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-               and self.inline_query_id == other.inline_query_id \
-               and self.results == other.results \
-               and self.cache_time == other.cache_time \
-               and self.is_personal == other.is_personal
+        return (
+            self.__class__ == other.__class__
+            and self.inline_query_id == other.inline_query_id
+            and self.results == other.results
+            and self.cache_time == other.cache_time
+            and self.is_personal == other.is_personal
+        )
 
     def _repr_arguments(self):
         return self.results
@@ -524,15 +521,15 @@ class AnswerInlineQuery(BaseLayer):
             results.append(await result.serialize(request))
 
         out = {
-            'inline_query_id': self.inline_query_id,
-            'results': results,
+            "inline_query_id": self.inline_query_id,
+            "results": results,
         }
 
         if self.cache_time is not None:
-            out['cache_time'] = self.cache_time
+            out["cache_time"] = self.cache_time
 
         if self.is_personal is not None:
-            out['is_personal'] = self.is_personal
+            out["is_personal"] = self.is_personal
 
         return out
 
@@ -561,8 +558,7 @@ class BotCommand(BaseLayer):
         return [self.command]
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-            and self.command == other.command
+        return self.__class__ == other.__class__ and self.command == other.command
 
     def __hash__(self):
         return hash(self.command)

@@ -318,7 +318,6 @@ data for you.
 Now, let's create a `store.py` file:
 
 ```python
-# coding: utf-8
 from bernard.storage.context import (
     create_context_store,
 )
@@ -506,8 +505,6 @@ The last file to touch is `transitions.py`. Basically, it's all the
 arrows we see in the flow graph.
 
 ```python
-# coding: utf-8
-
 from bernard.engine import (
     Tr,
     triggers as trg,

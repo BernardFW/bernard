@@ -1,20 +1,19 @@
-# coding: utf-8
 import asyncio
-from typing import (
-    Text,
-)
+from typing import Text
 
 import aioredis
 
 
 class BaseRedisStore(object):
-    def __init__(self,
-                 host: Text='localhost',
-                 port: int=6379,
-                 db_id: int=0,
-                 min_pool_size: int=5,
-                 max_pool_size: int=10,
-                 **kwargs):
+    def __init__(
+        self,
+        host: Text = "localhost",
+        port: int = 6379,
+        db_id: int = 0,
+        min_pool_size: int = 5,
+        max_pool_size: int = 10,
+        **kwargs
+    ):
         """
         Give here the connection parameters to the redis. There is going to be
         a connection pool, so you can specify its size tool.

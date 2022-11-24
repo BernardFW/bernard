@@ -1,12 +1,8 @@
-# coding: utf-8
 import re
 import types
-from typing import (
-    Any,
-    Text,
-)
+from typing import Any, Text
 
-CONFIG_ATTR = re.compile(r'^[A-Z](?:_?[A-Z0-9]+)*$')
+CONFIG_ATTR = re.compile(r"^[A-Z](?:_?[A-Z0-9]+)*$")
 
 
 class Settings(dict):
@@ -47,15 +43,14 @@ class Settings(dict):
         """
 
         # noinspection PyUnresolvedReferences
-        module_ = types.ModuleType('settings')
+        module_ = types.ModuleType("settings")
         module_.__file__ = file_path
 
         try:
-            with open(file_path, encoding='utf-8') as f:
-                exec(compile(f.read(), file_path, 'exec'), module_.__dict__)
+            with open(file_path, encoding="utf-8") as f:
+                exec(compile(f.read(), file_path, "exec"), module_.__dict__)
         except IOError as e:
-            e.strerror = 'Unable to load configuration file ({})'\
-                .format(e.strerror)
+            e.strerror = "Unable to load configuration file ({})".format(e.strerror)
             raise
 
         for key in dir(module_):
@@ -75,29 +70,31 @@ class LazySettings(object):
         """
         Initialize internal cache.
         """
-        self.__dict__.update({
-            '__settings': None,
-            '_get_files': get_files,
-        })
+        self.__dict__.update(
+            {
+                "__settings": None,
+                "_get_files": get_files,
+            }
+        )
 
     @property
     def _settings(self) -> Settings:
         """
         Return the actual settings object, or create it if missing.
         """
-        if self.__dict__['__settings'] is None:
-            self.__dict__['__settings'] = Settings()
+        if self.__dict__["__settings"] is None:
+            self.__dict__["__settings"] = Settings()
             for file_path in self._get_files():
                 if file_path:
                     # noinspection PyProtectedMember
-                    self.__dict__['__settings']._load(file_path)
-        return self.__dict__['__settings']
+                    self.__dict__["__settings"]._load(file_path)
+        return self.__dict__["__settings"]
 
     def _reload(self) -> None:
         """
         Delete the inner settings object so it gets reloaded.
         """
-        self.__dict__['__settings'] = None
+        self.__dict__["__settings"] = None
 
     def __getattr__(self, key: Text) -> Any:
         """

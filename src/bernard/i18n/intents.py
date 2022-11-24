@@ -1,27 +1,11 @@
 # config: utf-8
-from typing import (
-    TYPE_CHECKING,
-    List,
-    Optional,
-    Text,
-    Tuple,
-)
+from typing import TYPE_CHECKING, List, Optional, Text, Tuple
 
-from bernard.conf import (
-    settings,
-)
-from bernard.utils import (
-    import_class,
-    run,
-)
+from bernard.conf import settings
+from bernard.utils import import_class, run
 
-from .loaders import (
-    BaseIntentsLoader,
-    IntentDict,
-)
-from .utils import (
-    LocalesFlatDict,
-)
+from .loaders import BaseIntentsLoader, IntentDict
+from .utils import LocalesFlatDict
 
 if TYPE_CHECKING:
     from bernard.engine.request import Request
@@ -44,10 +28,10 @@ class IntentsDb(LocalesFlatDict):
         """
 
         for loader in settings.I18N_INTENTS_LOADERS:
-            loader_class = import_class(loader['loader'])
+            loader_class = import_class(loader["loader"])
             instance = loader_class()
             instance.on_update(self.update)
-            run(instance.load(**loader['params']))
+            run(instance.load(**loader["params"]))
 
     def update(self, new_data: IntentDict):
         """
@@ -80,15 +64,15 @@ class Intent(object):
         self.key = key
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.key == other.key)
+        return self.__class__ == other.__class__ and self.key == other.key
 
     def __repr__(self):
-        return 'Intent({})'.format(repr(self.key))
+        return "Intent({})".format(repr(self.key))
 
     # noinspection PyUnusedLocal
-    async def strings(self, request: Optional['Request']=None) \
-            -> List[Tuple[Text, ...]]:
+    async def strings(
+        self, request: Optional["Request"] = None
+    ) -> List[Tuple[Text, ...]]:
         """
         For the given request, find the list of strings of that intent. If the
         intent does not exist, it will raise a KeyError.
@@ -108,7 +92,7 @@ class IntentsMaker(object):
     from anywhere in the code.
     """
 
-    def __init__(self, db: IntentsDb=None):
+    def __init__(self, db: IntentsDb = None):
         self.db = db
 
         if not self.db:

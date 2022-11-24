@@ -1,39 +1,18 @@
-# coding: utf-8
-from functools import (
-    wraps,
-)
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Text,
-    Union,
-)
+from functools import wraps
+from typing import Any, Dict, Iterator, List, Optional, Text, Union
 
-from bernard.conf import (
-    settings,
-)
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.engine.state import (
-    BaseState,
-)
-from bernard.engine.triggers import (
-    BaseTrigger,
-)
-from bernard.utils import (
-    import_class,
-)
+from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
+from bernard.engine.state import BaseState
+from bernard.engine.triggers import BaseTrigger
+from bernard.utils import import_class
 
 Context = Dict[Text, Any]
 
 
-def create_context_store(name='default',
-                         ttl=settings.CONTEXT_DEFAULT_TTL,
-                         store=settings.CONTEXT_STORE) -> 'BaseContextStore':
+def create_context_store(
+    name="default", ttl=settings.CONTEXT_DEFAULT_TTL, store=settings.CONTEXT_STORE
+) -> "BaseContextStore":
     """
     Create a context store. By default using the default configured context
     store, but you can use a custom class if you want to using the `store`
@@ -64,8 +43,8 @@ def create_context_store(name='default',
     See `BaseContextStore.inject()` for more info.
     """
 
-    store_class = import_class(store['class'])
-    return store_class(name=name, ttl=ttl, **store['params'])
+    store_class = import_class(store["class"])
+    return store_class(name=name, ttl=ttl, **store["params"])
 
 
 class BaseContextStore(object):
@@ -114,7 +93,7 @@ class BaseContextStore(object):
         """
         raise NotImplementedError
 
-    def open(self, key: Text) -> 'ContextContextManager':
+    def open(self, key: Text) -> "ContextContextManager":
         """
         Opens a context using the a Python context manager.
 
@@ -122,10 +101,12 @@ class BaseContextStore(object):
         """
         return ContextContextManager(key, self)
 
-    def inject(self,
-               require: Optional[List[Text]] = None,
-               fail: Text = 'missing_context',
-               var_name: Text = 'context'):
+    def inject(
+        self,
+        require: Optional[List[Text]] = None,
+        fail: Text = "missing_context",
+        var_name: Text = "context",
+    ):
         """
         This is a decorator intended to be used on states (and actually only
         work on state handlers).
@@ -146,10 +127,10 @@ class BaseContextStore(object):
             async def health_check(cls) -> Iterator[HealthCheckFail]:
                 if not callable(getattr(cls, fail, None)):
                     yield HealthCheckFail(
-                        '00001',
+                        "00001",
                         f'State "{cls.__name__}" has no method "{fail}" to '
-                        f'fall back to if required attributes are missing '
-                        f'from the context.'
+                        f"fall back to if required attributes are missing "
+                        f"from the context.",
                     )
 
             if require:
@@ -158,11 +139,11 @@ class BaseContextStore(object):
             @wraps(func)
             async def wrapper(state: Union[BaseState, BaseTrigger], **kwargs):
                 conv_id = state.request.conversation.id
-                key = f'context::{self.name}::{conv_id}'
+                key = f"context::{self.name}::{conv_id}"
 
                 x = self.open(key)
                 async with x as context:
-                    for item in (require or []):
+                    for item in require or []:
                         if item not in context:
                             return await getattr(state, fail)(state, **kwargs)
 
@@ -170,6 +151,7 @@ class BaseContextStore(object):
                     return await func(state, **kwargs)
 
             return wrapper
+
         return decorator
 
 

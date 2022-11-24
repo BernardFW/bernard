@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Settings management.
 
@@ -7,9 +6,10 @@ thanks to their teams.
 """
 import os
 from typing import List, Text
+
 from .loader import LazySettings
 
-ENVIRONMENT_VARIABLE = 'BERNARD_SETTINGS_FILE'
+ENVIRONMENT_VARIABLE = "BERNARD_SETTINGS_FILE"
 
 
 def list_config_files() -> List[Text]:
@@ -21,8 +21,8 @@ def list_config_files() -> List[Text]:
     """
 
     return [
-        os.path.join(os.path.dirname(__file__), 'default_settings.py'),
-        os.getenv(ENVIRONMENT_VARIABLE, ''),
+        os.path.join(os.path.dirname(__file__), "default_settings.py"),
+        os.getenv(ENVIRONMENT_VARIABLE, ""),
     ]
 
 

@@ -1,95 +1,33 @@
-# coding: utf-8
-
 import asyncio
 import hmac
 import logging
-from datetime import (
-    tzinfo,
-)
-from hashlib import (
-    sha1,
-    sha256,
-)
-from textwrap import (
-    wrap,
-)
-from typing import (
-    Any,
-    ByteString,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Text,
-    Tuple,
-)
-from urllib.parse import (
-    urljoin,
-)
+from datetime import tzinfo
+from hashlib import sha1, sha256
+from textwrap import wrap
+from typing import Any, ByteString, Dict, List, Optional, Set, Text, Tuple
+from urllib.parse import urljoin
 
 import aiohttp
 import jwt
-from aiohttp.web import (
-    Request as HttpRequest,
-)
-from aiohttp.web_response import (
-    Response,
-    json_response,
-)
-from aiohttp.web_urldispatcher import (
-    UrlDispatcher,
-)
-from dateutil import (
-    tz,
-)
-from facepy import (
-    SignedRequest,
-    SignedRequestError,
-)
-
 import ujson
-from bernard import (
-    layers as lyr,
-)
-from bernard.conf import (
-    settings,
-)
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.engine.platform import (
-    PlatformOperationError,
-    SimplePlatform,
-)
-from bernard.engine.request import (
-    BaseMessage,
-    Conversation,
-    Request,
-    User,
-)
-from bernard.engine.responder import (
-    Responder,
-)
-from bernard.i18n.translator import (
-    render,
-)
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
-from bernard.layers.definitions import (
-    BaseMediaLayer,
-)
-from bernard.media.base import (
-    BaseMedia,
-    UrlMedia,
-)
-from bernard.reporter import (
-    reporter,
-)
-from bernard.utils import (
-    dict_is_subset,
-)
+from aiohttp.web import Request as HttpRequest
+from aiohttp.web_response import Response, json_response
+from aiohttp.web_urldispatcher import UrlDispatcher
+from dateutil import tz
+from facepy import SignedRequest, SignedRequestError
+
+from bernard import layers as lyr
+from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
+from bernard.engine.platform import PlatformOperationError, SimplePlatform
+from bernard.engine.request import BaseMessage, Conversation, Request, User
+from bernard.engine.responder import Responder
+from bernard.i18n.translator import render
+from bernard.layers import BaseLayer, Stack
+from bernard.layers.definitions import BaseMediaLayer
+from bernard.media.base import BaseMedia, UrlMedia
+from bernard.reporter import reporter
+from bernard.utils import dict_is_subset
 
 from .layers import (
     ButtonTemplate,
@@ -100,13 +38,13 @@ from .layers import (
     QuickReply,
 )
 
-FB_API = '2.12'
-MESSAGES_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messages'
-PROFILE_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/me/messenger_profile'
+FB_API = "2.12"
+MESSAGES_ENDPOINT = f"https://graph.facebook.com/v{FB_API}/me/messages"
+PROFILE_ENDPOINT = f"https://graph.facebook.com/v{FB_API}/me/messenger_profile"
 GRAPH_ENDPOINT = f'https://graph.facebook.com/v{FB_API}/{"{}"}'
 
 
-logger = logging.getLogger('bernard.platform.facebook')
+logger = logging.getLogger("bernard.platform.facebook")
 
 
 def sign_message(body: ByteString, secret: Text) -> Text:
@@ -114,9 +52,7 @@ def sign_message(body: ByteString, secret: Text) -> Text:
     Compute a message's signature.
     """
 
-    return 'sha1={}'.format(
-        hmac.new(secret.encode(), body, sha1).hexdigest()
-    )
+    return "sha1={}".format(hmac.new(secret.encode(), body, sha1).hexdigest())
 
 
 class FacebookUser(User):
@@ -125,11 +61,13 @@ class FacebookUser(User):
     ID.
     """
 
-    def __init__(self,
-                 fbid: Text,
-                 page_id: Text,
-                 facebook: 'Facebook',
-                 message: 'FacebookMessage'):
+    def __init__(
+        self,
+        fbid: Text,
+        page_id: Text,
+        facebook: "Facebook",
+        message: "FacebookMessage",
+    ):
         self.fbid = fbid
         self.page_id = page_id
         self.facebook = facebook
@@ -141,7 +79,7 @@ class FacebookUser(User):
         """
         Transforms a Facebook user ID into a unique user ID.
         """
-        return 'facebook:user:{}'.format(fbid)
+        return "facebook:user:{}".format(fbid)
 
     async def _get_user(self):
         """
@@ -150,8 +88,7 @@ class FacebookUser(User):
 
         if self._cache is None:
             try:
-                self._cache = \
-                    await self.facebook.get_user(self.fbid, self.page_id)
+                self._cache = await self.facebook.get_user(self.fbid, self.page_id)
             except PlatformOperationError:
                 self._cache = {}
         return self._cache
@@ -174,8 +111,8 @@ class FacebookUser(User):
         name is missing, use the last name.
         """
         u = await self._get_user()
-        f = u.get('first_name', '').strip()
-        l = u.get('last_name', '').strip()
+        f = u.get("first_name", "").strip()
+        l = u.get("last_name", "").strip()
 
         return f or l
 
@@ -186,7 +123,7 @@ class FacebookUser(User):
         u = await self._get_user()
 
         try:
-            return User.Gender(u.get('gender'))
+            return User.Gender(u.get("gender"))
         except ValueError:
             return User.Gender.unknown
 
@@ -198,13 +135,13 @@ class FacebookUser(User):
         """
 
         u = await self._get_user()
-        diff = float(u.get('timezone', 0)) * 3600.0
+        diff = float(u.get("timezone", 0)) * 3600.0
 
-        return tz.tzoffset('ITC', diff)
+        return tz.tzoffset("ITC", diff)
 
     async def get_locale(self) -> Text:
         u = await self._get_user()
-        return u.get('locale', '')
+        return u.get("locale", "")
 
 
 class FacebookConversation(Conversation):
@@ -221,7 +158,7 @@ class FacebookConversation(Conversation):
         Facebook ID into conversation ID. So far we just handle user-to-bot
         cases, but who knows it might change in the future.
         """
-        return 'facebook:conversation:user:{}'.format(fbid)
+        return "facebook:conversation:user:{}".format(fbid)
 
 
 class FacebookMessage(BaseMessage):
@@ -239,14 +176,14 @@ class FacebookMessage(BaseMessage):
         """
         The platform is always Facebook
         """
-        return 'facebook'
+        return "facebook"
 
     def get_user(self) -> FacebookUser:
         """
         Generate a Facebook user instance
         """
         return FacebookUser(
-            self._event['sender']['id'],
+            self._event["sender"]["id"],
             self.get_page_id(),
             self._facebook,
             self,
@@ -256,43 +193,47 @@ class FacebookMessage(BaseMessage):
         """
         Generate a Facebook conversation instance
         """
-        return FacebookConversation(self._event['sender']['id'])
+        return FacebookConversation(self._event["sender"]["id"])
 
     def get_layers(self) -> List[BaseLayer]:
         """
         Return all layers that can be found in the message.
         """
         out = []
-        msg = self._event.get('message', {})
+        msg = self._event.get("message", {})
 
-        if 'text' in msg:
-            out.append(lyr.RawText(msg['text']))
+        if "text" in msg:
+            out.append(lyr.RawText(msg["text"]))
 
-        for attachment in msg.get('attachments') or []:
-            if attachment['type'] == 'image':
-                out.append(lyr.Image(UrlMedia(attachment['payload']['url'])))
-            elif attachment['type'] == 'audio':
-                out.append(lyr.Audio(UrlMedia(attachment['payload']['url'])))
-            elif attachment['type'] == 'file':
-                out.append(lyr.File(UrlMedia(attachment['payload']['url'])))
-            elif attachment['type'] == 'video':
-                out.append(lyr.Video(UrlMedia(attachment['payload']['url'])))
-            elif attachment['type'] == 'location':
+        for attachment in msg.get("attachments") or []:
+            if attachment["type"] == "image":
+                out.append(lyr.Image(UrlMedia(attachment["payload"]["url"])))
+            elif attachment["type"] == "audio":
+                out.append(lyr.Audio(UrlMedia(attachment["payload"]["url"])))
+            elif attachment["type"] == "file":
+                out.append(lyr.File(UrlMedia(attachment["payload"]["url"])))
+            elif attachment["type"] == "video":
+                out.append(lyr.Video(UrlMedia(attachment["payload"]["url"])))
+            elif attachment["type"] == "location":
                 # noinspection PyArgumentList
-                out.append(lyr.Location(lyr.Location.Point(
-                    lat=attachment['payload']['coordinates']['lat'],
-                    lon=attachment['payload']['coordinates']['long'],
-                )))
+                out.append(
+                    lyr.Location(
+                        lyr.Location.Point(
+                            lat=attachment["payload"]["coordinates"]["lat"],
+                            lon=attachment["payload"]["coordinates"]["long"],
+                        )
+                    )
+                )
 
-        if 'quick_reply' in msg:
-            out.append(QuickReply(msg['quick_reply']['payload']))
+        if "quick_reply" in msg:
+            out.append(QuickReply(msg["quick_reply"]["payload"]))
 
-        if 'postback' in self._event:
-            payload = ujson.loads(self._event['postback']['payload'])
+        if "postback" in self._event:
+            payload = ujson.loads(self._event["postback"]["payload"])
             out.append(lyr.Postback(payload))
 
-        if 'optin' in self._event:
-            out.append(OptIn(self._event['optin']['ref']))
+        if "optin" in self._event:
+            out.append(OptIn(self._event["optin"]["ref"]))
 
         return out
 
@@ -300,7 +241,7 @@ class FacebookMessage(BaseMessage):
         """
         That's for internal use, extract the Facebook page ID.
         """
-        return self._event['recipient']['id']
+        return self._event["recipient"]["id"]
 
     def should_confuse(self) -> bool:
         """
@@ -313,8 +254,8 @@ class FacebookMessage(BaseMessage):
 
         return jwt.encode(
             {
-                'fb_psid': user.fbid,
-                'fb_pid': user.page_id,
+                "fb_psid": user.fbid,
+                "fb_pid": user.page_id,
             },
             settings.WEBVIEW_SECRET_KEY,
             algorithm=settings.WEBVIEW_JWT_ALGORITHM,
@@ -328,18 +269,15 @@ class FacebookResponder(Responder):
 
 
 class Facebook(SimplePlatform):
-    NAME = 'facebook'
+    NAME = "facebook"
 
     PATTERNS = {
-        'text': '^(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?$',
-        'generic_template': '^GenericTemplate QuickRepliesList? '
-                            'MessagingType?$',
-        'button_template': '^ButtonTemplate QuickRepliesList? '
-                           'MessagingType?$',
-        'attachment': '^(Image|Audio|Video|File) QuickRepliesList? '
-                      'MessagingType?$',
-        'sleep': '^Sleep$',
-        'typing': '^Typing$',
+        "text": "^(Text|RawText|MultiText)+ QuickRepliesList? MessagingType?$",
+        "generic_template": "^GenericTemplate QuickRepliesList? " "MessagingType?$",
+        "button_template": "^ButtonTemplate QuickRepliesList? " "MessagingType?$",
+        "attachment": "^(Image|Audio|Video|File) QuickRepliesList? " "MessagingType?$",
+        "sleep": "^Sleep$",
+        "typing": "^Typing$",
     }
 
     @classmethod
@@ -356,20 +294,20 @@ class Facebook(SimplePlatform):
 
         s = cls.settings()
 
-        if not hasattr(settings, 'BERNARD_BASE_URL'):
+        if not hasattr(settings, "BERNARD_BASE_URL"):
             yield HealthCheckFail(
-                '00005',
+                "00005",
                 '"BERNARD_BASE_URL" cannot be found in the configuration. The'
-                'Telegram platform needs it because it uses it to '
-                'automatically register its hook.'
+                "Telegram platform needs it because it uses it to "
+                "automatically register its hook.",
             )
 
-        if not hasattr(settings, 'WEBVIEW_SECRET_KEY'):
+        if not hasattr(settings, "WEBVIEW_SECRET_KEY"):
             yield HealthCheckFail(
-                '00005',
+                "00005",
                 '"WEBVIEW_SECRET_KEY" cannot be found in the configuration. '
-                'It is required in order to be able to create secure postback '
-                'URLs.'
+                "It is required in order to be able to create secure postback "
+                "URLs.",
             )
 
     @property
@@ -397,7 +335,7 @@ class Facebook(SimplePlatform):
         Path to the webhook
         """
 
-        return f'/hooks/{self.id}'
+        return f"/hooks/{self.id}"
 
     @property
     def webhook_url(self):
@@ -420,19 +358,24 @@ class Facebook(SimplePlatform):
         Called when Facebook checks the hook
         """
 
-        verify_token = request.query.get('hub.verify_token')
+        verify_token = request.query.get("hub.verify_token")
 
         if not verify_token:
-            return json_response({
-                'error': 'No verification token was provided',
-            }, status=400)
+            return json_response(
+                {
+                    "error": "No verification token was provided",
+                },
+                status=400,
+            )
 
         if verify_token == self.verify_token:
-            return Response(text=request.query.get('hub.challenge', ''))
+            return Response(text=request.query.get("hub.challenge", ""))
 
-        return json_response({
-            'error': 'could not find the page token in the configuration',
-        })
+        return json_response(
+            {
+                "error": "could not find the page token in the configuration",
+            }
+        )
 
     async def receive_events(self, request: HttpRequest):
         """
@@ -445,29 +388,33 @@ class Facebook(SimplePlatform):
         try:
             content = ujson.loads(body)
         except ValueError:
-            return json_response({
-                'error': True,
-                'message': 'Cannot decode body'
-            }, status=400)
+            return json_response(
+                {"error": True, "message": "Cannot decode body"}, status=400
+            )
 
-        secret = s['app_secret']
-        actual_sig = request.headers['X-Hub-Signature']
+        secret = s["app_secret"]
+        actual_sig = request.headers["X-Hub-Signature"]
         expected_sig = sign_message(body, secret)
 
         if not hmac.compare_digest(actual_sig, expected_sig):
-            return json_response({
-                'error': True,
-                'message': 'Invalid signature',
-            }, status=401)
+            return json_response(
+                {
+                    "error": True,
+                    "message": "Invalid signature",
+                },
+                status=401,
+            )
 
-        for entry in content['entry']:
-            for raw_message in entry.get('messaging', []):
+        for entry in content["entry"]:
+            for raw_message in entry.get("messaging", []):
                 message = FacebookMessage(raw_message, self)
                 await self.handle_event(message)
 
-        return json_response({
-            'ok': True,
-        })
+        return json_response(
+            {
+                "ok": True,
+            }
+        )
 
     async def _deferred_init(self):
         """
@@ -489,8 +436,8 @@ class Facebook(SimplePlatform):
         """
 
         params = {
-            'access_token': page['page_token'],
-            'fields': ','.join(fields),
+            "access_token": page["page_token"],
+            "fields": ",".join(fields),
         }
 
         get = self.session.get(PROFILE_ENDPOINT, params=params)
@@ -499,7 +446,7 @@ class Facebook(SimplePlatform):
 
             out = {}
 
-            for data in (await r.json())['data']:
+            for data in (await r.json())["data"]:
                 out.update(data)
 
             return out
@@ -513,28 +460,25 @@ class Facebook(SimplePlatform):
         :param content: content to be sent to Facebook (as dict)
         """
 
-        log_name = ', '.join(repr(x) for x in content.keys())
-        page_id = page['page_id']
+        log_name = ", ".join(repr(x) for x in content.keys())
+        page_id = page["page_id"]
 
         current = await self._get_messenger_profile(page, content.keys())
 
         if dict_is_subset(content, current):
-            logger.info('Page %s: %s is already up to date', page_id, log_name)
+            logger.info("Page %s: %s is already up to date", page_id, log_name)
             return
 
         params = {
-            'access_token': page['page_token'],
+            "access_token": page["page_token"],
         }
 
         headers = {
-            'content-type': 'application/json',
+            "content-type": "application/json",
         }
 
         post = self.session.post(
-            PROFILE_ENDPOINT,
-            params=params,
-            headers=headers,
-            data=ujson.dumps(content)
+            PROFILE_ENDPOINT, params=params, headers=headers, data=ujson.dumps(content)
         )
 
         # noinspection PyBroadException
@@ -542,10 +486,10 @@ class Facebook(SimplePlatform):
             async with post as r:
                 await self._handle_fb_response(r)
         except Exception:
-            logger.exception('Page %s: %s could not be set', page_id, log_name)
+            logger.exception("Page %s: %s could not be set", page_id, log_name)
             reporter.report()
         else:
-            logger.info('Page %s: %s was updated', page_id, log_name)
+            logger.info("Page %s: %s was updated", page_id, log_name)
 
     async def _set_get_started(self):
         """
@@ -554,18 +498,21 @@ class Facebook(SimplePlatform):
 
         page = self.settings()
 
-        if 'get_started' in page:
-            payload = page['get_started']
+        if "get_started" in page:
+            payload = page["get_started"]
         else:
-            payload = {'action': 'get_started'}
+            payload = {"action": "get_started"}
 
-        await self._send_to_messenger_profile(page, {
-            'get_started': {
-                'payload': ujson.dumps(payload),
+        await self._send_to_messenger_profile(
+            page,
+            {
+                "get_started": {
+                    "payload": ujson.dumps(payload),
+                },
             },
-        })
+        )
 
-        logger.info('Get started set for page %s', page['page_id'])
+        logger.info("Get started set for page %s", page["page_id"])
 
     async def _set_greeting_text(self):
         """
@@ -574,12 +521,15 @@ class Facebook(SimplePlatform):
 
         page = self.settings()
 
-        if 'greeting' in page:
-            await self._send_to_messenger_profile(page, {
-                'greeting': page['greeting'],
-            })
+        if "greeting" in page:
+            await self._send_to_messenger_profile(
+                page,
+                {
+                    "greeting": page["greeting"],
+                },
+            )
 
-            logger.info('Greeting text set for page %s', page['page_id'])
+            logger.info("Greeting text set for page %s", page["page_id"])
 
     async def _set_persistent_menu(self):
         """
@@ -588,12 +538,15 @@ class Facebook(SimplePlatform):
 
         page = self.settings()
 
-        if 'menu' in page:
-            await self._send_to_messenger_profile(page, {
-                'persistent_menu': page['menu'],
-            })
+        if "menu" in page:
+            await self._send_to_messenger_profile(
+                page,
+                {
+                    "persistent_menu": page["menu"],
+                },
+            )
 
-            logger.info('Set menu for page %s', page['page_id'])
+            logger.info("Set menu for page %s", page["page_id"])
 
     async def _set_whitelist(self):
         """
@@ -602,14 +555,17 @@ class Facebook(SimplePlatform):
 
         page = self.settings()
 
-        if 'whitelist' in page:
-            await self._send_to_messenger_profile(page, {
-                'whitelisted_domains': page['whitelist'],
-            })
+        if "whitelist" in page:
+            await self._send_to_messenger_profile(
+                page,
+                {
+                    "whitelisted_domains": page["whitelist"],
+                },
+            )
 
-            logger.info('Whitelisted %s for page %s',
-                        page['whitelist'],
-                        page['page_id'])
+            logger.info(
+                "Whitelisted %s for page %s", page["whitelist"], page["page_id"]
+            )
 
     def _get_subscriptions_endpoint(self):
         """
@@ -619,7 +575,7 @@ class Facebook(SimplePlatform):
         s = self.settings()
 
         params = {
-            'access_token': self.app_access_token,
+            "access_token": self.app_access_token,
         }
 
         return (
@@ -640,14 +596,14 @@ class Facebook(SimplePlatform):
             await self._handle_fb_response(r)
             data = await r.json()
 
-            for scope in data['data']:
-                if scope['object'] == 'page':
+            for scope in data["data"]:
+                if scope["object"] == "page":
                     return (
-                        set(x['name'] for x in scope['fields']),
-                        scope['callback_url'],
+                        set(x["name"] for x in scope["fields"]),
+                        scope["callback_url"],
                     )
 
-        return set(), ''
+        return set(), ""
 
     async def _set_subscriptions(self, subscriptions):
         """
@@ -657,14 +613,14 @@ class Facebook(SimplePlatform):
         url, params = self._get_subscriptions_endpoint()
 
         data = {
-            'object': 'page',
-            'callback_url': self.webhook_url,
-            'fields': ', '.join(subscriptions),
-            'verify_token': self.verify_token,
+            "object": "page",
+            "callback_url": self.webhook_url,
+            "fields": ", ".join(subscriptions),
+            "verify_token": self.verify_token,
         }
 
         headers = {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         }
 
         post = self.session.post(
@@ -688,9 +644,9 @@ class Facebook(SimplePlatform):
 
         if (expect - subscribed) or url != self.webhook_url:
             await self._set_subscriptions(expect | subscribed)
-            logger.info('Updated webhook subscriptions')
+            logger.info("Updated webhook subscriptions")
         else:
-            logger.info('No need to update webhook subscriptions')
+            logger.info("No need to update webhook subscriptions")
 
     async def handle_event(self, event: FacebookMessage):
         """
@@ -699,7 +655,7 @@ class Facebook(SimplePlatform):
         responder = FacebookResponder(self)
         await self._notify(event, responder)
 
-    def _access_token(self, request: Request=None, page_id: Text=''):
+    def _access_token(self, request: Request = None, page_id: Text = ""):
         """
         Guess the access token for that specific request.
         """
@@ -710,29 +666,28 @@ class Facebook(SimplePlatform):
 
         page = self.settings()
 
-        if page['page_id'] == page_id:
-            return page['page_token']
+        if page["page_id"] == page_id:
+            return page["page_token"]
 
-        raise PlatformOperationError('Trying to get access token of the '
-                                     'page "{}", which is not configured.'
-                                     .format(page_id))
+        raise PlatformOperationError(
+            "Trying to get access token of the "
+            'page "{}", which is not configured.'.format(page_id)
+        )
 
-    async def _make_qr(self,
-                       qr: QuickRepliesList.BaseOption,
-                       request: Request):
+    async def _make_qr(self, qr: QuickRepliesList.BaseOption, request: Request):
         """
         Generate a single quick reply's content.
         """
 
         if isinstance(qr, QuickRepliesList.TextOption):
             return {
-                'content_type': 'text',
-                'title': await render(qr.text, request),
-                'payload': qr.slug,
+                "content_type": "text",
+                "title": await render(qr.text, request),
+                "payload": qr.slug,
             }
         elif isinstance(qr, QuickRepliesList.LocationOption):
             return {
-                'content_type': 'location',
+                "content_type": "location",
             }
 
     async def _add_qr(self, stack, msg, request):
@@ -742,9 +697,7 @@ class Facebook(SimplePlatform):
             pass
         else:
             # noinspection PyUnresolvedReferences
-            msg['quick_replies'] = [
-                await self._make_qr(o, request) for o in qr.options
-            ]
+            msg["quick_replies"] = [await self._make_qr(o, request) for o in qr.options]
 
     async def _send_text(self, request: Request, stack: Stack):
         """
@@ -769,14 +722,18 @@ class Facebook(SimplePlatform):
                     parts.append(part)
 
         for part in parts[:-1]:
-            await self._send(request, {
-                'text': part,
-            }, stack)
+            await self._send(
+                request,
+                {
+                    "text": part,
+                },
+                stack,
+            )
 
         part = parts[-1]
 
         msg = {
-            'text': part,
+            "text": part,
         }
 
         await self._add_qr(stack, msg, request)
@@ -790,12 +747,7 @@ class Facebook(SimplePlatform):
         gt = stack.get_layer(GenericTemplate)
         payload = await gt.serialize(request)
 
-        msg = {
-            'attachment': {
-                'type': 'template',
-                'payload': payload
-            }
-        }
+        msg = {"attachment": {"type": "template", "payload": payload}}
 
         await self._add_qr(stack, msg, request)
         await self._send(request, msg, stack)
@@ -808,27 +760,22 @@ class Facebook(SimplePlatform):
         gt = stack.get_layer(ButtonTemplate)
 
         payload = {
-            'template_type': 'button',
-            'text': await render(gt.text, request),
-            'buttons': [await b.serialize(request) for b in gt.buttons],
+            "template_type": "button",
+            "text": await render(gt.text, request),
+            "buttons": [await b.serialize(request) for b in gt.buttons],
         }
 
-        msg = {
-            'attachment': {
-                'type': 'template',
-                'payload': payload
-            }
-        }
+        msg = {"attachment": {"type": "template", "payload": payload}}
 
         await self._add_qr(stack, msg, request)
         await self._send(request, msg, stack)
 
     async def _send_attachment(self, request: Request, stack: Stack):
         types = {
-            lyr.Image: 'image',
-            lyr.Audio: 'audio',
-            lyr.File: 'file',
-            lyr.Video: 'video',
+            lyr.Image: "image",
+            lyr.Audio: "audio",
+            lyr.File: "file",
+            lyr.Video: "video",
         }
 
         l: BaseMediaLayer = stack.layers[0]
@@ -836,11 +783,11 @@ class Facebook(SimplePlatform):
 
         # noinspection PyTypeChecker
         msg = {
-            'attachment': {
-                'type': types[l.__class__],
-                'payload': {
-                    'url': media.url,
-                }
+            "attachment": {
+                "type": types[l.__class__],
+                "payload": {
+                    "url": media.url,
+                },
             },
         }
 
@@ -862,19 +809,21 @@ class Facebook(SimplePlatform):
 
         active = stack.get_layer(lyr.Typing).active
 
-        msg = ujson.dumps({
-            'recipient': {
-                'id': request.conversation.fbid,
-            },
-            'sender_action': 'typing_on' if active else 'typing_off',
-        })
+        msg = ujson.dumps(
+            {
+                "recipient": {
+                    "id": request.conversation.fbid,
+                },
+                "sender_action": "typing_on" if active else "typing_off",
+            }
+        )
 
         headers = {
-            'content-type': 'application/json',
+            "content-type": "application/json",
         }
 
         params = {
-            'access_token': self._access_token(request),
+            "access_token": self._access_token(request),
         }
 
         post = self.session.post(
@@ -884,7 +833,7 @@ class Facebook(SimplePlatform):
             headers=headers,
         )
 
-        logger.debug('Sending: %s', msg)
+        logger.debug("Sending: %s", msg)
 
         async with post as r:
             await self._handle_fb_response(r)
@@ -900,26 +849,22 @@ class Facebook(SimplePlatform):
         if not ok:
             # noinspection PyBroadException
             try:
-                error = (await response.json())['error']['message']
+                error = (await response.json())["error"]["message"]
             except Exception:
-                error = '(nothing)'
+                error = "(nothing)"
 
-            raise PlatformOperationError('Facebook says: "{}"'
-                                         .format(error))
+            raise PlatformOperationError('Facebook says: "{}"'.format(error))
 
-    async def _send(self,
-                    request: Request,
-                    content: Dict[Text, Any],
-                    stack: Stack):
+    async def _send(self, request: Request, content: Dict[Text, Any], stack: Stack):
         """
         Actually proceed to sending the message to the Facebook API.
         """
 
         msg = {
-            'recipient': {
-                'id': request.conversation.fbid,
+            "recipient": {
+                "id": request.conversation.fbid,
             },
-            'message': content,
+            "message": content,
         }
 
         if stack and stack.has_layer(MessagingType):
@@ -931,11 +876,11 @@ class Facebook(SimplePlatform):
         msg_json = ujson.dumps(msg)
 
         headers = {
-            'content-type': 'application/json',
+            "content-type": "application/json",
         }
 
         params = {
-            'access_token': self._access_token(request),
+            "access_token": self._access_token(request),
         }
 
         post = self.session.post(
@@ -945,7 +890,7 @@ class Facebook(SimplePlatform):
             headers=headers,
         )
 
-        logger.debug('Sending: %s', msg_json)
+        logger.debug("Sending: %s", msg_json)
 
         async with post as r:
             await self._handle_fb_response(r)
@@ -958,9 +903,8 @@ class Facebook(SimplePlatform):
         access_token = self._access_token(page_id=page_id)
 
         params = {
-            'fields': 'first_name,last_name,profile_pic,locale,timezone'
-                      ',gender',
-            'access_token': access_token,
+            "fields": "first_name,last_name,profile_pic,locale,timezone" ",gender",
+            "access_token": access_token,
         }
 
         url = GRAPH_ENDPOINT.format(user_id)
@@ -977,7 +921,7 @@ class Facebook(SimplePlatform):
         """
 
         if not isinstance(media, UrlMedia):
-            raise ValueError('Facebook platform only accepts URL media')
+            raise ValueError("Facebook platform only accepts URL media")
 
         return media
 
@@ -988,27 +932,26 @@ class Facebook(SimplePlatform):
         """
 
         event = {
-            'sender': {
-                'id': user_id,
+            "sender": {
+                "id": user_id,
             },
-            'recipient': {
-                'id': page_id,
+            "recipient": {
+                "id": page_id,
             },
-            'postback': {
-                'payload': ujson.dumps(payload),
+            "postback": {
+                "payload": ujson.dumps(payload),
             },
         }
 
         return FacebookMessage(event, self, False)
 
-    def _message_from_sr(self, token: Text, payload: Any) \
-            -> Optional[BaseMessage]:
+    def _message_from_sr(self, token: Text, payload: Any) -> Optional[BaseMessage]:
         """
         Tries to verify the signed request
         """
 
         page = self.settings()
-        secret = page['app_secret']
+        secret = page["app_secret"]
 
         try:
             sr_data = SignedRequest.parse(token, secret)
@@ -1016,13 +959,12 @@ class Facebook(SimplePlatform):
             return
 
         return self._make_fake_message(
-            sr_data['psid'],
-            page['page_id'],
+            sr_data["psid"],
+            page["page_id"],
             payload,
         )
 
-    def _message_from_token(self, token: Text, payload: Any) \
-            -> Optional[BaseMessage]:
+    def _message_from_token(self, token: Text, payload: Any) -> Optional[BaseMessage]:
         """
         Analyzes a signed token and generates the matching message
         """
@@ -1033,18 +975,19 @@ class Facebook(SimplePlatform):
             return
 
         try:
-            user_id = tk['fb_psid']
+            user_id = tk["fb_psid"]
             assert isinstance(user_id, Text)
-            page_id = tk['fb_pid']
+            page_id = tk["fb_pid"]
             assert isinstance(page_id, Text)
         except (KeyError, AssertionError):
             return
 
-        if self.settings()['page_id'] == page_id:
+        if self.settings()["page_id"] == page_id:
             return self._make_fake_message(user_id, page_id, payload)
 
-    async def message_from_token(self, token: Text, payload: Any) \
-            -> Optional[BaseMessage]:
+    async def message_from_token(
+        self, token: Text, payload: Any
+    ) -> Optional[BaseMessage]:
         """
         There is two ways of getting a FB user: either with a signed request or
         either with a platform token. Both are tried out.

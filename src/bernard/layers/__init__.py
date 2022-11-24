@@ -1,19 +1,17 @@
-# coding: utf-8
-
-from .stack import Stack, stack
 from .definitions import (
-    BaseLayer,
-    Text,
-    RawText,
-    MultiText,
-    Markdown,
-    Sleep,
-    Postback,
-    Image,
     Audio,
-    Video,
+    BaseLayer,
     File,
+    Image,
     Location,
+    Markdown,
     Message,
+    MultiText,
+    Postback,
+    RawText,
+    Sleep,
+    Text,
     Typing,
+    Video,
 )
+from .stack import Stack, stack

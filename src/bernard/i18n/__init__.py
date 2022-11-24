@@ -1,6 +1,5 @@
-# coding: utf-8
-from .translator import Translator, TransText, serialize, unserialize, render
 from .intents import IntentsMaker
+from .translator import Translator, TransText, render, serialize, unserialize
 
 translate = Translator()
 intents = IntentsMaker()

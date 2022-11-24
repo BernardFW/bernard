@@ -1,16 +1,7 @@
-# coding: utf-8
-from bernard import (
-    layers as lyr,
-)
-from bernard.analytics import (
-    page_view,
-)
-from bernard.engine import (
-    BaseState,
-)
-from bernard.i18n import (
-    translate as t,
-)
+from bernard import layers as lyr
+from bernard.analytics import page_view
+from bernard.engine import BaseState
+from bernard.i18n import translate as t
 
 
 class __project_name_camel__State(BaseState):
@@ -22,7 +13,7 @@ class __project_name_camel__State(BaseState):
     CONFUSED texts are defined in `i18n/en/responses.csv`.
     """
 
-    @page_view('/bot/error')
+    @page_view("/bot/error")
     async def error(self) -> None:
         """
         This happens when something goes wrong (it's the equivalent of the
@@ -31,7 +22,7 @@ class __project_name_camel__State(BaseState):
 
         self.send(lyr.Text(t.ERROR))
 
-    @page_view('/bot/confused')
+    @page_view("/bot/confused")
     async def confused(self) -> None:
         """
         This is called when the user sends a message that triggers no
@@ -54,6 +45,6 @@ class Hello(__project_name_camel__State):
     will be called as usual.
     """
 
-    @page_view('/bot/hello')
+    @page_view("/bot/hello")
     async def handle(self):
         self.send(lyr.Text(t.HELLO))
