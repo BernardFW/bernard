@@ -1,26 +1,12 @@
 import re
-from typing import (
-    TYPE_CHECKING,
-    List,
-    Text as TextT,
-)
+from typing import TYPE_CHECKING, List
+from typing import Text as TextT
 
-from bernard import (
-    layers as lyr,
-)
-from bernard.conf import (
-    settings,
-)
-from bernard.engine.request import (
-    Request,
-)
-from bernard.i18n import (
-    render,
-)
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
+from bernard import layers as lyr
+from bernard.conf import settings
+from bernard.engine.request import Request
+from bernard.i18n import render
+from bernard.layers import BaseLayer, Stack
 
 if TYPE_CHECKING:
     from bernard.engine.responder import Responder
@@ -67,8 +53,7 @@ class AutoSleep(BaseMiddleware):
 
         return ns
 
-    def split_stacks(self, stacks: List[List[BaseLayer]]) \
-            -> List[List[BaseLayer]]:
+    def split_stacks(self, stacks: List[List[BaseLayer]]) -> List[List[BaseLayer]]:
         """
         First step of the stacks cleanup process. We consider that if inside
         a stack there's a text layer showing up then it's the beginning of a
@@ -92,8 +77,7 @@ class AutoSleep(BaseMiddleware):
 
         return ns
 
-    def clean_stacks(self, stacks: List[List[BaseLayer]]) \
-            -> List[List[BaseLayer]]:
+    def clean_stacks(self, stacks: List[List[BaseLayer]]) -> List[List[BaseLayer]]:
         """
         Two cases: if a stack finishes by a sleep then let's keep it (it means
         that there was nothing after the text). However if the stack finishes
@@ -151,7 +135,7 @@ class AutoSleep(BaseMiddleware):
         containing the text passed as parameter.
         """
 
-        wc = re.findall(r'\w+', text)
+        wc = re.findall(r"\w+", text)
         period = 60.0 / settings.USERS_READING_SPEED
         return float(len(wc)) * period + settings.USERS_READING_BUBBLE_START
 
@@ -177,7 +161,7 @@ class AutoType(BaseMiddleware):
 
         await self.next(request, ns)
 
-    async def pre_handle(self, request: Request, responder: 'Responder'):
+    async def pre_handle(self, request: Request, responder: "Responder"):
         """
         Start typing right when the message is received.
         """

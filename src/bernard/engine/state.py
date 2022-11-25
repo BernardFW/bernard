@@ -1,25 +1,11 @@
-# coding: utf-8
-from typing import (
-    Iterator,
-)
+from typing import Iterator
 
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.engine.triggers import (
-    BaseTrigger,
-)
-from bernard.layers import (
-    BaseLayer,
-    Text,
-)
+from bernard.core.health_check import HealthCheckFail
+from bernard.engine.triggers import BaseTrigger
+from bernard.layers import BaseLayer, Text
 
-from .request import (
-    Request,
-)
-from .responder import (
-    Responder,
-)
+from .request import Request
+from .responder import Responder
 
 
 class BaseState(object):
@@ -33,11 +19,13 @@ class BaseState(object):
     `DEFAULT_STATE` in the configuration.
     """
 
-    def __init__(self,
-                 request: Request,
-                 responder: Responder,
-                 trigger: BaseTrigger,
-                 user_trigger: BaseTrigger):
+    def __init__(
+        self,
+        request: Request,
+        responder: Responder,
+        trigger: BaseTrigger,
+        user_trigger: BaseTrigger,
+    ):
         self.request = request
         self.responder = responder
         self.trigger = trigger
@@ -50,7 +38,7 @@ class BaseState(object):
         name.
         """
 
-        return '{}.{}'.format(
+        return "{}.{}".format(
             cls.__module__,
             cls.__qualname__,
         )
@@ -67,7 +55,7 @@ class BaseState(object):
         """
 
         for k, v in cls.__dict__.items():
-            if hasattr(v, 'health_check') and callable(v.health_check):
+            if hasattr(v, "health_check") and callable(v.health_check):
                 async for check in v.health_check(cls):
                     yield check
 
@@ -119,10 +107,10 @@ class DefaultState(BaseState):
         """
         Send a stupid text.
         """
-        self.send(Text('I do not understand this text'))
+        self.send(Text("I do not understand this text"))
 
     def error(self) -> None:
         """
         Send another stupid text.
         """
-        self.send(Text('Something went wrong in my head and I cannot answer'))
+        self.send(Text("Something went wrong in my head and I cannot answer"))

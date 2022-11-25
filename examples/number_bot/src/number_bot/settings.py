@@ -1,11 +1,5 @@
-# coding: utf-8
-from os import (
-    getenv,
-    path,
-)
-from urllib.parse import (
-    urlparse,
-)
+from os import getenv, path
+from urllib.parse import urlparse
 
 
 def extract_domain(var_name, output):
@@ -29,7 +23,7 @@ def make_whitelist():
     """
 
     out = []
-    extract_domain('BERNARD_BASE_URL', out)
+    extract_domain("BERNARD_BASE_URL", out)
     return out
 
 
@@ -38,20 +32,20 @@ def i18n_root(lang):
     Computes the root to a given lang's root directory
     """
 
-    return path.join(path.dirname(__file__), '../../i18n', lang)
+    return path.join(path.dirname(__file__), "../../i18n", lang)
 
 
 # --- Starting points ---
 
 # This module contains the transitions and is loaded to generate the FSM.
-TRANSITIONS_MODULE = 'number_bot.transitions'
+TRANSITIONS_MODULE = "number_bot.transitions"
 
 # The default state is used whenever something goes wrong which prevents a
 # state to be chosen. In this case, it will ball back to the default state
 # in order to produce an error message. This default state must also be the
 # common ancestor of all your states in order for them to inherit the default
 # error messages.
-DEFAULT_STATE = 'number_bot.states.NumberBotState'
+DEFAULT_STATE = "number_bot.states.NumberBotState"
 
 
 # --- Platforms ---
@@ -59,29 +53,33 @@ DEFAULT_STATE = 'number_bot.states.NumberBotState'
 # That's the configuration tokens for all the platforms you want to manage.
 PLATFORMS = [
     {
-        'class': 'bernard.platforms.facebook.platform.Facebook',
-        'settings': [
+        "class": "bernard.platforms.facebook.platform.Facebook",
+        "settings": [
             {
-                'security_token': getenv('FB_SECURITY_TOKEN'),
-                'app_id': getenv('FB_APP_ID'),
-                'app_secret': getenv('FB_APP_SECRET'),
-                'page_id': getenv('FB_PAGE_ID'),
-                'page_token': getenv('FB_PAGE_TOKEN'),
-                'greeting': [{
-                    'locale': 'default',
-                    'text': 'Welcome to the number bot!',
-                }],
-                'menu': [{
-                    'locale': 'default',
-                    'call_to_actions': [
-                        {
-                            'title': 'Guess a number',
-                            'type': 'postback',
-                            'payload': '{"action": "guess"}',
-                        },
-                    ]
-                }],
-                'whitelist': make_whitelist()
+                "security_token": getenv("FB_SECURITY_TOKEN"),
+                "app_id": getenv("FB_APP_ID"),
+                "app_secret": getenv("FB_APP_SECRET"),
+                "page_id": getenv("FB_PAGE_ID"),
+                "page_token": getenv("FB_PAGE_TOKEN"),
+                "greeting": [
+                    {
+                        "locale": "default",
+                        "text": "Welcome to the number bot!",
+                    }
+                ],
+                "menu": [
+                    {
+                        "locale": "default",
+                        "call_to_actions": [
+                            {
+                                "title": "Guess a number",
+                                "type": "postback",
+                                "payload": '{"action": "guess"}',
+                            },
+                        ],
+                    }
+                ],
+                "whitelist": make_whitelist(),
             },
         ],
     }
@@ -91,17 +89,17 @@ PLATFORMS = [
 # --- Self-awareness ---
 
 # Public base URL, used to generate links to the bot itself.
-BERNARD_BASE_URL = getenv('BERNARD_BASE_URL')
+BERNARD_BASE_URL = getenv("BERNARD_BASE_URL")
 
 # Secret key that serves in particular to sign content sent to the webview, but
 # also in other places where signed content is required (aka when something
 # goes outside and back again).
-WEBVIEW_SECRET_KEY = getenv('WEBVIEW_SECRET_KEY')
+WEBVIEW_SECRET_KEY = getenv("WEBVIEW_SECRET_KEY")
 
 
 # --- Network configuration ---
 
-socket_path = getenv('SOCKET_PATH')
+socket_path = getenv("SOCKET_PATH")
 
 # That's a way to configure the network binding. If you define the SOCKET_PATH
 # environment variable, then it will bind to the specified path as a UNIX
@@ -109,12 +107,12 @@ socket_path = getenv('SOCKET_PATH')
 # and will fall back to 8666.
 if socket_path:
     SERVER_BIND = {
-        'path': socket_path,
+        "path": socket_path,
     }
 else:
     SERVER_BIND = {
-        'host': '127.0.0.1',
-        'port': int(getenv('BIND_PORT', '8666')),
+        "host": "127.0.0.1",
+        "port": int(getenv("BIND_PORT", "8666")),
     }
 
 
@@ -123,10 +121,10 @@ else:
 # List of intents loaders, typically CSV files with intents.
 I18N_INTENTS_LOADERS = [
     {
-        'loader': 'bernard.i18n.loaders.CsvIntentsLoader',
-        'params': {
-            'file_path': path.join(i18n_root('en'), 'intents.csv'),
-            'locale': 'en',
+        "loader": "bernard.i18n.loaders.CsvIntentsLoader",
+        "params": {
+            "file_path": path.join(i18n_root("en"), "intents.csv"),
+            "locale": "en",
         },
     },
 ]
@@ -134,10 +132,10 @@ I18N_INTENTS_LOADERS = [
 # List of translation loaders, typically CSV files with translations.
 I18N_TRANSLATION_LOADERS = [
     {
-        'loader': 'bernard.i18n.loaders.CsvTranslationLoader',
-        'params': {
-            'file_path': path.join(i18n_root('en'), 'responses.csv'),
-            'locale': 'fr',
+        "loader": "bernard.i18n.loaders.CsvTranslationLoader",
+        "params": {
+            "file_path": path.join(i18n_root("en"), "responses.csv"),
+            "locale": "fr",
         },
     },
 ]
@@ -148,8 +146,8 @@ I18N_TRANSLATION_LOADERS = [
 # All your middlewares. The default ones are here to slow down the sending of
 # messages and make it look more natural.
 MIDDLEWARES = [
-    'bernard.middleware.AutoSleep',
-    'bernard.middleware.AutoType',
+    "bernard.middleware.AutoSleep",
+    "bernard.middleware.AutoType",
 ]
 
 # Sleeping offset before any message

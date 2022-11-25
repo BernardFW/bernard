@@ -1,39 +1,15 @@
-# coding: utf-8
 import logging
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    Optional,
-    Text,
-    Tuple,
-    Type,
-)
+from typing import Any, AsyncIterator, Dict, Optional, Text, Tuple, Type
 
-from bernard.conf import (
-    settings,
-)
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.engine.fsm import (
-    FSM,
-)
-from bernard.engine.platform import (
-    Platform,
-    PlatformDoesNotExist,
-)
-from bernard.engine.request import (
-    BaseMessage,
-)
-from bernard.middleware import (
-    MiddlewareManager,
-)
-from bernard.utils import (
-    import_class,
-)
+from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
+from bernard.engine.fsm import FSM
+from bernard.engine.platform import Platform, PlatformDoesNotExist
+from bernard.engine.request import BaseMessage
+from bernard.middleware import MiddlewareManager
+from bernard.utils import import_class
 
-logger = logging.getLogger('bernard.platform.health')
+logger = logging.getLogger("bernard.platform.health")
 
 
 def get_platform_settings():
@@ -49,11 +25,13 @@ def get_platform_settings():
 
     s = settings.PLATFORMS
 
-    if hasattr(settings, 'FACEBOOK') and settings.FACEBOOK:
-        s.append({
-            'class': 'bernard.platforms.facebook.platform.Facebook',
-            'settings': settings.FACEBOOK,
-        })
+    if hasattr(settings, "FACEBOOK") and settings.FACEBOOK:
+        s.append(
+            {
+                "class": "bernard.platforms.facebook.platform.Facebook",
+                "settings": settings.FACEBOOK,
+            }
+        )
 
     return s
 
@@ -97,7 +75,7 @@ class PlatformManager(object):
         # noinspection PyTypeChecker
         async for check in self.run_checks():
             checks.append(check)
-            logger.error('HEALTH CHECK FAIL #%s: %s', check.code, check.reason)
+            logger.error("HEALTH CHECK FAIL #%s: %s", check.code, check.reason)
 
         if checks:
             exit(1)
@@ -129,23 +107,18 @@ class PlatformManager(object):
 
         for platform in get_platform_settings():
             try:
-                name = platform['class']
+                name = platform["class"]
                 cls: Type[Platform] = import_class(name)
             except KeyError:
                 yield HealthCheckFail(
-                    '00004',
-                    'Missing platform `class` name in configuration.'
+                    "00004", "Missing platform `class` name in configuration."
                 )
             except (AttributeError, ImportError, ValueError):
-                yield HealthCheckFail(
-                    '00003',
-                    f'Platform "{name}" cannot be imported.'
-                )
+                yield HealthCheckFail("00003", f'Platform "{name}" cannot be imported.')
             else:
                 if cls in platforms:
                     yield HealthCheckFail(
-                        '00002',
-                        f'Platform "{name}" is imported more than once.'
+                        "00002", f'Platform "{name}" is imported more than once.'
                     )
                 platforms.add(cls)
 
@@ -161,10 +134,10 @@ class PlatformManager(object):
         out = {}
 
         for p in get_platform_settings():
-            cls: Type[Platform] = import_class(p['class'])
+            cls: Type[Platform] = import_class(p["class"])
 
-            if 'name' in p:
-                out[p['name']] = cls
+            if "name" in p:
+                out[p["name"]] = cls
             else:
                 out[cls.NAME] = cls
 
@@ -195,8 +168,9 @@ class PlatformManager(object):
         if platform in self._classes:
             return self._classes[platform]
 
-        raise PlatformDoesNotExist('Platform "{}" is not in configuration'
-                                   .format(platform))
+        raise PlatformDoesNotExist(
+            'Platform "{}" is not in configuration'.format(platform)
+        )
 
     async def get_platform(self, name: Text):
         """
@@ -208,8 +182,7 @@ class PlatformManager(object):
             await self.init()
 
         if name not in self.platforms:
-            self.platforms[name] = \
-                await self.build_platform(self.get_class(name), name)
+            self.platforms[name] = await self.build_platform(self.get_class(name), name)
 
         return self.platforms[name]
 
@@ -221,8 +194,9 @@ class PlatformManager(object):
         for name in self._classes.keys():
             yield await self.get_platform(name)
 
-    async def message_from_token(self, token: Text, payload: Any) \
-            -> Tuple[Optional[BaseMessage], Optional[Platform]]:
+    async def message_from_token(
+        self, token: Text, payload: Any
+    ) -> Tuple[Optional[BaseMessage], Optional[Platform]]:
         """
         Given an authentication token, find the right platform that can
         recognize this token and create a message for this platform.

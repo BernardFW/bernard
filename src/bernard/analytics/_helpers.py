@@ -1,14 +1,7 @@
-# coding: utf-8
-from functools import (
-    wraps,
-)
+from functools import wraps
 
-from bernard.analytics.base import (
-    providers,
-)
-from bernard.engine.state import (
-    BaseState,
-)
+from bernard.analytics.base import providers
+from bernard.engine.state import BaseState
 
 
 def page_view(url):
@@ -29,7 +22,7 @@ def page_view(url):
             try:
                 user_lang = await self.request.user.get_locale()
             except NotImplementedError:
-                user_lang = ''
+                user_lang = ""
 
             title = self.__class__.__name__
 
@@ -38,5 +31,7 @@ def page_view(url):
                 await p.page_view(url, title, user_id, user_lang)
 
             return await func(self, *args, **kwargs)
+
         return wrapper
+
     return decorator

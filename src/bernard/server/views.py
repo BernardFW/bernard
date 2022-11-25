@@ -1,37 +1,15 @@
-# coding: utf-8
-from functools import (
-    wraps,
-)
+from functools import wraps
 
-from aiohttp.web_request import (
-    Request,
-)
-from aiohttp.web_response import (
-    Response,
-    json_response,
-)
+from aiohttp.web_request import Request
+from aiohttp.web_response import Response, json_response
 
-from bernard.analytics.base import (
-    providers,
-)
-from bernard.conf import (
-    settings,
-)
-from bernard.engine.platform import (
-    Platform,
-)
-from bernard.engine.request import (
-    BaseMessage,
-)
-from bernard.layers import (
-    Postback,
-)
-from bernard.middleware import (
-    MiddlewareManager,
-)
-from bernard.platforms import (
-    manager,
-)
+from bernard.analytics.base import providers
+from bernard.conf import settings
+from bernard.engine.platform import Platform
+from bernard.engine.request import BaseMessage
+from bernard.layers import Postback
+from bernard.middleware import MiddlewareManager
+from bernard.platforms import manager
 
 
 def bernard_auth(func):
@@ -43,19 +21,24 @@ def bernard_auth(func):
     async def wrapper(request: Request):
         def get_query_token():
             token_key = settings.WEBVIEW_TOKEN_KEY
-            return request.query.get(token_key, '')
+            return request.query.get(token_key, "")
 
         def get_header_token():
             header_key = settings.WEBVIEW_HEADER_NAME
-            return request.headers.get(header_key, '')
+            return request.headers.get(header_key, "")
 
         try:
-            token = next(filter(None, [
-                get_header_token(),
-                get_query_token(),
-            ]))
+            token = next(
+                filter(
+                    None,
+                    [
+                        get_header_token(),
+                        get_query_token(),
+                    ],
+                )
+            )
         except StopIteration:
-            token = ''
+            token = ""
 
         try:
             body = await request.json()
@@ -65,12 +48,16 @@ def bernard_auth(func):
         msg, platform = await manager.message_from_token(token, body)
 
         if not msg:
-            return json_response({
-                'status': 'unauthorized',
-                'message': 'No valid token found',
-            }, status=401)
+            return json_response(
+                {
+                    "status": "unauthorized",
+                    "message": "No valid token found",
+                },
+                status=401,
+            )
 
         return await func(msg, platform)
+
     return wrapper
 
 
@@ -85,12 +72,12 @@ async def postback_me(msg: BaseMessage, platform: Platform) -> Response:
         user = _msg.get_user()
 
         return {
-            'friendly_name': await user.get_friendly_name(),
-            'locale': await user.get_locale(),
-            'platform': _platform.NAME,
+            "friendly_name": await user.get_friendly_name(),
+            "locale": await user.get_locale(),
+            "platform": _platform.NAME,
         }
 
-    func = MiddlewareManager.instance().get('api_postback_me', get_basic_info)
+    func = MiddlewareManager.instance().get("api_postback_me", get_basic_info)
 
     return json_response(await func(msg, platform))
 
@@ -103,9 +90,11 @@ async def postback_send(msg: BaseMessage, platform: Platform) -> Response:
 
     await platform.inject_message(msg)
 
-    return json_response({
-        'status': 'ok',
-    })
+    return json_response(
+        {
+            "status": "ok",
+        }
+    )
 
 
 @bernard_auth
@@ -122,30 +111,32 @@ async def postback_analytics(msg: BaseMessage, platform: Platform) -> Response:
         user_lang = await user.get_locale()
         user_id = user.id
 
-        if pb.payload['event'] == 'page_view':
-            func = 'page_view'
-            path = pb.payload['path']
-            title = pb.payload.get('title', '')
+        if pb.payload["event"] == "page_view":
+            func = "page_view"
+            path = pb.payload["path"]
+            title = pb.payload.get("title", "")
             args = [path, title, user_id, user_lang]
         else:
-            return json_response({
-                'status': 'unknown event',
-                'message': f'"{pb.payload["event"]}" is not a recognized '
-                           f'analytics event',
-            })
+            return json_response(
+                {
+                    "status": "unknown event",
+                    "message": f'"{pb.payload["event"]}" is not a recognized '
+                    f"analytics event",
+                }
+            )
 
         async for p in providers():
             await getattr(p, func)(*args)
 
     except (KeyError, IndexError, AssertionError, TypeError):
-        return json_response({
-            'status': 'missing data'
-        }, status=400)
+        return json_response({"status": "missing data"}, status=400)
 
     else:
-        return json_response({
-            'status': 'ok',
-        })
+        return json_response(
+            {
+                "status": "ok",
+            }
+        )
 
 
 async def health_check(request: Request) -> Response:
@@ -153,6 +144,8 @@ async def health_check(request: Request) -> Response:
     A simple non-authenticated endpoint to check the health of the process.
     """
 
-    return json_response({
-        'status': 'ok',
-    })
+    return json_response(
+        {
+            "status": "ok",
+        }
+    )

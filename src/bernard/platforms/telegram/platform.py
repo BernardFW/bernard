@@ -1,82 +1,31 @@
 import logging
-from asyncio import (
-    Lock,
-    sleep,
-)
-from datetime import (
-    tzinfo,
-)
-from hashlib import (
-    sha256,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Text,
-)
-from urllib.parse import (
-    quote,
-    urljoin,
-)
+from asyncio import Lock, sleep
+from datetime import tzinfo
+from hashlib import sha256
+from typing import Any, Dict, List, Optional, Set, Text
+from urllib.parse import quote, urljoin
 
 import jwt
-from aiohttp.web_request import (
-    Request,
-)
-from aiohttp.web_response import (
-    json_response,
-)
-from aiohttp.web_urldispatcher import (
-    UrlDispatcher,
-)
-
 import ujson
-from bernard import (
-    layers as lyr,
-)
-from bernard.conf import (
-    settings,
-)
-from bernard.core.health_check import (
-    HealthCheckFail,
-)
-from bernard.engine.platform import (
-    PlatformOperationError,
-)
-from bernard.engine.request import (
-    BaseMessage,
-    Conversation,
-    Request as BernardRequest,
-    User,
-)
-from bernard.engine.responder import (
-    Layers,
-    Responder,
-)
-from bernard.i18n import (
-    render,
-)
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
-from bernard.media.base import (
-    BaseMedia,
-)
-from bernard.utils import (
-    patch_dict,
-    patch_qs,
-)
+from aiohttp.web_request import Request
+from aiohttp.web_response import json_response
+from aiohttp.web_urldispatcher import UrlDispatcher
 
-from ...platforms import (
-    SimplePlatform,
-)
-from ._utils import (
-    set_reply_markup,
-)
+from bernard import layers as lyr
+from bernard.conf import settings
+from bernard.core.health_check import HealthCheckFail
+from bernard.engine.platform import PlatformOperationError
+from bernard.engine.request import BaseMessage, Conversation
+from bernard.engine.request import Request as BernardRequest
+from bernard.engine.request import User
+from bernard.engine.responder import Layers, Responder
+from bernard.i18n import render
+from bernard.layers import BaseLayer, Stack
+from bernard.media.base import BaseMedia
+from bernard.utils import patch_dict, patch_qs
+
+from ...platforms import SimplePlatform
+from ._utils import set_reply_markup
 from .layers import (
     AnswerCallbackQuery,
     AnswerInlineQuery,
@@ -86,13 +35,11 @@ from .layers import (
     Reply,
     Update,
 )
-from .media import (
-    Photo,
-)
+from .media import Photo
 
-TELEGRAM_URL = 'https://api.telegram.org/bot{token}/{method}'
+TELEGRAM_URL = "https://api.telegram.org/bot{token}/{method}"
 
-logger = logging.getLogger('bernard.platform.telegram')
+logger = logging.getLogger("bernard.platform.telegram")
 
 
 class TelegramConversation(Conversation):
@@ -105,14 +52,14 @@ class TelegramConversation(Conversation):
         super(TelegramConversation, self).__init__(self._make_id())
 
     def _make_id(self):
-        if 'is_inline_query' in self._chat:
+        if "is_inline_query" in self._chat:
             return f'telegram:inline_query:{self._chat["id"]}'
         else:
             return f'telegram:conversation:{self._chat["id"]}'
 
 
 class TelegramUser(User):
-    def __init__(self, user, chat, telegram: 'Telegram'):
+    def __init__(self, user, chat, telegram: "Telegram"):
         self._user = user
         self._chat = chat
         self._telegram = telegram
@@ -135,17 +82,17 @@ class TelegramUser(User):
         a locking mechanism around the cache to allow concurrent calls.
         """
 
-        if 'language_code' in self._user:
+        if "language_code" in self._user:
             return self._user
 
         async with self._lock:
             if self._full_user is None:
                 cm = await self._telegram.call(
-                    'getChatMember',
-                    user_id=self._user['id'],
-                    chat_id=self._chat['id'],
+                    "getChatMember",
+                    user_id=self._user["id"],
+                    chat_id=self._chat["id"],
                 )
-                self._full_user = cm['result']['user']
+                self._full_user = cm["result"]["user"]
 
             return self._full_user
 
@@ -156,24 +103,24 @@ class TelegramUser(User):
         fetched.
         """
 
-        if 'first_name' not in self._user:
+        if "first_name" not in self._user:
             user = await self._get_full_user()
         else:
             user = self._user
 
-        return user.get('first_name')
+        return user.get("first_name")
 
     async def get_locale(self) -> Text:
         user = await self._get_full_user()
-        return user.get('language_code', None)
+        return user.get("language_code", None)
 
     async def get_formal_name(self) -> Text:
         parts = [
-            self._user.get('first_name'),
-            self._user.get('last_name'),
+            self._user.get("first_name"),
+            self._user.get("last_name"),
         ]
 
-        return ' '.join(x for x in parts if x)
+        return " ".join(x for x in parts if x)
 
     async def get_timezone(self) -> Optional[tzinfo]:
         return None
@@ -183,52 +130,52 @@ class TelegramUser(User):
 
 
 class TelegramMessage(BaseMessage):
-    def __init__(self, update: Dict, telegram: 'Telegram'):
+    def __init__(self, update: Dict, telegram: "Telegram"):
         self._update = update
         self._telegram = telegram
 
     def get_layers(self) -> List[BaseLayer]:
         out = []
 
-        if 'message' in self._update:
-            msg = self._update.get('message', {})
+        if "message" in self._update:
+            msg = self._update.get("message", {})
 
-            if 'text' in msg:
-                text = msg['text']
+            if "text" in msg:
+                text = msg["text"]
                 out.append(lyr.RawText(text))
 
-                for entity in (msg.get('entities') or []):
-                    o = entity['offset']
-                    l = entity['length']
-                    entity_text = text[o:o + l]
+                for entity in msg.get("entities") or []:
+                    o = entity["offset"]
+                    l = entity["length"]
+                    entity_text = text[o : o + l]
 
-                    if entity['type'] == 'bot_command':
+                    if entity["type"] == "bot_command":
                         out.append(BotCommand(entity_text))
 
-            if 'reply_to_message' in msg:
+            if "reply_to_message" in msg:
                 sub_msg = TelegramMessage(
-                    {'message': msg['reply_to_message']},
+                    {"message": msg["reply_to_message"]},
                     self._telegram,
                 )
                 out.append(lyr.Message(sub_msg))
 
-            if 'photo' in msg:
-                media = Photo(msg['photo'])
+            if "photo" in msg:
+                media = Photo(msg["photo"])
                 out.append(lyr.Image(media))
 
-        if 'callback_query' in self._update:
-            payload = self._update['callback_query']['data']
+        if "callback_query" in self._update:
+            payload = self._update["callback_query"]["data"]
             out.append(lyr.Postback(ujson.loads(payload)))
             out.append(InlineMessage())
 
             sub_msg = TelegramMessage(
-                self._update['callback_query'],
+                self._update["callback_query"],
                 self._telegram,
             )
             out.append(lyr.Message(sub_msg))
 
-        if 'inline_query' in self._update:
-            out.append(InlineQuery(self._update['inline_query']))
+        if "inline_query" in self._update:
+            out.append(InlineQuery(self._update["inline_query"]))
 
         return out
 
@@ -241,19 +188,19 @@ class TelegramMessage(BaseMessage):
         this method tries to be smart about finding it in the right place.
         """
 
-        if 'callback_query' in self._update:
-            query = self._update['callback_query']
-            if 'message' in query:
-                return query['message']['chat']
+        if "callback_query" in self._update:
+            query = self._update["callback_query"]
+            if "message" in query:
+                return query["message"]["chat"]
             else:
-                return {'id': query['chat_instance']}
-        elif 'inline_query' in self._update:
+                return {"id": query["chat_instance"]}
+        elif "inline_query" in self._update:
             return patch_dict(
-                self._update['inline_query']['from'],
+                self._update["inline_query"]["from"],
                 is_inline_query=True,
             )
-        elif 'message' in self._update:
-            return self._update['message']['chat']
+        elif "message" in self._update:
+            return self._update["message"]["chat"]
 
     def _get_user(self) -> Dict:
         """
@@ -261,12 +208,12 @@ class TelegramMessage(BaseMessage):
         message.
         """
 
-        if 'callback_query' in self._update:
-            return self._update['callback_query']['from']
-        elif 'inline_query' in self._update:
-            return self._update['inline_query']['from']
-        elif 'message' in self._update:
-            return self._update['message']['from']
+        if "callback_query" in self._update:
+            return self._update["callback_query"]["from"]
+        elif "inline_query" in self._update:
+            return self._update["inline_query"]["from"]
+        elif "message" in self._update:
+            return self._update["message"]["from"]
 
     def get_conversation(self) -> Conversation:
         return TelegramConversation(self._get_chat())
@@ -275,19 +222,19 @@ class TelegramMessage(BaseMessage):
         return TelegramUser(self._get_user(), self._get_chat(), self._telegram)
 
     def get_chat_id(self) -> Text:
-        return self._get_chat()['id']
+        return self._get_chat()["id"]
 
     async def get_token(self) -> Text:
         user = self.get_user()
         # noinspection PyUnresolvedReferences,PyProtectedMember
-        user_id = user._user['id']
+        user_id = user._user["id"]
         # noinspection PyUnresolvedReferences,PyProtectedMember
-        chat_id = user._chat['id']
+        chat_id = user._chat["id"]
 
         return jwt.encode(
             {
-                'telegram_user_id': user_id,
-                'telegram_chat_id': chat_id,
+                "telegram_user_id": user_id,
+                "telegram_chat_id": chat_id,
             },
             settings.WEBVIEW_SECRET_KEY,
             algorithm=settings.WEBVIEW_JWT_ALGORITHM,
@@ -305,7 +252,7 @@ class TelegramResponder(Responder):
 
         self._update = update
 
-        if 'callback_query' in update:
+        if "callback_query" in update:
             self._acq = AnswerCallbackQuery()
         else:
             self._acq = None
@@ -319,37 +266,36 @@ class TelegramResponder(Responder):
         if not isinstance(stack, Stack):
             stack = Stack(stack)
 
-        if 'callback_query' in self._update and stack.has_layer(Update):
+        if "callback_query" in self._update and stack.has_layer(Update):
             layer = stack.get_layer(Update)
 
             try:
-                msg = self._update['callback_query']['message']
+                msg = self._update["callback_query"]["message"]
             except KeyError:
-                layer.inline_message_id = \
-                    self._update['callback_query']['inline_message_id']
+                layer.inline_message_id = self._update["callback_query"][
+                    "inline_message_id"
+                ]
             else:
-                layer.chat_id = msg['chat']['id']
-                layer.message_id = msg['message_id']
+                layer.chat_id = msg["chat"]["id"]
+                layer.message_id = msg["message_id"]
 
         if stack.has_layer(AnswerCallbackQuery):
             self._acq = stack.get_layer(AnswerCallbackQuery)
-            stack = Stack([
-                l for l in stack.layers
-                if not isinstance(l, AnswerCallbackQuery)
-            ])
+            stack = Stack(
+                [l for l in stack.layers if not isinstance(l, AnswerCallbackQuery)]
+            )
 
         if stack.has_layer(Reply):
             layer = stack.get_layer(Reply)
 
-            if 'message' in self._update:
-                layer.message = self._update['message']
-            elif 'callback_query' in self._update:
-                layer.message = self._update['callback_query']['message']
+            if "message" in self._update:
+                layer.message = self._update["message"]
+            elif "callback_query" in self._update:
+                layer.message = self._update["callback_query"]["message"]
 
-        if 'inline_query' in self._update \
-                and stack.has_layer(AnswerInlineQuery):
+        if "inline_query" in self._update and stack.has_layer(AnswerInlineQuery):
             a = stack.get_layer(AnswerInlineQuery)
-            a.inline_query_id = self._update['inline_query']['id']
+            a.inline_query_id = self._update["inline_query"]["id"]
 
         if stack.layers:
             return super(TelegramResponder, self).send(stack)
@@ -360,36 +306,33 @@ class TelegramResponder(Responder):
         before actually flushing the buffer.
         """
 
-        if self._acq and 'callback_query' in self._update:
+        if self._acq and "callback_query" in self._update:
             try:
-                cbq_id = self._update['callback_query']['id']
+                cbq_id = self._update["callback_query"]["id"]
             except KeyError:
                 pass
             else:
                 await self.platform.call(
-                    'answerCallbackQuery',
-                    **(await self._acq.serialize(cbq_id))
+                    "answerCallbackQuery", **(await self._acq.serialize(cbq_id))
                 )
 
         return await super(TelegramResponder, self).flush(request)
 
 
 class Telegram(SimplePlatform):
-    NAME = 'telegram'
+    NAME = "telegram"
     PATTERNS = {
-        'plain_text': '^(Text|RawText)+ '
-                      '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
-                      'Reply?$'
-
-                      '|^(Text|RawText) InlineKeyboard? Reply? Update$',
-        'inline_answer': '^AnswerInlineQuery$',
-        'markdown': '^Markdown+ '
-                    '(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? '
-                    'Reply?$'
-
-                    '|^Markdown InlineKeyboard? Reply? Update$',
-        'sleep': '^Sleep$',
-        'typing': '^Typing$',
+        "plain_text": "^(Text|RawText)+ "
+        "(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? "
+        "Reply?$"
+        "|^(Text|RawText) InlineKeyboard? Reply? Update$",
+        "inline_answer": "^AnswerInlineQuery$",
+        "markdown": "^Markdown+ "
+        "(InlineKeyboard|ReplyKeyboard|ReplyKeyboardRemove)? "
+        "Reply?$"
+        "|^Markdown InlineKeyboard? Reply? Update$",
+        "sleep": "^Sleep$",
+        "typing": "^Typing$",
     }
 
     @classmethod
@@ -408,28 +351,28 @@ class Telegram(SimplePlatform):
         s = cls.settings()
 
         try:
-            assert isinstance(s['token'], str)
+            assert isinstance(s["token"], str)
         except (KeyError, TypeError, AssertionError):
             yield HealthCheckFail(
-                '00005',
+                "00005",
                 'Missing "token" for Telegram platform. You can obtain one by'
-                'registering your bot in Telegram.',
+                "registering your bot in Telegram.",
             )
 
-        if not hasattr(settings, 'BERNARD_BASE_URL'):
+        if not hasattr(settings, "BERNARD_BASE_URL"):
             yield HealthCheckFail(
-                '00005',
+                "00005",
                 '"BERNARD_BASE_URL" cannot be found in the configuration. The'
-                'Telegram platform needs it because it uses it to '
-                'automatically register its hook.'
+                "Telegram platform needs it because it uses it to "
+                "automatically register its hook.",
             )
 
-        if not hasattr(settings, 'WEBVIEW_SECRET_KEY'):
+        if not hasattr(settings, "WEBVIEW_SECRET_KEY"):
             yield HealthCheckFail(
-                '00005',
+                "00005",
                 '"WEBVIEW_SECRET_KEY" cannot be found in the configuration. '
-                'It is required in order to be able to create secure postback '
-                'URLs.'
+                "It is required in order to be able to create secure postback "
+                "URLs.",
             )
 
     def hook_up(self, router: UrlDispatcher):
@@ -445,47 +388,53 @@ class Telegram(SimplePlatform):
         try:
             content = ujson.loads(body)
         except ValueError:
-            return json_response({
-                'error': True,
-                'message': 'Cannot decode body',
-            }, status=400)
+            return json_response(
+                {
+                    "error": True,
+                    "message": "Cannot decode body",
+                },
+                status=400,
+            )
 
-        logger.debug('Received from Telegram: %s', content)
+        logger.debug("Received from Telegram: %s", content)
 
         message = TelegramMessage(content, self)
         responder = TelegramResponder(content, self)
         await self._notify(message, responder)
 
-        return json_response({
-            'error': False,
-        })
+        return json_response(
+            {
+                "error": False,
+            }
+        )
 
-    async def message_from_token(self, token: Text, payload: Any) \
-            -> Optional[BaseMessage]:
+    async def message_from_token(
+        self, token: Text, payload: Any
+    ) -> Optional[BaseMessage]:
         try:
             tk = jwt.decode(token, settings.WEBVIEW_SECRET_KEY)
         except jwt.InvalidTokenError:
             return
 
         try:
-            user_id = tk['telegram_user_id']
+            user_id = tk["telegram_user_id"]
             assert isinstance(user_id, int)
-            chat_id = tk['telegram_chat_id']
+            chat_id = tk["telegram_chat_id"]
             assert isinstance(chat_id, int)
         except (KeyError, AssertionError):
             return
 
         fake_message = {
-            'callback_query': {
-                'from': {
-                    'id': user_id,
+            "callback_query": {
+                "from": {
+                    "id": user_id,
                 },
-                'message': {
-                    'chat': {
-                        'id': chat_id,
+                "message": {
+                    "chat": {
+                        "id": chat_id,
                     },
                 },
-                'data': ujson.dumps(payload),
+                "data": ujson.dumps(payload),
             }
         }
 
@@ -496,26 +445,25 @@ class Telegram(SimplePlatform):
         responder = TelegramResponder(message._update, self)
         await self._notify(message, responder)
 
-        return json_response({
-            'error': False,
-        })
+        return json_response(
+            {
+                "error": False,
+            }
+        )
 
     def make_url(self, method):
         """
         Generate a Telegram URL for this bot.
         """
 
-        token = self.settings()['token']
+        token = self.settings()["token"]
 
         return TELEGRAM_URL.format(
             token=quote(token),
             method=quote(method),
         )
 
-    async def call(self,
-                   method: Text,
-                   _ignore: Set[Text] = None,
-                   **params: Any):
+    async def call(self, method: Text, _ignore: Set[Text] = None, **params: Any):
         """
         Call a telegram method
 
@@ -526,12 +474,12 @@ class Telegram(SimplePlatform):
         :return: Returns the API response
         """
 
-        logger.debug('Calling Telegram %s(%s)', method, params)
+        logger.debug("Calling Telegram %s(%s)", method, params)
 
         url = self.make_url(method)
 
         headers = {
-            'content-type': 'application/json',
+            "content-type": "application/json",
         }
 
         post = self.session.post(
@@ -542,7 +490,7 @@ class Telegram(SimplePlatform):
 
         async with post as r:
             out = await self._handle_telegram_response(r, _ignore)
-            logger.debug('Telegram replied: %s', out)
+            logger.debug("Telegram replied: %s", out)
             return out
 
     async def _handle_telegram_response(self, response, ignore=None):
@@ -563,17 +511,16 @@ class Telegram(SimplePlatform):
             data = await response.json()
 
             if not ok:
-                desc = data['description']
+                desc = data["description"]
 
                 if desc in ignore:
                     return
 
                 raise PlatformOperationError(
-                    'Telegram replied with an error: {}'
-                    .format(desc)
+                    "Telegram replied with an error: {}".format(desc)
                 )
         except (ValueError, TypeError, KeyError):
-            raise PlatformOperationError('An unknown Telegram error occurred')
+            raise PlatformOperationError("An unknown Telegram error occurred")
 
         return data
 
@@ -582,11 +529,11 @@ class Telegram(SimplePlatform):
         Compute the path to the hook URL
         """
 
-        token = self.settings()['token']
+        token = self.settings()["token"]
         h = sha256()
         h.update(token.encode())
         key = str(h.hexdigest())
-        return f'/hooks/telegram/{key}'
+        return f"/hooks/telegram/{key}"
 
     async def _deferred_init(self):
         """
@@ -595,13 +542,12 @@ class Telegram(SimplePlatform):
 
         hook_path = self.make_hook_path()
         url = urljoin(settings.BERNARD_BASE_URL, hook_path)
-        await self.call('setWebhook', url=url)
+        await self.call("setWebhook", url=url)
         logger.info('Setting Telegram webhook to "%s"', url)
 
-    async def _send_text(self,
-                         request: Request,
-                         stack: Stack,
-                         parse_mode: Optional[Text] = None):
+    async def _send_text(
+        self, request: Request, stack: Stack, parse_mode: Optional[Text] = None
+    ):
         """
         Base function for sending text
         """
@@ -616,42 +562,40 @@ class Telegram(SimplePlatform):
 
         for part in parts[:-1]:
             await self.call(
-                'sendMessage',
+                "sendMessage",
                 text=part,
                 chat_id=chat_id,
             )
 
         msg = {
-            'text': parts[-1],
-            'chat_id': chat_id,
+            "text": parts[-1],
+            "chat_id": chat_id,
         }
 
         if parse_mode is not None:
-            msg['parse_mode'] = parse_mode
+            msg["parse_mode"] = parse_mode
 
         await set_reply_markup(msg, request, stack)
 
         if stack.has_layer(Reply):
             reply = stack.get_layer(Reply)
             if reply.message:
-                msg['reply_to_message_id'] = reply.message['message_id']
+                msg["reply_to_message_id"] = reply.message["message_id"]
 
         if stack.has_layer(Update):
             update = stack.get_layer(Update)
 
             if update.inline_message_id:
-                msg['inline_message_id'] = update.inline_message_id
-                del msg['chat_id']
+                msg["inline_message_id"] = update.inline_message_id
+                del msg["chat_id"]
             else:
-                msg['message_id'] = update.message_id
+                msg["message_id"] = update.message_id
 
             await self.call(
-                'editMessageText',
-                {'Bad Request: message is not modified'},
-                **msg
+                "editMessageText", {"Bad Request: message is not modified"}, **msg
             )
         else:
-            await self.call('sendMessage', **msg)
+            await self.call("sendMessage", **msg)
 
     async def _send_plain_text(self, request: Request, stack: Stack):
         """
@@ -665,7 +609,7 @@ class Telegram(SimplePlatform):
         Sends Markdown using `_send_text()`
         """
 
-        await self._send_text(request, stack, 'Markdown')
+        await self._send_text(request, stack, "Markdown")
 
     async def _send_sleep(self, request: Request, stack: Stack):
         """
@@ -678,7 +622,7 @@ class Telegram(SimplePlatform):
     async def _send_inline_answer(self, request: Request, stack: Stack):
         aiq = stack.get_layer(AnswerInlineQuery)
         answer = await aiq.serialize(request)
-        await self.call('answerInlineQuery', **answer)
+        await self.call("answerInlineQuery", **answer)
 
     async def _send_typing(self, request: Request, stack: Stack):
         """
@@ -691,9 +635,9 @@ class Telegram(SimplePlatform):
 
         if t.active:
             await self.call(
-                'sendChatAction',
+                "sendChatAction",
                 chat_id=request.message.get_chat_id(),
-                action='typing',
+                action="typing",
             )
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:

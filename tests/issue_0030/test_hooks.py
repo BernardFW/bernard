@@ -1,44 +1,27 @@
-from bernard.conf.utils import (
-    patch_conf,
-)
-from bernard.engine.request import (
-    BaseMessage,
-    Conversation,
-    Request,
-    User,
-)
-from bernard.i18n import (
-    Translator,
-)
-from bernard.i18n.translator import (
-    WordDictionary,
-)
-from bernard.middleware import (
-    BaseMiddleware,
-)
-from bernard.storage.register import (
-    Register,
-)
-from bernard.utils import (
-    run,
-)
+from bernard.conf.utils import patch_conf
+from bernard.engine.request import BaseMessage, Conversation, Request, User
+from bernard.i18n import Translator
+from bernard.i18n.translator import WordDictionary
+from bernard.middleware import BaseMiddleware
+from bernard.storage.register import Register
+from bernard.utils import run
 
 
 class AddName(BaseMiddleware):
     async def resolve_trans_params(self, params, request):
         params = await self.next(params, request)
-        params['name'] = 'Foo'
+        params["name"] = "Foo"
         return params
 
     async def make_trans_flags(self, request):
         flags = await self.next(request)
-        flags['gender'] = 'male'
+        flags["gender"] = "male"
         return flags
 
 
 CONFIG = {
-    'MIDDLEWARES': [
-        'tests.issue_0030.test_hooks.AddName',
+    "MIDDLEWARES": [
+        "tests.issue_0030.test_hooks.AddName",
     ],
 }
 
@@ -54,13 +37,13 @@ class MockUser(User):
 
 class BaseMockMessage(BaseMessage):
     def get_platform(self):
-        return 'mock'
+        return "mock"
 
     def get_user(self):
-        return MockUser('fake_user')
+        return MockUser("fake_user")
 
     def get_conversation(self):
-        return Conversation('fake_convo')
+        return Conversation("fake_convo")
 
     def get_layers(self):
         raise NotImplementedError
@@ -76,11 +59,15 @@ def test_resolve_params():
         wd = WordDictionary()
         t = Translator(wd)
 
-        wd.update_lang(None, [
-            ('HELLO', 'Hello, {name}!'),
-        ], {})
+        wd.update_lang(
+            None,
+            [
+                ("HELLO", "Hello, {name}!"),
+            ],
+            {},
+        )
 
-        assert run(t.HELLO.render_list(None)) == ['Hello, Foo!']
+        assert run(t.HELLO.render_list(None)) == ["Hello, Foo!"]
 
 
 def test_make_trans_flags():
@@ -93,12 +80,20 @@ def test_make_trans_flags():
             Register({}),
         )
 
-        wd.update_lang(None, [
-            ('HELLO', 'Hello boy'),
-        ], {'gender': 'male'})
+        wd.update_lang(
+            None,
+            [
+                ("HELLO", "Hello boy"),
+            ],
+            {"gender": "male"},
+        )
 
-        wd.update_lang(None, [
-            ('HELLO', 'Hello girl'),
-        ], {'gender': 'female'})
+        wd.update_lang(
+            None,
+            [
+                ("HELLO", "Hello girl"),
+            ],
+            {"gender": "female"},
+        )
 
-        assert run(t.HELLO.render_list(req)) == ['Hello boy']
+        assert run(t.HELLO.render_list(req)) == ["Hello boy"]

@@ -1,22 +1,12 @@
-# coding: utf-8
 import asyncio
-from typing import (
-    Any,
-    Dict,
-    Text,
-)
+from typing import Any, Dict, Text
 
 import ujson
-from bernard.conf import (
-    settings,
-)
 
-from ..redis import (
-    BaseRedisStore,
-)
-from .base import (
-    BaseRegisterStore,
-)
+from bernard.conf import settings
+
+from ..redis import BaseRedisStore
+from .base import BaseRegisterStore
 
 
 class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
@@ -31,13 +21,13 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         """
         Compute the internal lock key for the specified key
         """
-        return 'register::lock:{}'.format(key)
+        return "register::lock:{}".format(key)
 
     def register_key(self, key: Text) -> Text:
         """
         Compute the internal register content key for the specified key
         """
-        return 'register::content:{}'.format(key)
+        return "register::content:{}".format(key)
 
     async def _start(self, key: Text) -> None:
         """
@@ -46,16 +36,10 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Here we use a SETNX-based algorithm. It's quite shitty, change it.
         """
         for _ in range(0, 1000):
-            with await self.pool as r:
-                just_set = await r.set(
-                    self.lock_key(key),
-                    '',
-                    expire=settings.REGISTER_LOCK_TIME,
-                    exist=r.SET_IF_NOT_EXIST,
-                )
+            just_set = await self.redis.setnx(self.lock_key(key), "")
 
-                if just_set:
-                    break
+            if just_set:
+                break
 
             await asyncio.sleep(settings.REDIS_POLL_INTERVAL)
 
@@ -64,8 +48,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Remove the lock.
         """
 
-        with await self.pool as r:
-            await r.delete(self.lock_key(key))
+        await self.redis.delete(self.lock_key(key))
 
     async def _get(self, key: Text) -> Dict[Text, Any]:
         """
@@ -74,8 +57,7 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         """
 
         try:
-            with await self.pool as r:
-                return ujson.loads(await r.get(self.register_key(key)))
+            return ujson.loads(await self.redis.get(self.register_key(key)))
         except (ValueError, TypeError):
             return {}
 
@@ -84,5 +66,4 @@ class RedisRegisterStore(BaseRedisStore, BaseRegisterStore):
         Replace the register with a new value.
         """
 
-        with await self.pool as r:
-            await r.set(self.register_key(key), ujson.dumps(data))
+        await self.redis.set(self.register_key(key), ujson.dumps(data))

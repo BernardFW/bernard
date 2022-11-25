@@ -1,39 +1,16 @@
-# coding: utf-8
 import asyncio
-from typing import (
-    Any,
-    Callable,
-    Coroutine,
-    List,
-    Optional,
-    Text,
-)
+from typing import Any, Callable, Coroutine, List, Optional, Text
 
 import aiohttp
-from aiohttp.web_urldispatcher import (
-    UrlDispatcher,
-)
+from aiohttp.web_urldispatcher import UrlDispatcher
 
-from bernard.engine.request import (
-    Request,
-)
-from bernard.engine.responder import (
-    Responder,
-    UnacceptableStack,
-)
-from bernard.layers import (
-    Stack,
-)
-from bernard.media.base import (
-    BaseMedia,
-)
-from bernard.utils import (
-    import_class,
-)
+from bernard.engine.request import Request
+from bernard.engine.responder import Responder, UnacceptableStack
+from bernard.layers import Stack
+from bernard.media.base import BaseMedia
+from bernard.utils import import_class
 
-from .request import (
-    BaseMessage,
-)
+from .request import BaseMessage
 
 MessageCallback = Callable[[BaseMessage, Responder, bool], None]
 
@@ -78,9 +55,9 @@ class Platform(object):
         from bernard.platforms.management import get_platform_settings
 
         for platform in get_platform_settings():
-            candidate = import_class(platform['class'])
+            candidate = import_class(platform["class"])
             if candidate == cls:
-                return platform.get('settings', {})
+                return platform.get("settings", {})
 
     @property
     def id(self):
@@ -150,8 +127,9 @@ class Platform(object):
 
         pass
 
-    async def message_from_token(self, token: Text, payload: Any) \
-            -> Optional[BaseMessage]:
+    async def message_from_token(
+        self, token: Text, payload: Any
+    ) -> Optional[BaseMessage]:
         """
         Given a token and a payload, create a message for this platform with
         a Postback layer holding the payload.
@@ -213,16 +191,17 @@ class SimplePlatform(Platform):
 
         if stack.annotation not in self.PATTERNS:
             if not self.accept(stack):
-                raise UnacceptableStack('Cannot accept stack {}'.format(stack))
+                raise UnacceptableStack("Cannot accept stack {}".format(stack))
 
-        func = getattr(self, '_send_' + stack.annotation)
+        func = getattr(self, "_send_" + stack.annotation)
         return func(request, stack)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError
 
-    async def message_from_token(self, token: Text, payload: Any)\
-            -> Optional[BaseMessage]:
+    async def message_from_token(
+        self, token: Text, payload: Any
+    ) -> Optional[BaseMessage]:
         raise NotImplementedError
 
     async def inject_message(self, message: BaseMessage) -> None:

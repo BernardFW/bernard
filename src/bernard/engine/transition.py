@@ -1,24 +1,10 @@
-# coding: utf-8
-from typing import (
-    Optional,
-    Text,
-    Tuple,
-    Type,
-)
+from typing import Optional, Text, Tuple, Type
 
-from bernard.conf import (
-    settings,
-)
-from bernard.utils import (
-    run_or_return,
-)
+from bernard.conf import settings
+from bernard.utils import run_or_return
 
-from .state import (
-    BaseState,
-)
-from .triggers import (
-    BaseTrigger,
-)
+from .state import BaseState
+from .triggers import BaseTrigger
 
 
 class Transition(object):
@@ -27,14 +13,16 @@ class Transition(object):
     trigger in charge.
     """
 
-    def __init__(self,
-                 dest: Type[BaseState],
-                 factory,
-                 origin: Type[BaseState]=None,
-                 weight: float=1.0,
-                 desc: Text='',
-                 internal: bool=False,
-                 do_not_register: bool=False):
+    def __init__(
+        self,
+        dest: Type[BaseState],
+        factory,
+        origin: Type[BaseState] = None,
+        weight: float = 1.0,
+        desc: Text = "",
+        internal: bool = False,
+        do_not_register: bool = False,
+    ):
         """
         Create the transition.
 
@@ -63,19 +51,15 @@ class Transition(object):
             self.origin_name = None
 
     def __str__(self):
-        return '{} -[{}]-> {}'.format(
-            self.origin.__name__ if self.origin else '(init)',
-            getattr(self.factory, 'trigger_name', '???'),
+        return "{} -[{}]-> {}".format(
+            self.origin.__name__ if self.origin else "(init)",
+            getattr(self.factory, "trigger_name", "???"),
             self.dest.__name__,
         )
 
-    async def rank(self, request, origin: Optional[Text]) \
-            -> Tuple[
-                float,
-                Optional[BaseTrigger],
-                Optional[type],
-                Optional[bool],
-            ]:
+    async def rank(
+        self, request, origin: Optional[Text]
+    ) -> Tuple[float, Optional[BaseTrigger], Optional[type], Optional[bool],]:
         """
         Computes the rank of this transition for a given request.
 

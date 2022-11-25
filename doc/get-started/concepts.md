@@ -36,7 +36,7 @@ is a very hot topic at the moment. However, let's dial down a bit:
 
 In short, don't try to pass the
 [Turing test](https://en.wikipedia.org/wiki/Turing_test). Instead,
-create an experience that don't depend on understanding what your users
+create an experience that doesn't depend on understanding what your users
 say.
 
 However, there is still a need to understand a few things. And also,
@@ -44,7 +44,7 @@ if you're selling bots, your clients will ask for it and even if they
 don't they will expect it and if you don't plan ahead this is going to
 suck up all your energy. Which is not worth it for about 3% of users.
 
-There is a built-in [intents detection system](./nlu.md) based on very
+There is a built-in [intents detection system](../lang/nlu.md) based on very
 simple techniques. There is also the
 [Iron Throne](https://github.com/BernardFW/iron-throne) project that
 proposes a very simple NLU engine which can be quite effective for

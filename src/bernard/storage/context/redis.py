@@ -1,17 +1,9 @@
-# coding: utf-8
-from typing import (
-    Text,
-)
+from typing import Text
 
 import ujson
 
-from ..redis import (
-    BaseRedisStore,
-)
-from .base import (
-    BaseContextStore,
-    Context,
-)
+from ..redis import BaseRedisStore
+from .base import BaseContextStore, Context
 
 
 class RedisContextStore(BaseRedisStore, BaseContextStore):
@@ -22,11 +14,9 @@ class RedisContextStore(BaseRedisStore, BaseContextStore):
 
     async def _get(self, key: Text) -> Context:
         try:
-            with await self.pool as r:
-                return ujson.loads(await r.get(key))
+            return ujson.loads(await self.redis.get(key))
         except (ValueError, TypeError):
             return {}
 
     async def _set(self, key: Text, data: Context) -> None:
-        with await self.pool as r:
-            await r.set(key, ujson.dumps(data), expire=self.ttl)
+        await self.redis.set(key, ujson.dumps(data), expire=self.ttl)

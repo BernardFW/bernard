@@ -1,34 +1,22 @@
-# coding: utf-8
 import asyncio
 import importlib
 import re
-from asyncio import (
-    iscoroutine,
-)
-from collections import (
-    Mapping,
-    Sequence,
-)
-from itertools import (
-    chain,
-)
+from asyncio import iscoroutine
+from itertools import chain
 from typing import (
     Any,
     Coroutine,
     Dict,
     Iterator,
     List,
+    Mapping,
+    Sequence,
     Text,
     Tuple,
     Type,
     Union,
 )
-from urllib.parse import (
-    parse_qsl,
-    urlencode,
-    urlparse,
-    urlunparse,
-)
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 
 def import_class(name: Text) -> Type:
@@ -38,10 +26,10 @@ def import_class(name: Text) -> Type:
     :param name: name of the class
     """
 
-    parts = name.split('.')
+    parts = name.split(".")
     module_name = parts[:-1]
     class_name = parts[-1]
-    module_ = importlib.import_module('.'.join(module_name))
+    module_ = importlib.import_module(".".join(module_name))
     return getattr(module_, class_name)
 
 
@@ -133,8 +121,7 @@ def make_ro(obj: Any, forgive_type=False):
                          raising an exception)
     """
 
-    if isinstance(obj, (str, bytes, int, float, bool, RoDict, RoList)) \
-            or obj is None:
+    if isinstance(obj, (str, bytes, int, float, bool, RoDict, RoList)) or obj is None:
         return obj
     elif isinstance(obj, Mapping):
         return RoDict(obj, forgive_type)
@@ -143,8 +130,11 @@ def make_ro(obj: Any, forgive_type=False):
     elif forgive_type:
         return obj
     else:
-        raise ValueError('Trying to make read-only an object of type "{}"'
-                         .format(obj.__class__.__name__))
+        raise ValueError(
+            'Trying to make read-only an object of type "{}"'.format(
+                obj.__class__.__name__
+            )
+        )
 
 
 def make_rw(obj: Any):
@@ -167,8 +157,8 @@ class ClassExp(object):
     Perform regular expression matching on list of classes.
     """
 
-    RE_SPACES = re.compile(r'\s+')
-    RE_PYTHON_VAR = re.compile(r'([A-Za-z_][A-Za-z_0-9]*)')
+    RE_SPACES = re.compile(r"\s+")
+    RE_PYTHON_VAR = re.compile(r"([A-Za-z_][A-Za-z_0-9]*)")
 
     def __init__(self, expression):
         self._initial_expression = expression
@@ -179,8 +169,8 @@ class ClassExp(object):
         Transform a class exp into an actual regex
         """
 
-        x = self.RE_PYTHON_VAR.sub('(?:\\1,)', expression)
-        x = self.RE_SPACES.sub('', x)
+        x = self.RE_PYTHON_VAR.sub("(?:\\1,)", expression)
+        x = self.RE_SPACES.sub("", x)
         return re.compile(x)
 
     def _make_string(self, objects: List[Any]) -> Text:
@@ -188,7 +178,7 @@ class ClassExp(object):
         Transforms a list of objects into a matchable string
         """
 
-        return ''.join(x.__class__.__name__ + ',' for x in objects)
+        return "".join(x.__class__.__name__ + "," for x in objects)
 
     def match(self, objects: List[Any]) -> bool:
         """
@@ -215,10 +205,12 @@ def patch_qs(url: Text, data: Dict[Text, Text]) -> Text:
     qs_id = 4
     p = list(urlparse(url))
     qs = parse_qsl(p[qs_id])  # type: List[Tuple[Text, Text]]
-    patched_qs = list(chain(
-        filter(lambda x: x[0] not in data, qs),
-        data.items(),
-    ))
+    patched_qs = list(
+        chain(
+            filter(lambda x: x[0] not in data, qs),
+            data.items(),
+        )
+    )
 
     p[qs_id] = urlencode(patched_qs)
 

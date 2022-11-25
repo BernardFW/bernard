@@ -1,6 +1,3 @@
-# coding: utf-8
-
-
 class HealthCheckFail(object):
     """
     This object describes a failed health check.

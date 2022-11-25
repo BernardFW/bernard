@@ -14,15 +14,15 @@ if __name__ == '__main__':
 ```
 
 Well I'm sorry, this is a trick. No 3-liner can ever cover how to make
-a bot with BERNARD. You have to bear in mind that doing bots is a
+a bot with BERNARD. You have to bear in mind that creating bots is a
 **brand new craft** that you need to learn. When we asked COBOL
 developers to build websites, it was a disaster. Do you remember when
 JavaScript was only used to make snow fall at Christmas time? In fact,
-it took up until a few years to find what are the required skills and
-tools to build a website. The same thing is happening with bots: it's a
-new craft that nobody masters yet. It's up to all of us to build it!
+it took up until just a few years ago to find out what the required skills, and
+tools, to build a website were. The very same thing is happening with bots: it's a
+brand new craft that nobody has mastered yet. It's up to all of us to build it!
 
-This introduction to BERNARD is a walk-trough the basic features of the
+This introduction to BERNARD is a walk-through the basic features of the
 framework and intends to give you the techniques that BERNARD authors
 think are right. From here on, concepts and theory will be explained as
 general truth but keep in mind that it's just a point of view.

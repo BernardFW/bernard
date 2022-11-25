@@ -1,28 +1,15 @@
-# coding: utf-8
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    List,
-    Text,
-    Type,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Dict, List, Text, Type, TypeVar
 
-from bernard.utils import (
-    ClassExp,
-    RoList,
-)
+from bernard.utils import ClassExp, RoList
 
-from .definitions import (
-    BaseLayer,
-)
+from .definitions import BaseLayer
 
 if TYPE_CHECKING:
-    from bernard.engine.request import Request
     from bernard.engine.platform import Platform
+    from bernard.engine.request import Request
 
 
-L = TypeVar('L')
+L = TypeVar("L")
 
 
 class Stack(object):
@@ -38,7 +25,7 @@ class Stack(object):
     You have helper functions to filter through layer types and so on.
     """
 
-    def __init__(self, layers: List['BaseLayer']):
+    def __init__(self, layers: List["BaseLayer"]):
         self._layers = []
         self._index = {}
         self._transformed = {}
@@ -47,14 +34,13 @@ class Stack(object):
 
     def __eq__(self, other):
         # noinspection PyProtectedMember
-        return (self.__class__ == other.__class__ and
-                self._layers == other._layers)
+        return self.__class__ == other.__class__ and self._layers == other._layers
 
     def __repr__(self):
-        return 'Stack({})'.format(', '.join(repr(x) for x in self._layers))
+        return "Stack({})".format(", ".join(repr(x) for x in self._layers))
 
     @property
-    def layers(self) -> List['BaseLayer']:
+    def layers(self) -> List["BaseLayer"]:
         """
         Return a read-only version of the layers list, so people don't get
         tempted to append stuff to the list (which would break the index).
@@ -63,7 +49,7 @@ class Stack(object):
         return RoList(self._layers, True)
 
     @layers.setter
-    def layers(self, value: List['BaseLayer']):
+    def layers(self, value: List["BaseLayer"]):
         """
         Perform a copy of the layers list in order to avoid the list changing
         without updating the index.
@@ -98,7 +84,7 @@ class Stack(object):
 
         self._transformed = out
 
-    def has_layer(self, class_: Type[L], became: bool=True) -> bool:
+    def has_layer(self, class_: Type[L], became: bool = True) -> bool:
         """
         Test the presence of a given layer type.
 
@@ -106,10 +92,9 @@ class Stack(object):
         :param became: Allow transformed layers in results
         """
 
-        return (class_ in self._index or
-                (became and class_ in self._transformed))
+        return class_ in self._index or (became and class_ in self._transformed)
 
-    def get_layer(self, class_: Type[L], became: bool=True) -> L:
+    def get_layer(self, class_: Type[L], became: bool = True) -> L:
         """
         Return the first layer of a given class. If that layer is not present,
         then raise a KeyError.
@@ -126,7 +111,7 @@ class Stack(object):
             else:
                 raise
 
-    def get_layers(self, class_: Type[L], became: bool=True) -> List[L]:
+    def get_layers(self, class_: Type[L], became: bool = True) -> List[L]:
         """
         Returns the list of layers of a given class. If no layers are present
         then the list will be empty.
@@ -143,11 +128,9 @@ class Stack(object):
         return out
 
     def describe(self) -> Text:
-        return ', '.join(
-            s.__class__.__name__ for s in self._layers
-        )
+        return ", ".join(s.__class__.__name__ for s in self._layers)
 
-    async def patch_register(self, register: Dict, request: 'Request'):
+    async def patch_register(self, register: Dict, request: "Request"):
         for layer in self._layers:  # type: BaseLayer
             register = await layer.patch_register(register, request)
         return register
@@ -156,7 +139,7 @@ class Stack(object):
         e = ClassExp(expression)
         return e.match(self._layers)
 
-    async def convert_media(self, platform: 'Platform') -> None:
+    async def convert_media(self, platform: "Platform") -> None:
         """
         Polls all the layers to convert the media inside.
         """

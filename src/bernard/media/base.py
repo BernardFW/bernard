@@ -1,6 +1,3 @@
-# coding: utf-8
-
-
 class BaseMedia(object):
     """
     Different platforms have different ways of representing medias. The goal
@@ -26,8 +23,7 @@ class UrlMedia(BaseMedia):
         self.url = url
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.url == other.url)
+        return self.__class__ == other.__class__ and self.url == other.url
 
     def __repr__(self):
-        return 'UrlMedia({})'.format(repr(self.url))
+        return "UrlMedia({})".format(repr(self.url))

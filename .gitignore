@@ -7,3 +7,4 @@ MANIFEST
 *.log
 .cache
 *.egg-info
+.python-version

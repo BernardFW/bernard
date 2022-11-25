@@ -1,34 +1,14 @@
-# coding: utf-8
 import asyncio
-from typing import (
-    Any,
-    Callable,
-    List,
-    Optional,
-    Text as TextT,
-    Type,
-)
+from typing import Any, Callable, List, Optional
+from typing import Text as TextT
+from typing import Type
 
-from bernard import (
-    layers as l,
-)
-from bernard.engine.request import (
-    Request,
-)
-from bernard.i18n import (
-    intents,
-    render,
-)
-from bernard.i18n.intents import (
-    Intent,
-)
-from bernard.trigram import (
-    Matcher,
-    Trigram,
-)
-from bernard.utils import (
-    run_or_return,
-)
+from bernard import layers as l
+from bernard.engine.request import Request
+from bernard.i18n import intents, render
+from bernard.i18n.intents import Intent
+from bernard.trigram import Matcher, Trigram
+from bernard.utils import run_or_return
 
 
 class BaseTrigger(object):
@@ -36,9 +16,10 @@ class BaseTrigger(object):
         self.request = request
 
     @classmethod
-    def builder(cls, *args, **kwargs) -> Callable[[Request], 'BaseTrigger']:
+    def builder(cls, *args, **kwargs) -> Callable[[Request], "BaseTrigger"]:
         def factory(request: Request):
             return cls(request, *args, **kwargs)
+
         factory.trigger_name = cls.__name__
         return factory
 
@@ -72,7 +53,7 @@ class SharedTrigger(BaseTrigger):
         Computes a unique name for this class
         """
 
-        return f'{cls.__module__}.{cls.__qualname__}'
+        return f"{cls.__module__}.{cls.__qualname__}"
 
     @property
     def content_key(self) -> str:
@@ -80,7 +61,7 @@ class SharedTrigger(BaseTrigger):
         That's the key used to store the content in the request
         """
 
-        return f'{self.name()}::content'
+        return f"{self.name()}::content"
 
     @property
     def lock_key(self) -> str:
@@ -88,7 +69,7 @@ class SharedTrigger(BaseTrigger):
         That's the key to store the lock of this trigger
         """
 
-        return f'{self.name()}::lock'
+        return f"{self.name()}::lock"
 
     @property
     def lock(self) -> asyncio.Lock:
@@ -170,10 +151,12 @@ class Text(BaseTrigger):
             return
 
         tl = self.request.get_layer(l.RawText)
-        matcher = Matcher([
-            tuple(Trigram(y) for y in x)
-            for x in await self.intent.strings(self.request)
-        ])
+        matcher = Matcher(
+            [
+                tuple(Trigram(y) for y in x)
+                for x in await self.intent.strings(self.request)
+            ]
+        )
 
         return matcher % Trigram(tl.text)
 
@@ -190,7 +173,7 @@ class Choice(BaseTrigger):
     The optional `when` argument allows to limit matching to a single choice.
     """
 
-    def __init__(self, request: Request, when: Optional[TextT]=None):
+    def __init__(self, request: Request, when: Optional[TextT] = None):
         super(Choice, self).__init__(request)
         self.when = when
         self.slug = None
@@ -224,12 +207,12 @@ class Choice(BaseTrigger):
         for slug, params in choices.items():
             strings = []
 
-            if params['intent']:
-                intent = getattr(intents, params['intent'])
+            if params["intent"]:
+                intent = getattr(intents, params["intent"])
                 strings += await intent.strings(self.request)
 
-            if params['text']:
-                strings.append((params['text'],))
+            if params["text"]:
+                strings.append((params["text"],))
 
             matcher = Matcher([tuple(Trigram(y) for y in x) for x in strings])
             score = matcher % Trigram(await render(tl.text, self.request))
@@ -252,7 +235,7 @@ class Choice(BaseTrigger):
         """
         from bernard.platforms.facebook import layers as fbl
 
-        choices = self.request.get_trans_reg('choices')
+        choices = self.request.get_trans_reg("choices")
 
         if not choices:
             return
@@ -279,7 +262,7 @@ class Action(BaseTrigger):
             pb = self.request.get_layer(l.Postback)
 
             try:
-                if pb.payload['action'] == self.action:
+                if pb.payload["action"] == self.action:
                     return 1.0
             except (TypeError, KeyError):
                 pass
@@ -310,14 +293,16 @@ class BaseSlugTrigger(BaseTrigger):
 
     LAYER_TYPE = None
 
-    def __init__(self, request: Request, slug: Optional[Text]=None):
+    def __init__(self, request: Request, slug: Optional[Text] = None):
         super(BaseSlugTrigger, self).__init__(request)
         self.slug = slug
 
     def rank(self) -> Optional[float]:
         if self.request.has_layer(self.LAYER_TYPE):
-            if self.request.get_layer(self.LAYER_TYPE).slug == self.slug or \
-                    self.slug is None:
+            if (
+                self.request.get_layer(self.LAYER_TYPE).slug == self.slug
+                or self.slug is None
+            ):
                 return 1.0
 
 
@@ -330,9 +315,9 @@ class Worst(BaseTrigger):
     tests.
     """
 
-    def __init__(self,
-                 request: Request,
-                 triggers: List[Callable[[Request], 'BaseTrigger']]):
+    def __init__(
+        self, request: Request, triggers: List[Callable[[Request], "BaseTrigger"]]
+    ):
         super(Worst, self).__init__(request)
         self.triggers = triggers
 

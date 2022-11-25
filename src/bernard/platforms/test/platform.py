@@ -1,42 +1,14 @@
-# coding: utf-8
-from typing import (
-    List,
-    Text,
-    Tuple,
-    Type,
-)
+from typing import List, Text, Tuple, Type
 
-from bernard.engine.fsm import (
-    FSM,
-)
-from bernard.engine.platform import (
-    Platform,
-)
-from bernard.engine.request import (
-    BaseMessage,
-    Conversation,
-    Request,
-    User,
-)
-from bernard.engine.responder import (
-    Responder,
-)
-from bernard.engine.state import (
-    BaseState,
-)
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
-from bernard.media.base import (
-    BaseMedia,
-)
-from bernard.storage.register import (
-    Register,
-)
-from bernard.utils import (
-    run,
-)
+from bernard.engine.fsm import FSM
+from bernard.engine.platform import Platform
+from bernard.engine.request import BaseMessage, Conversation, Request, User
+from bernard.engine.responder import Responder
+from bernard.engine.state import BaseState
+from bernard.layers import BaseLayer, Stack
+from bernard.media.base import BaseMedia
+from bernard.storage.register import Register
+from bernard.utils import run
 
 
 class TestUser(User):
@@ -45,13 +17,13 @@ class TestUser(User):
     """
 
     def get_friendly_name(self) -> Text:
-        return 'Test'
+        return "Test"
 
     def get_formal_name(self) -> Text:
-        return 'Formal Test'
+        return "Formal Test"
 
     def get_full_name(self) -> Text:
-        return 'Full Test'
+        return "Full Test"
 
     async def get_timezone(self):
         return None
@@ -78,19 +50,19 @@ class TestMessage(BaseMessage):
         """
         That's the test platform
         """
-        return 'test'
+        return "test"
 
     def get_user(self):
         """
         So far the user is static
         """
-        return TestUser('test:test-id')
+        return TestUser("test:test-id")
 
     def get_conversation(self):
         """
         So far the conversation is static
         """
-        return TestConversation('test:test-id')
+        return TestConversation("test:test-id")
 
     def get_layers(self):
         """
@@ -121,7 +93,7 @@ class TestPlatform(Platform):
     >>> platform.assert_sent(l.stack(l.Text(t.HELLO)))
     """
 
-    NAME = 'test'
+    NAME = "test"
 
     fsm_creates_task = False
 

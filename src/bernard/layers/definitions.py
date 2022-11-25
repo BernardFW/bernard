@@ -1,26 +1,15 @@
-# coding: utf-8
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    NamedTuple,
-    Optional,
-    Text as TextT,
-    Type,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Dict, NamedTuple, Optional
+from typing import Text as TextT
+from typing import Type, TypeVar
 
-from bernard.i18n import (
-    TransText,
-    render,
-)
+from bernard.i18n import TransText, render
 
 if TYPE_CHECKING:
-    from bernard.engine.request import Request
     from bernard.engine.platform import Platform
-    from bernard.engine.request import BaseMessage
+    from bernard.engine.request import BaseMessage, Request
 
 
-L = TypeVar('L')
+L = TypeVar("L")
 
 
 class BaseLayer(object):
@@ -28,15 +17,15 @@ class BaseLayer(object):
         raise NotImplementedError
 
     def __repr__(self):
-        return '{}({})'.format(
+        return "{}({})".format(
             self.__class__.__name__,
-            ','.join(repr(x) for x in self._repr_arguments()),
+            ",".join(repr(x) for x in self._repr_arguments()),
         )
 
     def _repr_arguments(self):
         raise NotImplementedError
 
-    async def patch_register(self, register: Dict, request: 'Request') -> Dict:
+    async def patch_register(self, register: Dict, request: "Request") -> Dict:
         """
         If you want to put a value in the transition register, you can overload
         this function and patch the provided register.
@@ -72,14 +61,14 @@ class BaseLayer(object):
         """
         return []
 
-    async def become(self, layer_type: Type[L], request: 'Request') -> L:
+    async def become(self, layer_type: Type[L], request: "Request") -> L:
         """
         Transform this layer into another layer type
         """
 
         raise ValueError('Cannot become "{}"'.format(layer_type.__name__))
 
-    async def convert_media(self, platform: 'Platform') -> None:
+    async def convert_media(self, platform: "Platform") -> None:
         """
         Convert this layer's media if needed
         """
@@ -95,8 +84,7 @@ class Text(BaseLayer):
         self.text = text
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.text == other.text)
+        return self.__class__ == other.__class__ and self.text == other.text
 
     def _repr_arguments(self):
         return [self.text]
@@ -107,7 +95,7 @@ class Text(BaseLayer):
         """
         return [RawText]
 
-    async def become(self, layer_type: Type[L], request: 'Request'):
+    async def become(self, layer_type: Type[L], request: "Request"):
         """
         Transforms the translatable string into an actual string and put it
         inside a RawText.
@@ -134,8 +122,7 @@ class RawText(BaseLayer):
         self.text = text
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.text == other.text)
+        return self.__class__ == other.__class__ and self.text == other.text
 
     def _repr_arguments(self):
         return [self.text]
@@ -154,7 +141,7 @@ class Markdown(BaseLayer):
 
     def _repr_arguments(self):
         if len(self.text) > 15:
-            text = self.text[:12] + '...'
+            text = self.text[:12] + "..."
         else:
             text = self.text
 
@@ -170,8 +157,7 @@ class Sleep(BaseLayer):
         self.duration = duration
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.duration == other.duration)
+        return self.__class__ == other.__class__ and self.duration == other.duration
 
     def _repr_arguments(self):
         return [self.duration]
@@ -187,8 +173,7 @@ class Postback(BaseLayer):
         self.payload = payload
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.payload == other.payload)
+        return self.__class__ == other.__class__ and self.payload == other.payload
 
     def _repr_arguments(self):
         return [self.payload]
@@ -205,8 +190,7 @@ class BaseMediaLayer(BaseLayer):
         self.media = media
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.media == other.media)
+        return self.__class__ == other.__class__ and self.media == other.media
 
     def _repr_arguments(self):
         return [self.media]
@@ -216,6 +200,7 @@ class Image(BaseMediaLayer):
     """
     Represents an image
     """
+
     pass
 
 
@@ -223,6 +208,7 @@ class Audio(BaseMediaLayer):
     """
     Represents some audio
     """
+
     pass
 
 
@@ -230,6 +216,7 @@ class File(BaseMediaLayer):
     """
     Represents an arbitrary file
     """
+
     pass
 
 
@@ -237,6 +224,7 @@ class Video(BaseMediaLayer):
     """
     Represents a video
     """
+
     pass
 
 
@@ -257,8 +245,7 @@ class Location(BaseLayer):
         self.point = point
 
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.point == other.point)
+        return self.__class__ == other.__class__ and self.point == other.point
 
     def _repr_arguments(self):
         return [self.point]
@@ -269,8 +256,9 @@ class Message(BaseLayer):
     This layer represents a message embedded in another
     """
 
-    def __init__(self, message: 'BaseMessage'):
+    def __init__(self, message: "BaseMessage"):
         from bernard.layers import Stack
+
         self.message = message
         self.stack: Stack = Stack(message.get_layers())
 
@@ -293,5 +281,4 @@ class Typing(BaseLayer):
         return [self.active]
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-            and self.active == other.active
+        return self.__class__ == other.__class__ and self.active == other.active

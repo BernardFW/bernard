@@ -1,40 +1,13 @@
-# coding: utf-8
-from datetime import (
-    tzinfo,
-)
-from enum import (
-    Enum,
-)
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    List,
-    Optional,
-    Text,
-    Type,
-)
-from urllib.parse import (
-    quote,
-    urlparse,
-    urlunparse,
-)
+from datetime import tzinfo
+from enum import Enum
+from typing import TYPE_CHECKING, Any, List, Optional, Text, Type
+from urllib.parse import quote, urlparse, urlunparse
 
-from bernard.conf import (
-    settings,
-)
-from bernard.layers import (
-    BaseLayer,
-    Stack,
-)
-from bernard.layers.stack import (
-    L,
-)
-from bernard.storage.register import (
-    Register,
-)
-from bernard.utils import (
-    patch_qs,
-)
+from bernard.conf import settings
+from bernard.layers import BaseLayer, Stack
+from bernard.layers.stack import L
+from bernard.storage.register import Register
+from bernard.utils import patch_qs
 
 if TYPE_CHECKING:
     from bernard.i18n.translator import Flags
@@ -44,6 +17,7 @@ class Conversation(object):
     """
     Abstract representation of a conversation.
     """
+
     def __init__(self, id_):
         self.id = id_
 
@@ -60,9 +34,9 @@ class User(object):
         female.
         """
 
-        male = 'male'
-        female = 'female'
-        unknown = 'unknown'
+        male = "male"
+        female = "female"
+        unknown = "unknown"
 
     def __init__(self, id_):
         self.id = id_
@@ -116,7 +90,7 @@ class BaseMessage(object):
 
     def __repr__(self):
         stack = Stack(self.get_layers())
-        return f'{self.__class__.__name__}({stack})'
+        return f"{self.__class__.__name__}({stack})"
 
     def get_platform(self) -> Text:
         """
@@ -167,12 +141,10 @@ class Request(object):
     by the transitions and the handlers.
     """
 
-    QUERY = 'query'
-    HASH = 'hash'
+    QUERY = "query"
+    HASH = "hash"
 
-    def __init__(self,
-                 message: BaseMessage,
-                 register: Register):
+    def __init__(self, message: BaseMessage, register: Register):
         self.message = message
         self.platform = message.get_platform()
         self.conversation = message.get_conversation()
@@ -186,7 +158,7 @@ class Request(object):
     async def transform(self):
         await self.stack.transform(self)
 
-    def get_trans_reg(self, name: Text, default: Any=None) -> Any:
+    def get_trans_reg(self, name: Text, default: Any = None) -> Any:
         """
         Convenience function to access the transition register of a specific
         kind.
@@ -198,19 +170,19 @@ class Request(object):
         tr = self.register.get(Register.TRANSITION, {})
         return tr.get(name, default)
 
-    def has_layer(self, class_: Type[L], became: bool=True) -> bool:
+    def has_layer(self, class_: Type[L], became: bool = True) -> bool:
         """
         Proxy to stack
         """
         return self.stack.has_layer(class_, became)
 
-    def get_layer(self, class_: Type[L], became: bool=True) -> L:
+    def get_layer(self, class_: Type[L], became: bool = True) -> L:
         """
         Proxy to stack
         """
         return self.stack.get_layer(class_, became)
 
-    def get_layers(self, class_: Type[L], became: bool=True) -> List[L]:
+    def get_layers(self, class_: Type[L], became: bool = True) -> List[L]:
         """
         Proxy to stack
         """
@@ -239,17 +211,17 @@ class Request(object):
         else:
             return await self.user.get_locale()
 
-    async def get_trans_flags(self) -> 'Flags':
+    async def get_trans_flags(self) -> "Flags":
         """
         Gives a chance to middlewares to make the translation flags
         """
 
         from bernard.middleware import MiddlewareManager
 
-        async def make_flags(request: Request) -> 'Flags':
+        async def make_flags(request: Request) -> "Flags":
             return {}
 
-        mf = MiddlewareManager.instance().get('make_trans_flags', make_flags)
+        mf = MiddlewareManager.instance().get("make_trans_flags", make_flags)
         return await mf(self)
 
     async def get_token(self) -> Text:
@@ -267,9 +239,12 @@ class Request(object):
         token = await self.get_token()
 
         if method == self.QUERY:
-            return patch_qs(url, {
-                settings.WEBVIEW_TOKEN_KEY: token,
-            })
+            return patch_qs(
+                url,
+                {
+                    settings.WEBVIEW_TOKEN_KEY: token,
+                },
+            )
         elif method == self.HASH:
             hash_id = 5
             p = list(urlparse(url))

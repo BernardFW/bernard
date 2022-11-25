@@ -1,13 +1,7 @@
-from bernard import (
-    layers as lyr,
-)
-from bernard.engine.triggers import (
-    BaseTrigger,
-)
+from bernard import layers as lyr
+from bernard.engine.triggers import BaseTrigger
 
-from .store import (
-    cs,
-)
+from .store import cs
 
 
 class Number(BaseTrigger):
@@ -26,16 +20,16 @@ class Number(BaseTrigger):
     # noinspection PyMethodOverriding
     @cs.inject()
     async def rank(self, context) -> float:
-        number = context.get('number')
+        number = context.get("number")
 
         if not number:
-            return .0
+            return 0.0
 
         try:
             self.user_number = int(self.request.get_layer(lyr.RawText).text)
         except (KeyError, ValueError, TypeError):
-            return .0
+            return 0.0
 
         is_right = number == self.user_number
 
-        return 1. if is_right == self.is_right else .0
+        return 1.0 if is_right == self.is_right else 0.0

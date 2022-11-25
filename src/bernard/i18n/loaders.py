@@ -1,25 +1,15 @@
-# coding: utf-8
 import asyncio
 import csv
 import logging
 import os.path
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Text,
-    Tuple,
-    Union,
-)
+from typing import Callable, Dict, List, Optional, Text, Tuple, Union
 
-import aionotify
+from bernard.conf import settings
 
-from bernard.conf import (
-    settings,
-)
+if settings.I18N_LIVE_RELOAD:
+    import aionotify
 
-logger = logging.getLogger('bernard.i18n.loaders')
+logger = logging.getLogger("bernard.i18n.loaders")
 
 
 TransDict = Dict[Optional[Text], List[Tuple[Text, Text]]]
@@ -32,7 +22,7 @@ class LiveFileLoaderMixin(object):
     directly when saved.
     """
 
-    THING = 'file'
+    THING = "file"
 
     def __init__(self, *args, **kwargs):
         # noinspection PyArgumentList
@@ -69,9 +59,7 @@ class LiveFileLoaderMixin(object):
             if evt.name == file_name:
                 await self._load()
                 logger.info(
-                    'Reloading changed %s from "%s"',
-                    self.THING,
-                    self._file_path
+                    'Reloading changed %s from "%s"', self.THING, self._file_path
                 )
 
     async def start(self, file_path, locale=None, kwargs=None):
@@ -147,21 +135,21 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
     Loads data from a CSV file
     """
 
-    THING = 'CSV translation'
+    THING = "CSV translation"
 
     async def _load(self):
         """
         Load data from a Excel-formatted CSV file.
         """
 
-        flags = self._kwargs.get('flags')
+        flags = self._kwargs.get("flags")
 
         if not flags:
             flags = {1: {}}
 
         cols = {k: [] for k in flags.keys()}
 
-        with open(self._file_path, newline='', encoding='utf-8') as f:
+        with open(self._file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
 
             for row in reader:
@@ -182,7 +170,7 @@ class CsvTranslationLoader(LiveFileLoaderMixin, BaseTranslationLoader):
         Start the loading/watching process
         """
 
-        await self.start(file_path, locale, {'flags': flags})
+        await self.start(file_path, locale, {"flags": flags})
 
 
 class BaseIntentsLoader(object):
@@ -224,10 +212,12 @@ class BaseIntentsLoader(object):
         raise NotImplementedError
 
 
-ColRanges = List[Union[
-    int,
-    Tuple[int, Optional[int]],
-]]
+ColRanges = List[
+    Union[
+        int,
+        Tuple[int, Optional[int]],
+    ]
+]
 
 
 def extract_ranges(row, ranges: ColRanges) -> List[Text]:
@@ -249,7 +239,7 @@ def extract_ranges(row, ranges: ColRanges) -> List[Text]:
         if r[1] is None:
             r = (r[0], len(row))
 
-        out.extend(row[r[0]:r[1]])
+        out.extend(row[r[0] : r[1]])
 
     return [x for x in (y.strip() for y in out) if x]
 
@@ -259,18 +249,18 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
     Load intents from a CSV
     """
 
-    THING = 'CSV intents'
+    THING = "CSV intents"
 
     async def _load(self):
         """
         Load data from a Excel-formatted CSV file.
         """
 
-        key = self._kwargs['key']
-        pos = self._kwargs['pos']
-        neg = self._kwargs['neg']
+        key = self._kwargs["key"]
+        pos = self._kwargs["pos"]
+        neg = self._kwargs["neg"]
 
-        with open(self._file_path, newline='', encoding='utf-8') as f:
+        with open(self._file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
             data = {}
 
@@ -284,12 +274,14 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
 
         self._update({self._locale: data})
 
-    async def load(self,
-                   file_path,
-                   locale=None,
-                   key: int = 0,
-                   pos: int = 1,
-                   neg: Optional[ColRanges] = None):
+    async def load(
+        self,
+        file_path,
+        locale=None,
+        key: int = 0,
+        pos: int = 1,
+        neg: Optional[ColRanges] = None,
+    ):
         """
         Start the loading/watching process
         """
@@ -297,8 +289,12 @@ class CsvIntentsLoader(LiveFileLoaderMixin, BaseIntentsLoader):
         if neg is None:
             neg: ColRanges = [(2, None)]
 
-        await self.start(file_path, locale, kwargs={
-            'key': key,
-            'pos': pos,
-            'neg': neg,
-        })
+        await self.start(
+            file_path,
+            locale,
+            kwargs={
+                "key": key,
+                "pos": pos,
+                "neg": neg,
+            },
+        )

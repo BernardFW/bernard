@@ -1,9 +1,6 @@
 import pytest
 
-from bernard.platforms.facebook.layers import (
-    MessageTag,
-    MessagingType,
-)
+from bernard.platforms.facebook.layers import MessageTag, MessagingType
 
 
 def test_construct_check():
@@ -24,30 +21,30 @@ def test_equality():
 
 def test_repr():
     mt = MessagingType(response=True)
-    assert repr(mt) == 'MessagingType(\'response\')'
+    assert repr(mt) == "MessagingType('response')"
 
     mt = MessagingType(update=True)
-    assert repr(mt) == 'MessagingType(\'update\')'
+    assert repr(mt) == "MessagingType('update')"
 
     mt = MessagingType(tag=MessageTag.ACCOUNT_UPDATE)
-    assert repr(mt) == 'MessagingType(\'tag=ACCOUNT_UPDATE\')'
+    assert repr(mt) == "MessagingType('tag=ACCOUNT_UPDATE')"
 
     mt = MessagingType(subscription=True)
-    assert repr(mt) == 'MessagingType(\'subscription\')'
+    assert repr(mt) == "MessagingType('subscription')"
 
 
 def test_serialize():
     mt = MessagingType(response=True)
-    assert mt.serialize() == {'messaging_type': 'RESPONSE'}
+    assert mt.serialize() == {"messaging_type": "RESPONSE"}
 
     mt = MessagingType(update=True)
-    assert mt.serialize() == {'messaging_type': 'UPDATE'}
+    assert mt.serialize() == {"messaging_type": "UPDATE"}
 
     mt = MessagingType(tag=MessageTag.ACCOUNT_UPDATE)
     assert mt.serialize() == {
-        'messaging_type': 'MESSAGE_TAG',
-        'tag': 'ACCOUNT_UPDATE',
+        "messaging_type": "MESSAGE_TAG",
+        "tag": "ACCOUNT_UPDATE",
     }
 
     mt = MessagingType(subscription=True)
-    assert mt.serialize() == {'messaging_type': 'NON_PROMOTIONAL_SUBSCRIPTION'}
+    assert mt.serialize() == {"messaging_type": "NON_PROMOTIONAL_SUBSCRIPTION"}

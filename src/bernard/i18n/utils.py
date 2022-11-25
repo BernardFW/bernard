@@ -1,14 +1,6 @@
 import re
-from collections import (
-    OrderedDict,
-)
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Text,
-    Tuple,
-)
+from collections import OrderedDict
+from typing import Dict, List, Optional, Text, Tuple
 
 
 def split_locale(locale: Text) -> Tuple[Text, Optional[Text]]:
@@ -19,7 +11,7 @@ def split_locale(locale: Text) -> Tuple[Text, Optional[Text]]:
     is either the country as lower case either None if no country was supplied.
     """
 
-    items = re.split(r'[_\-]', locale.lower(), 1)
+    items = re.split(r"[_\-]", locale.lower(), 1)
 
     try:
         return items[0], items[1]

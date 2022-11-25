@@ -1,25 +1,12 @@
-# coding: utf-8
 import string
-from datetime import (
-    date,
-    datetime,
-    tzinfo,
-)
-from typing import (
-    Text,
-    Union,
-)
+from datetime import date, datetime, tzinfo
+from typing import Text, Union
 
-from babel import (
-    dates,
-    numbers,
-)
-from dateutil.parser import (
-    parse as parse_date,
-)
+from babel import dates, numbers
+from dateutil.parser import parse as parse_date
 
 
-def make_date(obj: Union[date, datetime, Text], timezone: tzinfo=None):
+def make_date(obj: Union[date, datetime, Text], timezone: tzinfo = None):
     """
     A flexible method to get a date object.
 
@@ -31,7 +18,7 @@ def make_date(obj: Union[date, datetime, Text], timezone: tzinfo=None):
     """
 
     if isinstance(obj, datetime):
-        if hasattr(obj, 'astimezone') and timezone:
+        if hasattr(obj, "astimezone") and timezone:
             obj = obj.astimezone(timezone)
         return obj.date()
     elif isinstance(obj, date):
@@ -40,7 +27,7 @@ def make_date(obj: Union[date, datetime, Text], timezone: tzinfo=None):
         return make_date(parse_date(obj), timezone)
 
 
-def make_datetime(obj: Union[datetime, Text], timezone: tzinfo=None):
+def make_datetime(obj: Union[datetime, Text], timezone: tzinfo = None):
     """
     A flexible method to get a date object.
 
@@ -52,7 +39,7 @@ def make_datetime(obj: Union[datetime, Text], timezone: tzinfo=None):
     """
 
     if isinstance(obj, datetime):
-        if hasattr(obj, 'astimezone') and timezone:
+        if hasattr(obj, "astimezone") and timezone:
             obj = obj.astimezone(timezone)
         return obj
     elif isinstance(obj, str):
@@ -102,13 +89,13 @@ class I18nFormatter(string.Formatter):
         Provide the additional formatters for localization.
         """
 
-        if spec.startswith('date:'):
-            _, format_ = spec.split(':', 1)
+        if spec.startswith("date:"):
+            _, format_ = spec.split(":", 1)
             return self.format_date(value, format_)
-        elif spec.startswith('datetime:'):
-            _, format_ = spec.split(':', 1)
+        elif spec.startswith("datetime:"):
+            _, format_ = spec.split(":", 1)
             return self.format_datetime(value, format_)
-        elif spec == 'number':
+        elif spec == "number":
             return self.format_number(value)
         else:
             return super(I18nFormatter, self).format_field(value, spec)

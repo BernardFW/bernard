@@ -5,8 +5,7 @@ ujson
 unidecode
 pyjwt
 uvloop
-raven
-raven-aiohttp
+sentry-sdk
 babel
 python-dateutil
 pytz
@@ -15,7 +14,9 @@ facepy
 
 # For Google import
 google-api-python-client
+oauth2client
 
 # For dev
 pytest
 isort
+black

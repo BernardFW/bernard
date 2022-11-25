@@ -9,7 +9,7 @@ can use it like this:
 bernard start_project proj_name ~/dev/proj_name
 ```
 
-This will automatically create a simplet emplate for a project named
+This will automatically create a simple template for a project named
 `proj_name` in the directory `~/dev/proj_name`.
 
 Please note the following requirements:
