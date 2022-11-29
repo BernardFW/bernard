@@ -18,5 +18,6 @@ oauth2client
 
 # For dev
 pytest
+twine
 isort
 black

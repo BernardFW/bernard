@@ -1,5 +1,12 @@
 name: Validation
-on: push
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - *
+
 jobs:
   tests:
     name: Run tests
@@ -10,28 +17,32 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - name: Checkout code
+      - &code
+        name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - &python
+        name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3'
 
-      - uses: actions/cache@v3
+      - &cache
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install tools
-        run: python -m pip install --upgrade pip wheel setuptools
+      - &dependencies
+        name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-
-      - name: Build package
+      - &build
+        name: Build package
         run: make build
 
       - name: Install package
@@ -39,3 +50,22 @@ jobs:
 
       - name: Run Pytest
         run: python -m pytest
+
+  pypi:
+    name: Publish to Pypi
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    needs:
+      - tests
+    steps:
+      - *code
+      - *python
+      - *cache
+      - *dependencies
+      - *build
+
+      - name: Upload to Pypi
+        run: python -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
