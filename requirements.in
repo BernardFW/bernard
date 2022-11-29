@@ -1,6 +1,6 @@
 # For everyone
 aiohttp
-aioredis
+redis
 ujson
 unidecode
 pyjwt

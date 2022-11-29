@@ -1,7 +1,6 @@
-import asyncio
 from typing import Text
 
-import aioredis
+from redis import asyncio as aioredis
 
 
 class BaseRedisStore(object):
