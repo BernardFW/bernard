@@ -48,10 +48,16 @@ jobs:
       - name: Build package
         run: python -m poetry build
 
-      - name: Upload artifact
+      - name: Upload tarball
         uses: actions/upload-artifact@v3
         with:
-          path: dist/*
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/*.whl
           if-no-files-found: error
 
       - name: Upload to Pypi
