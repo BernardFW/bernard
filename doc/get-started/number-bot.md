@@ -109,7 +109,7 @@ The bot automatically registers its webhook URL when starting, however
 it's up to you to
 
 1. Register to the right events (`messages`, `messaging_postbacks`,
-  `messaging_optins`)
+  `messaging_options`)
 2. Subscribe the app to your page's messages
 
 At this point, you should be able to talk to your bot by going to
