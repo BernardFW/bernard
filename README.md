@@ -1,8 +1,6 @@
 BERNARD
 =======
 
-**Version 0.2**
-
 [![Build Status](https://travis-ci.org/BernardFW/bernard.svg?branch=develop)](https://travis-ci.org/BernardFW/bernard)
 
 Building *instant services* (or chatbots) is a brand new craft. BERNARD

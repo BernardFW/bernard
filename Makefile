@@ -1,26 +1,17 @@
 ENV ?= pypitest
 
 install:
-	pip install -r requirements.txt
-
-venv: requirements.txt
-	pip install -r requirements.txt
-
-requirements.txt: requirements.in
-	pip-compile requirements.in
+	poetry install
 
 update:
-	pip-compile -U requirements.in
-
-convert_doc:
-	pandoc -f markdown -t rst -o README.txt README.md
+	poetry update
 
 build:
-	python setup.py sdist
+	poetry build
 
 upload:
-	python setup.py sdist upload -r $(ENV)
+	twine upload dist/*
 
 format:
-	python -m isort .
-	python -m black .
+	poetry run isort .
+	poetry run black .
