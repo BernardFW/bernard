@@ -29,6 +29,9 @@ isort = "^5.13.2"
 pytest = "^7.4.4"
 twine = "^4.0.2"
 
+[tool.poetry.scripts]
+bernard = 'bernard.misc.main:main'
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
