@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bernard"
-version = "0.4.1"
+version = "0.0.0"
 description = "Bot Engine Responding Naturally At Requests Detection"
 authors = ["Rémy Sanchez <remy.sanchez@hyperthese.net>"]
 license = "AGPL-3.0-or-later"
@@ -32,6 +32,19 @@ twine = "^4.0.2"
 [tool.poetry.scripts]
 bernard = 'bernard.misc.main:main'
 
+[tool.poetry-dynamic-versioning]
+enable = true
+pattern = "default-unprefixed"
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base, index=1), stage, revision, dev=distance, metadata=[commit]) }}
+    {%- endif -%}
+"""
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
