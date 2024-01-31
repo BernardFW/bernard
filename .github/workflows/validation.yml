@@ -55,9 +55,12 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-      - name: Upload to Pypi
+      - name: Configure Pypi publication
         if: github.ref_type == 'tag'
-        run: python -m poetry run twine upload dist/*
+        run: poetry config pypi-token.pypi $PYPI_TOKEN
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Publish package
+        if: github.ref_type == 'tag'
+        run: poetry publish
