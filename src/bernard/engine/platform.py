@@ -181,7 +181,7 @@ class SimplePlatform(Platform):
                 return True
         return False
 
-    def send(self, request: Request, stack: Stack) -> Coroutine:
+    async def send(self, request: Request, stack: Stack):
         """
         Send a stack to the platform.
 
@@ -194,7 +194,7 @@ class SimplePlatform(Platform):
                 raise UnacceptableStack("Cannot accept stack {}".format(stack))
 
         func = getattr(self, "_send_" + stack.annotation)
-        return func(request, stack)
+        return await func(request, stack)
 
     def ensure_usable_media(self, media: BaseMedia) -> BaseMedia:
         raise NotImplementedError
