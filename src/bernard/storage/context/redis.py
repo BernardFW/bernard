@@ -19,4 +19,4 @@ class RedisContextStore(BaseRedisStore, BaseContextStore):
             return {}
 
     async def _set(self, key: Text, data: Context) -> None:
-        await self.redis.set(key, ujson.dumps(data), expire=self.ttl)
+        await self.redis.set(key, ujson.dumps(data), ex=self.ttl)
