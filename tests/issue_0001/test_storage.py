@@ -100,7 +100,7 @@ def redis_store():
 
     async def shutdown():
         await store.redis.connection_pool.disconnect()
-        await store.redis.close()
+        await store.redis.aclose()
 
     run(shutdown())
 
