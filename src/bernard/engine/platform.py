@@ -1,7 +1,7 @@
 import asyncio
-from typing import Any, Callable, Coroutine, List, Optional, Text
+from typing import Any, Callable, List, Optional, Text
 
-import aiohttp
+import httpx
 from aiohttp.web_urldispatcher import UrlDispatcher
 
 from bernard.engine.request import Request
@@ -157,8 +157,8 @@ class SimplePlatform(Platform):
         During async init we just need to create a HTTP session so we can keep
         outgoing connexions to the platform alive.
         """
-        self.session = aiohttp.ClientSession()
-        asyncio.get_event_loop().create_task(self._deferred_init())
+        self.session = httpx.AsyncClient()
+        _ = asyncio.get_event_loop().create_task(self._deferred_init())
 
     async def _deferred_init(self):
         """

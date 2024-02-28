@@ -1,7 +1,7 @@
 import logging
 from urllib.parse import urlencode
 
-from aiohttp import ClientSession
+import httpx
 
 from ..base import BaseAnalytics, new_task
 
@@ -23,7 +23,7 @@ class GoogleAnalytics(BaseAnalytics):
         self.ga_domain = ga_domain
 
     async def async_init(self):
-        self.session = ClientSession()
+        self.session = httpx.AsyncClient()
 
     @new_task
     async def page_view(
@@ -56,8 +56,9 @@ class GoogleAnalytics(BaseAnalytics):
 
         logger.debug("GA settings = %s", urlencode(args))
 
-        async with self.session.post(ga_url, data=args) as r:
-            if r.status == 200:
-                logger.debug(f"Sent to GA {url} ({title}) for user {user_id}")
-            else:
-                logger.warning(f"Could not contact GA")
+        r = await self.session.post(ga_url, data=args)
+
+        if r.status_code == 200:
+            logger.debug(f"Sent to GA {url} ({title}) for user {user_id}")
+        else:
+            logger.warning(f"Could not contact GA")

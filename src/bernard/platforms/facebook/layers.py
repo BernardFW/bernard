@@ -298,7 +298,6 @@ class GenericTemplate(BaseLayer):
             await element.convert_media(platform)
 
     async def serialize(self, request: "Request"):
-
         payload = {
             "template_type": "generic",
             "elements": [await e.serialize(request) for e in self.elements],
