@@ -7,7 +7,7 @@ from textwrap import wrap
 from typing import Any, ByteString, Dict, List, Optional, Set, Text, Tuple
 from urllib.parse import urljoin
 
-import aiohttp
+import httpx
 import jwt
 import sentry_sdk
 import ujson
@@ -440,16 +440,15 @@ class Facebook(SimplePlatform):
             "fields": ",".join(fields),
         }
 
-        get = self.session.get(PROFILE_ENDPOINT, params=params)
-        async with get as r:
-            await self._handle_fb_response(r)
+        r = await self.session.get(PROFILE_ENDPOINT, params=params)
+        await self._handle_fb_response(r)
 
-            out = {}
+        out = {}
 
-            for data in (await r.json())["data"]:
-                out.update(data)
+        for data in (r.json())["data"]:
+            out.update(data)
 
-            return out
+        return out
 
     async def _send_to_messenger_profile(self, page, content):
         """
@@ -477,14 +476,13 @@ class Facebook(SimplePlatform):
             "content-type": "application/json",
         }
 
-        post = self.session.post(
+        r = await self.session.post(
             PROFILE_ENDPOINT, params=params, headers=headers, data=ujson.dumps(content)
         )
 
         # noinspection PyBroadException
         try:
-            async with post as r:
-                await self._handle_fb_response(r)
+            await self._handle_fb_response(r)
         except Exception as e:
             logger.exception("Page %s: %s could not be set", page_id, log_name)
             sentry_sdk.capture_exception(e)
@@ -590,18 +588,17 @@ class Facebook(SimplePlatform):
 
         url, params = self._get_subscriptions_endpoint()
 
-        get = self.session.get(url, params=params)
+        r = await self.session.get(url, params=params)
 
-        async with get as r:
-            await self._handle_fb_response(r)
-            data = await r.json()
+        await self._handle_fb_response(r)
+        data = r.json()
 
-            for scope in data["data"]:
-                if scope["object"] == "page":
-                    return (
-                        set(x["name"] for x in scope["fields"]),
-                        scope["callback_url"],
-                    )
+        for scope in data["data"]:
+            if scope["object"] == "page":
+                return (
+                    set(x["name"] for x in scope["fields"]),
+                    scope["callback_url"],
+                )
 
         return set(), ""
 
@@ -623,16 +620,15 @@ class Facebook(SimplePlatform):
             "Content-Type": "application/json",
         }
 
-        post = self.session.post(
+        r = await self.session.post(
             url,
             params=params,
             data=ujson.dumps(data),
             headers=headers,
         )
 
-        async with post as r:
-            await self._handle_fb_response(r)
-            data = await r.json()
+        await self._handle_fb_response(r)
+        data = r.json()
 
     async def _check_subscriptions(self):
         """
@@ -826,7 +822,7 @@ class Facebook(SimplePlatform):
             "access_token": self._access_token(request),
         }
 
-        post = self.session.post(
+        r = await self.session.post(
             MESSAGES_ENDPOINT,
             params=params,
             data=msg,
@@ -835,21 +831,20 @@ class Facebook(SimplePlatform):
 
         logger.debug("Sending: %s", msg)
 
-        async with post as r:
-            await self._handle_fb_response(r)
+        await self._handle_fb_response(r)
 
-    async def _handle_fb_response(self, response: aiohttp.ClientResponse):
+    async def _handle_fb_response(self, response: httpx.Response):
         """
         Check that Facebook was OK with the API call we just made and raise
         an exception if it failed.
         """
 
-        ok = response.status == 200
+        ok = response.status_code == 200
 
         if not ok:
             # noinspection PyBroadException
             try:
-                error = (await response.json())["error"]["message"]
+                error = (response.json())["error"]["message"]
             except Exception:
                 error = "(nothing)"
 
@@ -883,7 +878,7 @@ class Facebook(SimplePlatform):
             "access_token": self._access_token(request),
         }
 
-        post = self.session.post(
+        r = await self.session.post(
             MESSAGES_ENDPOINT,
             params=params,
             data=msg_json,
@@ -892,8 +887,7 @@ class Facebook(SimplePlatform):
 
         logger.debug("Sending: %s", msg_json)
 
-        async with post as r:
-            await self._handle_fb_response(r)
+        await self._handle_fb_response(r)
 
     async def get_user(self, user_id, page_id):
         """
@@ -909,10 +903,9 @@ class Facebook(SimplePlatform):
 
         url = GRAPH_ENDPOINT.format(user_id)
 
-        get = self.session.get(url, params=params)
-        async with get as r:
-            await self._handle_fb_response(r)
-            return await r.json()
+        r = await self.session.get(url, params=params)
+        await self._handle_fb_response(r)
+        return r.json()
 
     async def ensure_usable_media(self, media: BaseMedia) -> UrlMedia:
         """
