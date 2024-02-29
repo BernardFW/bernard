@@ -6,6 +6,7 @@ from redis import asyncio as aioredis
 class BaseRedisStore(object):
     def __init__(
         self,
+        protocol: Text = "redis",
         host: Text = "localhost",
         port: int = 6379,
         db_id: int = 0,
@@ -29,6 +30,7 @@ class BaseRedisStore(object):
         # noinspection PyArgumentList
         super(BaseRedisStore, self).__init__(**kwargs)
 
+        self.protocol = protocol
         self.host = host
         self.port = port
         self.db_id = db_id
@@ -42,5 +44,5 @@ class BaseRedisStore(object):
         """
 
         self.redis = await aioredis.from_url(
-            f"redis://{self.host}:{self.port}/{self.db_id}"
+            f"{self.protocol}://{self.host}:{self.port}/{self.db_id}"
         )
